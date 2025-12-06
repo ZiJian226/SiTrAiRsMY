@@ -1,0 +1,132 @@
+import Link from "next/link";
+import Navbar from "@/components/Navbar";
+import Container from "@/components/Container";
+import { vtubers, artists } from "@/data/mockData";
+
+export default function Home() {
+  const featuredVTubers = vtubers.filter((v) => v.featured);
+  const featuredArtists = artists.slice(0, 2);
+
+  return (
+    <div className="min-h-screen bg-base-100">
+      <Navbar />
+      
+      {/* Hero Section */}
+      <div className="hero min-h-[600px] bg-gradient-to-br from-primary/20 via-secondary/20 to-accent/20">
+        <div className="hero-content text-center">
+          <div className="max-w-3xl">
+            <h1 className="text-5xl font-bold mb-6 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+              Welcome to StarMy
+            </h1>
+            <p className="text-xl mb-8">
+              Your gateway to the vibrant world of VTubers and talented artists. 
+              Discover amazing content creators, explore stunning artwork, and commission your dream projects.
+            </p>
+            <div className="flex flex-wrap gap-4 justify-center">
+              <Link href="/vtubers" className="btn btn-primary btn-lg">
+                Explore VTubers
+              </Link>
+              <Link href="/artists" className="btn btn-secondary btn-lg">
+                Find Artists
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Featured VTubers Section */}
+      <Container className="py-16">
+        <h2 className="text-4xl font-bold text-center mb-12">Featured VTubers</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {featuredVTubers.map((vtuber) => (
+            <div key={vtuber.id} className="card bg-base-200 shadow-xl hover:shadow-2xl transition-shadow">
+              <div className="card-body">
+                <div className="flex items-start gap-4">
+                  <div className="avatar">
+                    <div className="w-24 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2">
+                      <img src={vtuber.avatar} alt={vtuber.name} />
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="card-title text-primary">{vtuber.name}</h3>
+                    <p className="text-sm opacity-70 mb-3">{vtuber.description}</p>
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {vtuber.tags.map((tag) => (
+                        <span key={tag} className="badge badge-secondary badge-sm">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                    <Link href={`/vtubers/${vtuber.id}`} className="btn btn-primary btn-sm">
+                      View Profile
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="text-center mt-8">
+          <Link href="/vtubers" className="btn btn-outline btn-primary">
+            View All VTubers
+          </Link>
+        </div>
+      </Container>
+
+      {/* Featured Artists Section */}
+      <div className="bg-base-200 py-16">
+        <Container>
+          <h2 className="text-4xl font-bold text-center mb-12">Featured Artists</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {featuredArtists.map((artist) => (
+              <div key={artist.id} className="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow">
+                <div className="card-body">
+                  <div className="flex items-start gap-4">
+                    <div className="avatar">
+                      <div className="w-24 rounded-full ring ring-secondary ring-offset-base-100 ring-offset-2">
+                        <img src={artist.avatar} alt={artist.name} />
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="card-title text-secondary">{artist.name}</h3>
+                      <p className="text-sm opacity-70 mb-3">{artist.description}</p>
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        {artist.specialty.map((spec) => (
+                          <span key={spec} className="badge badge-accent badge-sm">
+                            {spec}
+                          </span>
+                        ))}
+                      </div>
+                      <div className="flex gap-2">
+                        <Link href={`/artists/${artist.id}`} className="btn btn-secondary btn-sm">
+                          View Portfolio
+                        </Link>
+                        {artist.commissionsOpen && (
+                          <span className="badge badge-success">Open for Commissions</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="text-center mt-8">
+            <Link href="/artists" className="btn btn-outline btn-secondary">
+              View All Artists
+            </Link>
+          </div>
+        </Container>
+      </div>
+
+      {/* Footer */}
+      <footer className="footer footer-center p-10 bg-base-300 text-base-content">
+        <aside>
+          <p className="font-bold text-xl text-primary">⭐ StarMy</p>
+          <p className="mt-2">Connecting VTubers, Artists, and Fans</p>
+          <p className="text-sm opacity-70">© 2024 StarMy. All rights reserved.</p>
+        </aside>
+      </footer>
+    </div>
+  );
+}

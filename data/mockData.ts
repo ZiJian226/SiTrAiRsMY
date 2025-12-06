@@ -1,0 +1,121 @@
+import { VTuber, Artist } from "@/lib/types";
+
+export const vtubers: VTuber[] = [
+  {
+    id: "1",
+    name: "Luna Sparkle",
+    description: "Gaming and singing VTuber with a love for RPGs and karaoke streams",
+    avatar: "https://placehold.co/400x400/a855f7/ffffff?text=LS",
+    tags: ["Gaming", "Singing", "RPG"],
+    tiktokUrl: "https://www.tiktok.com/@lunasparkle",
+    twitchUrl: "https://www.twitch.tv/lunasparkle",
+    youtubeUrl: "https://www.youtube.com/@lunasparkle",
+    featured: true,
+  },
+  {
+    id: "2",
+    name: "Neko Starlight",
+    description: "Cute cat VTuber who loves art streams and chatting with viewers",
+    avatar: "https://placehold.co/400x400/8b5cf6/ffffff?text=NS",
+    tags: ["Art", "Chat", "Cozy"],
+    twitchUrl: "https://www.twitch.tv/nekostarlight",
+    youtubeUrl: "https://www.youtube.com/@nekostarlight",
+    featured: true,
+  },
+  {
+    id: "3",
+    name: "Cyber Phoenix",
+    description: "Tech-savvy VTuber specializing in coding streams and tech reviews",
+    avatar: "https://placehold.co/400x400/facc15/000000?text=CP",
+    tags: ["Tech", "Coding", "Reviews"],
+    twitchUrl: "https://www.twitch.tv/cyberphoenix",
+    youtubeUrl: "https://www.youtube.com/@cyberphoenix",
+    featured: false,
+  },
+  {
+    id: "4",
+    name: "Mystic Moon",
+    description: "ASMR and relaxation VTuber creating peaceful content for viewers",
+    avatar: "https://placehold.co/400x400/a855f7/ffffff?text=MM",
+    tags: ["ASMR", "Relaxation", "Cozy"],
+    youtubeUrl: "https://www.youtube.com/@mysticmoon",
+    featured: false,
+  },
+];
+
+export const artists: Artist[] = [
+  {
+    id: "1",
+    name: "Aria Designs",
+    description: "Professional character designer specializing in VTuber models and anime-style artwork",
+    avatar: "https://placehold.co/400x400/a855f7/ffffff?text=AD",
+    specialty: ["Character Design", "VTuber Models", "Anime Art"],
+    portfolio: [
+      "https://placehold.co/600x800/a855f7/ffffff?text=Portfolio+1",
+      "https://placehold.co/600x800/8b5cf6/ffffff?text=Portfolio+2",
+      "https://placehold.co/600x800/facc15/000000?text=Portfolio+3",
+    ],
+    commissionsOpen: true,
+    priceRange: "$100 - $500",
+    contactEmail: "aria@example.com",
+    socialLinks: {
+      twitter: "https://twitter.com/ariadesigns",
+      instagram: "https://instagram.com/ariadesigns",
+      website: "https://ariadesigns.example.com",
+    },
+  },
+  {
+    id: "2",
+    name: "Digital Dreams Studio",
+    description: "Full-service studio offering rigging, animation, and complete VTuber setup",
+    avatar: "https://placehold.co/400x400/facc15/000000?text=DD",
+    specialty: ["Rigging", "Animation", "Live2D"],
+    portfolio: [
+      "https://placehold.co/600x800/facc15/000000?text=Portfolio+1",
+      "https://placehold.co/600x800/a855f7/ffffff?text=Portfolio+2",
+    ],
+    commissionsOpen: true,
+    priceRange: "$500 - $2000",
+    contactEmail: "contact@digitaldreams.com",
+    socialLinks: {
+      website: "https://digitaldreams.example.com",
+    },
+  },
+  {
+    id: "3",
+    name: "Pixel Art Pro",
+    description: "Creating unique pixel art emotes, badges, and overlays for streamers",
+    avatar: "https://placehold.co/400x400/8b5cf6/ffffff?text=PP",
+    specialty: ["Pixel Art", "Emotes", "Overlays"],
+    portfolio: [
+      "https://placehold.co/600x800/8b5cf6/ffffff?text=Portfolio+1",
+      "https://placehold.co/600x800/a855f7/ffffff?text=Portfolio+2",
+      "https://placehold.co/600x800/facc15/000000?text=Portfolio+3",
+      "https://placehold.co/600x800/8b5cf6/ffffff?text=Portfolio+4",
+    ],
+    commissionsOpen: false,
+    priceRange: "$25 - $150",
+    contactEmail: "pixel@example.com",
+    socialLinks: {
+      twitter: "https://twitter.com/pixelartpro",
+    },
+  },
+  {
+    id: "4",
+    name: "Sketch & Color",
+    description: "Traditional and digital artist offering custom illustrations and portraits",
+    avatar: "https://placehold.co/400x400/facc15/000000?text=SC",
+    specialty: ["Illustrations", "Portraits", "Traditional Art"],
+    portfolio: [
+      "https://placehold.co/600x800/facc15/000000?text=Portfolio+1",
+      "https://placehold.co/600x800/8b5cf6/ffffff?text=Portfolio+2",
+    ],
+    commissionsOpen: true,
+    priceRange: "$75 - $300",
+    contactEmail: "sketch@example.com",
+    socialLinks: {
+      instagram: "https://instagram.com/sketchandcolor",
+      website: "https://sketchandcolor.example.com",
+    },
+  },
+];

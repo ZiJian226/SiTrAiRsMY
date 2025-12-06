@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Container from "@/components/Container";
+import Footer from "@/components/Footer";
 import { artists } from "@/data/mockData";
 
 export default function ArtistProfilePage({ params }: { params: Promise<{ id: string }> }) {
@@ -245,12 +246,7 @@ export default function ArtistProfilePage({ params }: { params: Promise<{ id: st
         </div>
       </Container>
 
-      <footer className="footer footer-center p-10 bg-base-300 text-base-content mt-16">
-        <aside>
-          <p className="font-bold text-xl text-primary">⭐ StarMy</p>
-          <p className="mt-2">Connecting VTubers, Artists, and Fans</p>
-        </aside>
-      </footer>
+      <Footer />
     </div>
   );
 }

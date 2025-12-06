@@ -1,81 +1,171 @@
-# StarMy - VTuber & Artist Community Platform
+# 🌟 StarMy (StarMyriad)
 
-A modern Next.js community platform connecting VTubers, artists, and fans. Built with Next.js 16, TypeScript, Tailwind CSS, and daisyUI.
+**Malaysia's Premier VTuber & Artist Community Platform**
 
-## Features
+StarMy is a comprehensive Next.js web application designed to connect VTubers, digital artists, and fans in Malaysia. The platform provides discovery, showcasing, and collaboration opportunities for the creative community.
 
-### 🏠 Homepage
-- Beautiful hero section with gradient background
-- Featured VTubers and Artists sections
-- Fully responsive design
-- Custom purple and yellow theme
+## 🎨 Design Theme
 
-### 🎮 VTuber Directory
-- Searchable directory with text filtering
-- Tag-based filtering (Gaming, Singing, Art, Tech, etc.)
-- Profile pages with social media links
-- Placeholder sections for TikTok/Twitch/YouTube embeds
+- **Main Colors**: Purple (#a855f7), Yellow (#facc15)
+- **Secondary Colors**: Dark, White
+- **Framework**: Next.js 16, DaisyUI, TailwindCSS 4
+- **Animations**: AnimeJS
+- **Database**: Supabase (PostgreSQL)
+- **Media Storage**: Cloudflare R2
 
-### 🎨 Artist Directory
-- Searchable directory with text filtering
-- Specialty-based filtering
-- Commission status filtering
-- Portfolio galleries
-- Commission request forms
+## ✨ Features
 
-### 🛠️ Admin Panel
-- Manage VTubers and Artists
-- Toggle featured status
-- Toggle commission availability
-- Edit and delete entries
-- Tabbed interface for easy navigation
+### Main Website Flow
+- ✅ **Homepage** - Hero section with featured VTubers and Artists
+- ✅ **News Page** - Community news and announcements with category filtering
+- ✅ **VTubers Directory** - Searchable list with tag filtering
+- ✅ **VTuber Profiles** - Individual profiles with streaming schedules, social links, TikTok/Twitch/YouTube placeholders
+- ✅ **Artists Directory** - Searchable list with specialty and commission status filtering
+- ✅ **Artist Profiles** - Portfolio showcase with commission request forms
+- ✅ **About Us** - Company information, mission, values, and team
+- ✅ **Career Page** - Application forms for VTubers, Artists, and Team positions
+- ✅ **FAQ** - Comprehensive frequently asked questions
+- ✅ **Privacy Policy** - Detailed privacy information
+- ✅ **Terms of Service** - Legal terms and conditions
+- ✅ **Loading States** - Custom loading page with animations
+- ✅ **Error Pages** - Custom error and 404 pages
 
-## Tech Stack
+### Admin Flow (Separate Authentication)
+- ✅ **Admin Login/Register** - Authentication pages with validation
+- ✅ **Admin Dashboard** - Statistics and quick actions overview
+- 🚧 **VTuber Management** - Full CRUD for VTuber profiles
+- 🚧 **Artist Management** - Full CRUD for artist profiles
+- 🚧 **News Management** - Create, edit, and publish news articles
+- 🚧 **Application Review** - Review career applications
+- 🚧 **Commission Management** - View and manage commission requests
 
-- **Framework**: Next.js 16 (App Router)
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS with daisyUI
-- **Theme**: Custom purple (#a855f7) and yellow (#facc15) colors
+### Layout Features
+- ✅ Sticky top navigation bar with dropdown menus
+- ✅ Horizontally centered content with Container component
+- ✅ Standardized footer across all pages
+- ✅ Fully responsive mobile design
+- ✅ Smooth scroll animations with AnimeJS
 
-## Getting Started
+## 🚀 Getting Started
 
-First, install the dependencies:
+### Prerequisites
+- Node.js 18+ 
+- npm or yarn
+- Supabase account (for database)
+- Cloudflare R2 account (for media storage)
 
-```bash
-npm install
-```
+### Installation
 
-Then, run the development server:
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/ZiJian226/StarMy.git
+   cd StarMy
+   ```
 
-```bash
-npm run dev
-```
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+3. **Set up environment variables**
+   
+   Copy `.env.local.example` to `.env.local` and fill in your credentials:
+   ```bash
+   cp .env.local.example .env.local
+   ```
 
-## Available Scripts
+   Required environment variables:
+   - `NEXT_PUBLIC_SUPABASE_URL` - Your Supabase project URL
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Your Supabase anon key
+   - `SUPABASE_SERVICE_ROLE_KEY` - Your Supabase service role key
+   - `R2_ACCOUNT_ID` - Cloudflare R2 account ID
+   - `R2_ACCESS_KEY_ID` - R2 access key
+   - `R2_SECRET_ACCESS_KEY` - R2 secret key
+   - `R2_BUCKET_NAME` - R2 bucket name
 
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm start` - Start production server
-- `npm run lint` - Run ESLint
+4. **Set up the database**
+   
+   Follow the instructions in `DATABASE_SCHEMA.md` to set up your Supabase database
 
-## Project Structure
+5. **Run the development server**
+   ```bash
+   npm run dev
+   ```
+
+6. **Open your browser**
+   
+   Navigate to [http://localhost:3000](http://localhost:3000)
+
+## 📁 Project Structure
 
 ```
 StarMy/
-├── app/                    # Next.js app directory
-│   ├── admin/             # Admin panel
-│   ├── artists/           # Artist directory and profiles
-│   ├── vtubers/           # VTuber directory and profiles
-│   ├── layout.tsx         # Root layout
-│   ├── page.tsx           # Homepage
-│   └── globals.css        # Global styles
-├── components/            # Reusable components
-│   ├── Container.tsx      # Centered content container
-│   └── Navbar.tsx         # Navigation bar
-├── data/                  # Mock data
-│   └── mockData.ts        # Sample VTubers and Artists
+├── app/                      # Next.js app directory
+│   ├── about/               # About Us page
+│   ├── admin/               # Admin pages (login, dashboard)
+│   ├── artists/             # Artists directory and profiles
+│   ├── career/              # Career/Join Us page
+│   ├── faq/                 # FAQ page
+│   ├── news/                # News listing page
+│   ├── privacy/             # Privacy Policy page
+│   ├── terms/               # Terms of Service page
+│   ├── vtubers/             # VTubers directory and profiles
+│   ├── error.tsx            # Error boundary page
+│   ├── layout.tsx           # Root layout
+│   ├── loading.tsx          # Loading state
+│   ├── not-found.tsx        # 404 page
+│   └── page.tsx             # Homepage
+├── components/              # Reusable components
+│   ├── AnimatedSection.tsx  # Animation wrapper component
+│   ├── Container.tsx        # Content container wrapper
+│   ├── Footer.tsx           # Site footer
+│   └── Navbar.tsx           # Navigation bar
+├── data/                    # Mock data (will be replaced with Supabase)
+│   └── mockData.ts          # VTubers and Artists data
+├── lib/                     # Utility libraries
+│   ├── animations.ts        # AnimeJS animation helpers
+│   ├── supabase.ts          # Supabase client configuration
+│   └── types.ts             # TypeScript type definitions
+├── public/                  # Static assets
+├── .env.local.example       # Environment variables template
+├── DATABASE_SCHEMA.md       # Database schema documentation
+├── package.json             # Project dependencies
+├── tailwind.config.ts       # Tailwind configuration
+└── tsconfig.json            # TypeScript configuration
+```
+
+## 🎯 Roadmap
+
+### Phase 1: MVP (Current)
+- [x] Basic website structure
+- [x] VTuber and Artist directories
+- [x] Static pages (About, FAQ, Career, etc.)
+- [x] Admin authentication UI
+- [x] Schedule feature for VTubers
+- [x] Animation utilities
+
+### Phase 2: Database Integration
+- [ ] Connect Supabase for all data
+- [ ] Implement full CRUD in admin panel
+- [ ] User authentication with Supabase Auth
+- [ ] File uploads to Cloudflare R2
+- [ ] Real-time updates
+
+### Phase 3: Enhanced Features
+- [ ] Actual TikTok/Twitch/YouTube embeds
+- [ ] Live streaming status indicators
+- [ ] Email notifications for commissions
+- [ ] Payment integration for commissions
+- [ ] Advanced search and filtering
+
+## 🛠️ Technology Stack
+
+- **Frontend**: Next.js 16, React 19, TypeScript
+- **Styling**: TailwindCSS 4, DaisyUI 5
+- **Animations**: AnimeJS
+- **Database**: Supabase (PostgreSQL)
+- **Storage**: Cloudflare R2
+- **Deployment**: Vercel (recommended)
 ├── lib/                   # Utility functions and types
 │   └── types.ts           # TypeScript type definitions
 └── public/                # Static assets

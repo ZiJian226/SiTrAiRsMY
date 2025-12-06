@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Container from "@/components/Container";
+import Footer from "@/components/Footer";
 import { vtubers } from "@/data/mockData";
 
 export default async function VTuberProfilePage({ params }: { params: Promise<{ id: string }> }) {
@@ -11,6 +12,32 @@ export default async function VTuberProfilePage({ params }: { params: Promise<{ 
   if (!vtuber) {
     notFound();
   }
+
+  const getPlatformIcon = (platform: string) => {
+    switch (platform) {
+      case "youtube":
+        return "🎥";
+      case "twitch":
+        return "🎮";
+      case "tiktok":
+        return "🎵";
+      default:
+        return "📺";
+    }
+  };
+
+  const getPlatformColor = (platform: string) => {
+    switch (platform) {
+      case "youtube":
+        return "badge-error";
+      case "twitch":
+        return "badge-secondary";
+      case "tiktok":
+        return "badge-accent";
+      default:
+        return "badge-primary";
+    }
+  };
 
   return (
     <div className="min-h-screen bg-base-100">
@@ -78,6 +105,47 @@ export default async function VTuberProfilePage({ params }: { params: Promise<{ 
             </div>
           </div>
         </div>
+
+        {/* Streaming Schedule */}
+        {vtuber.schedule && vtuber.schedule.length > 0 && (
+          <div className="card bg-base-200 shadow-xl mb-8">
+            <div className="card-body">
+              <h2 className="card-title text-2xl mb-4">📅 Streaming Schedule (MYT)</h2>
+              <div className="overflow-x-auto">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>Day</th>
+                      <th>Time</th>
+                      <th>Stream Title</th>
+                      <th>Platform</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {vtuber.schedule.map((slot) => (
+                      <tr key={slot.id} className="hover">
+                        <td className="font-semibold">{slot.day}</td>
+                        <td>{slot.time}</td>
+                        <td>{slot.title}</td>
+                        <td>
+                          <span className={`badge ${getPlatformColor(slot.platform)}`}>
+                            {getPlatformIcon(slot.platform)} {slot.platform}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="alert alert-info mt-4">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span>Schedule may change. Follow on social media for updates!</span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Content Embeds */}
         <div className="space-y-8">
@@ -161,12 +229,7 @@ export default async function VTuberProfilePage({ params }: { params: Promise<{ 
         </div>
       </Container>
 
-      <footer className="footer footer-center p-10 bg-base-300 text-base-content mt-16">
-        <aside>
-          <p className="font-bold text-xl text-primary">⭐ StarMy</p>
-          <p className="mt-2">Connecting VTubers, Artists, and Fans</p>
-        </aside>
-      </footer>
+      <Footer />
     </div>
   );
 }

@@ -1,18 +1,49 @@
+"use client";
+
+import { useEffect } from "react";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Container from "@/components/Container";
+import Footer from "@/components/Footer";
 import { vtubers, artists } from "@/data/mockData";
 
 export default function Home() {
   const featuredVTubers = vtubers.filter((v) => v.featured);
   const featuredArtists = artists.slice(0, 2);
 
+  useEffect(() => {
+    const handleScroll = () => {
+      const heroSection = document.getElementById("hero-section");
+      if (!heroSection) return;
+
+      const scrollPosition = window.scrollY;
+      const heroHeight = heroSection.offsetHeight;
+      
+      // Calculate blur amount based on scroll (0 to 20px blur)
+      const blurAmount = Math.min((scrollPosition / heroHeight) * 20, 20);
+      
+      // Calculate opacity (fade from 1 to 0.3)
+      const opacity = Math.max(1 - (scrollPosition / heroHeight) * 0.7, 0.3);
+      
+      // Apply filter and opacity
+      heroSection.style.filter = `blur(${blurAmount}px)`;
+      heroSection.style.opacity = opacity.toString();
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   return (
     <div className="min-h-screen bg-base-100">
       <Navbar />
       
-      {/* Hero Section */}
-      <div className="hero min-h-[600px] bg-gradient-to-br from-primary/20 via-secondary/20 to-accent/20">
+      {/* Hero Section with Scroll Blur Effect */}
+      <div 
+        id="hero-section"
+        className="hero min-h-[600px] bg-gradient-to-br from-primary/20 via-secondary/20 to-accent/20 sticky top-0 transition-all duration-0 ease-in-out"
+        style={{ zIndex: 1 }}
+      >
         <div className="hero-content text-center">
           <div className="max-w-3xl">
             <h1 className="text-5xl font-bold mb-6 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
@@ -34,8 +65,8 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Featured VTubers Section */}
-      <Container className="py-16">
+      {/* Featured VTubers Section - This will cover the hero on scroll */}
+      <Container className="py-16 relative bg-base-100" style={{ zIndex: 2 }}>
         <h2 className="text-4xl font-bold text-center mb-12">Featured VTubers</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {featuredVTubers.map((vtuber) => (
@@ -74,7 +105,7 @@ export default function Home() {
       </Container>
 
       {/* Featured Artists Section */}
-      <div className="bg-base-200 py-16">
+      <div className="bg-base-200 py-16 relative" style={{ zIndex: 2 }}>
         <Container>
           <h2 className="text-4xl font-bold text-center mb-12">Featured Artists</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -119,14 +150,7 @@ export default function Home() {
         </Container>
       </div>
 
-      {/* Footer */}
-      <footer className="footer footer-center p-10 bg-base-300 text-base-content">
-        <aside>
-          <p className="font-bold text-xl text-primary">⭐ StarMy</p>
-          <p className="mt-2">Connecting VTubers, Artists, and Fans</p>
-          <p className="text-sm opacity-70">© 2024 StarMy. All rights reserved.</p>
-        </aside>
-      </footer>
+      <Footer />
     </div>
   );
 }

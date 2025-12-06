@@ -11,6 +11,12 @@ export const vtubers: VTuber[] = [
     twitchUrl: "https://www.twitch.tv/lunasparkle",
     youtubeUrl: "https://www.youtube.com/@lunasparkle",
     featured: true,
+    schedule: [
+      { id: "1", day: "Monday", time: "20:00 - 22:00", title: "RPG Marathon", platform: "twitch" },
+      { id: "2", day: "Wednesday", time: "19:00 - 21:00", title: "Karaoke Night", platform: "youtube" },
+      { id: "3", day: "Friday", time: "20:00 - 23:00", title: "Gaming with Viewers", platform: "twitch" },
+      { id: "4", day: "Sunday", time: "18:00 - 20:00", title: "Chill Chat & Games", platform: "youtube" },
+    ],
   },
   {
     id: "2",
@@ -21,6 +27,11 @@ export const vtubers: VTuber[] = [
     twitchUrl: "https://www.twitch.tv/nekostarlight",
     youtubeUrl: "https://www.youtube.com/@nekostarlight",
     featured: true,
+    schedule: [
+      { id: "1", day: "Tuesday", time: "15:00 - 18:00", title: "Art Stream", platform: "youtube" },
+      { id: "2", day: "Thursday", time: "15:00 - 17:00", title: "Cozy Chat", platform: "twitch" },
+      { id: "3", day: "Saturday", time: "14:00 - 17:00", title: "Drawing Your Requests", platform: "youtube" },
+    ],
   },
   {
     id: "3",
@@ -31,6 +42,11 @@ export const vtubers: VTuber[] = [
     twitchUrl: "https://www.twitch.tv/cyberphoenix",
     youtubeUrl: "https://www.youtube.com/@cyberphoenix",
     featured: false,
+    schedule: [
+      { id: "1", day: "Monday", time: "21:00 - 23:00", title: "Code Review", platform: "twitch" },
+      { id: "2", day: "Wednesday", time: "21:00 - 00:00", title: "Late Night Coding", platform: "twitch" },
+      { id: "3", day: "Saturday", time: "16:00 - 18:00", title: "Tech Talk", platform: "youtube" },
+    ],
   },
   {
     id: "4",
@@ -40,6 +56,10 @@ export const vtubers: VTuber[] = [
     tags: ["ASMR", "Relaxation", "Cozy"],
     youtubeUrl: "https://www.youtube.com/@mysticmoon",
     featured: false,
+    schedule: [
+      { id: "1", day: "Tuesday", time: "22:00 - 23:30", title: "ASMR Session", platform: "youtube" },
+      { id: "2", day: "Friday", time: "22:00 - 00:00", title: "Relaxation Stream", platform: "youtube" },
+    ],
   },
 ];
 

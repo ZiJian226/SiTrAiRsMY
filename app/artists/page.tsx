@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Container from "@/components/Container";
+import Footer from "@/components/Footer";
 import { artists } from "@/data/mockData";
 
 export default function ArtistsPage() {
@@ -124,12 +125,7 @@ export default function ArtistsPage() {
         )}
       </Container>
 
-      <footer className="footer footer-center p-10 bg-base-300 text-base-content mt-16">
-        <aside>
-          <p className="font-bold text-xl text-primary">⭐ StarMy</p>
-          <p className="mt-2">Connecting VTubers, Artists, and Fans</p>
-        </aside>
-      </footer>
+      <Footer />
     </div>
   );
 }

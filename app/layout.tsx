@@ -12,7 +12,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" data-theme="mytheme">
+    <html lang="en" data-theme="starmy">
       <body className="antialiased">
         {children}
       </body>

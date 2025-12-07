@@ -5,6 +5,7 @@ import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Container from "@/components/Container";
 import Footer from "@/components/Footer";
+import PageBackground from "@/components/PageBackground";
 import { vtubers } from "@/data/mockData";
 
 export default function VTubersPage() {
@@ -22,8 +23,10 @@ export default function VTubersPage() {
   });
 
   return (
-    <div className="min-h-screen bg-base-100">
-      <Navbar />
+    <div className="min-h-screen bg-base-100 relative">
+      <PageBackground rotate={true} blur={true} opacity={50} />
+      <div className="relative z-10">
+        <Navbar />
 
       <Container className="py-12">
         <h1 className="text-5xl font-bold text-center mb-8 text-primary">
@@ -108,6 +111,7 @@ export default function VTubersPage() {
       </Container>
 
       <Footer />
+      </div>
     </div>
   );
 }

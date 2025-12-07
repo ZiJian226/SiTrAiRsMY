@@ -3,6 +3,7 @@
 import Navbar from "@/components/Navbar";
 import Container from "@/components/Container";
 import Footer from "@/components/Footer";
+import PageBackground from "@/components/PageBackground";
 
 const faqs = [
   {
@@ -115,60 +116,63 @@ const faqs = [
 
 export default function FAQPage() {
   return (
-    <div className="min-h-screen bg-base-100 flex flex-col">
-      <Navbar />
+    <div className="min-h-screen bg-base-100 relative flex flex-col">
+      <PageBackground rotate={true} blur={true} opacity={50} />
+      <div className="relative z-10">
+        <Navbar />
 
-      <Container className="py-12 flex-grow">
-        <h1 className="text-5xl font-bold text-center mb-4 text-primary">
-          Frequently Asked Questions
-        </h1>
-        <p className="text-center text-lg mb-12 max-w-2xl mx-auto opacity-70">
-          Find answers to common questions about StarMy. Can't find what you're looking for? Contact our support team!
-        </p>
+        <Container className="py-12 flex-grow">
+          <h1 className="text-5xl font-bold text-center mb-4 text-primary">
+            Frequently Asked Questions
+          </h1>
+          <p className="text-center text-lg mb-12 max-w-2xl mx-auto opacity-70">
+            Find answers to common questions about StarMy. Can't find what you're looking for? Contact our support team!
+          </p>
 
-        <div className="max-w-4xl mx-auto space-y-8">
-          {faqs.map((section, sectionIdx) => (
-            <div key={sectionIdx} className="card bg-base-200 shadow-xl">
-              <div className="card-body">
-                <h2 className="text-3xl font-bold mb-6 text-secondary">{section.category}</h2>
-                <div className="space-y-4">
-                  {section.questions.map((faq, faqIdx) => (
-                    <div key={faqIdx} className="collapse collapse-plus bg-base-100">
-                      <input type="radio" name={`faq-${sectionIdx}`} defaultChecked={faqIdx === 0} />
-                      <div className="collapse-title text-xl font-medium">
-                        {faq.q}
+          <div className="max-w-4xl mx-auto space-y-8">
+            {faqs.map((section, sectionIdx) => (
+              <div key={sectionIdx} className="card bg-base-200 shadow-xl">
+                <div className="card-body">
+                  <h2 className="text-3xl font-bold mb-6 text-secondary">{section.category}</h2>
+                  <div className="space-y-4">
+                    {section.questions.map((faq, faqIdx) => (
+                      <div key={faqIdx} className="collapse collapse-plus bg-base-100">
+                        <input type="radio" name={`faq-${sectionIdx}`} defaultChecked={faqIdx === 0} />
+                        <div className="collapse-title text-xl font-medium">
+                          {faq.q}
+                        </div>
+                        <div className="collapse-content">
+                          <p className="opacity-80">{faq.a}</p>
+                        </div>
                       </div>
-                      <div className="collapse-content">
-                        <p className="opacity-80">{faq.a}</p>
-                      </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
 
-        {/* Contact Section */}
-        <div className="card bg-gradient-to-br from-primary/20 to-secondary/20 shadow-xl mt-12 max-w-4xl mx-auto">
-          <div className="card-body text-center">
-            <h2 className="text-3xl font-bold mb-4">Still Have Questions?</h2>
-            <p className="mb-6 opacity-80">
-              Our support team is here to help! Reach out and we'll get back to you as soon as possible.
-            </p>
-            <div className="flex flex-wrap gap-4 justify-center">
-              <a href="mailto:support@starmy.my" className="btn btn-primary">
-                Email Support
-              </a>
-              <a href="/about" className="btn btn-secondary">
-                Learn More About Us
-              </a>
+          {/* Contact Section */}
+          <div className="card bg-gradient-to-br from-primary/20 to-secondary/20 shadow-xl mt-12 max-w-4xl mx-auto">
+            <div className="card-body text-center">
+              <h2 className="text-3xl font-bold mb-4">Still Have Questions?</h2>
+              <p className="mb-6 opacity-80">
+                Our support team is here to help! Reach out and we'll get back to you as soon as possible.
+              </p>
+              <div className="flex flex-wrap gap-4 justify-center">
+                <a href="mailto:support@starmy.my" className="btn btn-primary">
+                  Email Support
+                </a>
+                <a href="/about" className="btn btn-secondary">
+                  Learn More About Us
+                </a>
+              </div>
             </div>
           </div>
-        </div>
-      </Container>
+        </Container>
 
-      <Footer />
+        <Footer />
+      </div>
     </div>
   );
 }

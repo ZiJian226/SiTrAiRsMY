@@ -1,15 +1,27 @@
 import Link from "next/link";
+import Image from "next/image";
 
 export default function Footer() {
   return (
     <footer className="bg-base-300 text-base-content">
-      <div className="container mx-auto px-4 py-10">
+      <div className="container mx-auto px-50 py-10">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand Section */}
           <div>
-            <Link href="/" className="text-2xl font-bold text-primary flex items-center gap-2">
-              ⭐ StarMy
-            </Link>
+              <Link 
+            href="/" 
+            className="flex items-center px-4 transition-all duration-300 hover:drop-shadow-[0_0_8px_rgba(141,118,209,0.8)] hover:scale-110"
+            aria-label="StarMy Home"
+          >
+            <Image
+              src="/assets/images/icons/starmy-logo.png"
+              alt="StarMy Logo"
+              width={120}
+              height={48}
+              className="object-contain"
+              priority
+            />
+          </Link>
             <p className="mt-4 text-sm opacity-70">
               Your gateway to Malaysia's vibrant VTuber and Artist community. Discover, connect, and create together.
             </p>

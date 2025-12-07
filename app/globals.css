@@ -5,3 +5,65 @@
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
+
+/* Force DaisyUI theme application */
+@plugin "daisyui/theme" {
+  name: "dark";
+  default: true;
+  prefersdark: true;
+  color-scheme: "dark";
+  --color-base-100: #32286E;
+  --color-base-200: #46329B;
+  --color-base-300: #5A50A5;
+  --color-base-content: #F9ECF4;
+  --color-primary: #8D76D1;
+  --color-primary-content: #F9ECF4;
+  --color-secondary: #FFA5A7;
+  --color-secondary-content: #32286E;
+  --color-accent: oklch(77% 0.152 181.912);
+  --color-accent-content: #32286E;
+  --color-neutral: oklch(14% 0.005 285.823);
+  --color-neutral-content: oklch(92% 0.004 286.32);
+  --color-info: #C6E0FF;
+  --color-info-content: #32286E;
+  --color-success: oklch(76% 0.177 163.223);
+  --color-success-content: #32286E;
+  --color-warning: #E6D796;
+  --color-warning-content: #32286E;
+  --color-error: #B40B0B;
+  --color-error-content: #F9ECF4;
+  --radius-selector: 2rem;
+  --radius-field: 2rem;
+  --radius-box: 2rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 2px;
+  --depth: 1;
+  --noise: 0;
+}
+
+
+/* RGB extract from poffu
+Light Blue #C6E0FF
+Dark Blue #4D4A84
+Purple #8D76D1
+Light Pink #F9ECF4
+Pink #FFA5A7
+Red #B40B0B
+
+RGB StarMy logo — Purple Variant
+#A091CD
+#917DBE
+#5A50A5
+#46329B
+#32286E
+
+RGB StarMy logo — Yellow Variant
+#F5F0CD
+#FFEBAA
+#E6D796
+
+RGB StarMy logo — Pink Variant
+#E1C3DC
+#DC96BE 
+*/

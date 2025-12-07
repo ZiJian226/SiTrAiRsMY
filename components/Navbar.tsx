@@ -1,9 +1,10 @@
 import Link from "next/link";
+import Image from "next/image";
 
 export default function Navbar() {
   return (
     <div className="navbar bg-base-100 shadow-lg sticky top-0 z-50">
-      <div className="navbar-start hidden lg:flex">
+      <div className="navbar-start lg:flex">
         <div className="dropdown">
           <div tabIndex={0} role="button" className="btn btn-ghost lg:hidden">
             <svg
@@ -50,8 +51,8 @@ export default function Navbar() {
           </ul>
         </div>
       </div>
-      <div className="navbar-center hidden lg:flex">
-        <ul className="menu menu-horizontal px-1">
+      <div className="navbar-center ho hidden lg:flex">
+        <ul className="menu menu-horizontal items-center">
           <li>
             <Link href="/vtubers">VTubers</Link>
           </li>
@@ -61,13 +62,24 @@ export default function Navbar() {
           <li>
             <Link href="/news">News</Link>
           </li>
-          <Link href="/" className="btn btn-ghost text-xl font-bold text-primary">
-          ⭐ StarMy
+          <Link 
+            href="/" 
+            className="flex items-center px-4 transition-all duration-300 hover:drop-shadow-[0_0_8px_rgba(141,118,209,0.8)] hover:scale-110"
+            aria-label="StarMy Home"
+          >
+            <Image
+              src="/assets/images/icons/starmy-logo.png"
+              alt="StarMy Logo"
+              width={100}
+              height={48}
+              className="object-contain"
+              priority
+            />
           </Link>
           <li>
             <details>
               <summary>More</summary>
-              <ul className="p-2 bg-base-100 rounded-box shadow-lg">
+              <ul className="bg-base-100 shadow-lg">
                 <li><Link href="/about">About Us</Link></li>
                 <li><Link href="/career">Career</Link></li>
                 <li><Link href="/faq">FAQ</Link></li>

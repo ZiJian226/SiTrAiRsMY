@@ -112,8 +112,8 @@ export default function PrivacyPage() {
               <section className="card bg-base-200 p-6">
                 <h2 className="text-3xl font-bold mb-4 text-secondary">8. Children's Privacy</h2>
                 <p className="opacity-80">
-                  Our services are not intended for children under 13 years of age. We do not knowingly collect
-                  personal information from children under 13.
+                  Our services are not intended for children under 16 years of age. We do not knowingly collect
+                  personal information from children under 16.
                 </p>
               </section>
 
@@ -131,8 +131,7 @@ export default function PrivacyPage() {
                   If you have any questions about this Privacy Policy, please contact us:
                 </p>
                 <ul className="space-y-2 opacity-80">
-                  <li><strong>Email:</strong> privacy@starmy.my</li>
-                  <li><strong>Address:</strong> Kuala Lumpur, Malaysia</li>
+                  <li><strong>Email:</strong> starmy@gmail.com</li>
                 </ul>
               </section>
             </div>

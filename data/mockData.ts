@@ -61,6 +61,19 @@ export const vtubers: VTuber[] = [
       { id: "2", day: "Friday", time: "22:00 - 00:00", title: "Relaxation Stream", platform: "youtube" },
     ],
   },
+  {
+    id: "5",
+    name: "Makoto Azusa",
+    description: "I love bananas!",
+    avatar: "https://placehold.co/400x400/a855f7/ffffff?text=BANANA",
+    tags: ["Big", "Relaxation", "Cozy"],
+    youtubeUrl: "https://www.youtube.com/@mysticmoon",
+    featured: false,
+    schedule: [
+      { id: "1", day: "Tuesday", time: "22:00 - 23:30", title: "ASMR Session", platform: "youtube" },
+      { id: "2", day: "Friday", time: "22:00 - 00:00", title: "Relaxation Stream", platform: "youtube" },
+    ],
+  },
 ];
 
 export const artists: Artist[] = [

@@ -40,7 +40,7 @@ export default function TermsPage() {
 
               <section className="card bg-base-200 p-6">
                 <h2 className="text-3xl font-bold mb-4 text-secondary">3. User Accounts</h2>
-                <h3 className="text-xl font-semibold mb-3">Registration</h3>
+                <h3 className="text-xl font-semibold mb-3">Registration (StarMy Talent Only)</h3>
                 <p className="opacity-80 mb-4">
                   To access certain features, you may need to create an account. You agree to:
                 </p>
@@ -165,9 +165,15 @@ export default function TermsPage() {
                   For questions about these Terms of Service, contact us:
                 </p>
                 <ul className="space-y-2 opacity-80">
-                  <li><strong>Email:</strong> legal@starmy.my</li>
-                  <li><strong>Address:</strong> Kuala Lumpur, Malaysia</li>
+                  <li><strong>Email:</strong> starmy@gmail.com</li>
                 </ul>
+              </section>
+
+              <section className="card bg-base-200 p-6">
+                <h2 className="text-3xl font-bold mb-4 text-secondary">13. No AI Artwork</h2>
+                <p className="opacity-80 mb-4">
+                  At StarMyriad Agency, the use of AI (Artificial Intelligence) is highly prohibited. Therefore, this community is against AI usage. We are committed to preserving the integrity, originality, and professionalism of our artists’ work. To protect both our creative talents and the agency’s reputation, we enforce a strict No AI Artwork Policy across all official projects, releases, and branding materials.
+                </p>
               </section>
             </div>
           </div>

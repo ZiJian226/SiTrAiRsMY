@@ -83,7 +83,7 @@ export default function Home() {
       {/* Featured VTubers Section - This will cover the hero on scroll */}
       <div className="bg-base-100 py-16 relative " style={{ zIndex: 2 }}>
         <Container>
-          <h2 className="text-4xl font-bold text-center mb-12">Featured VTubers</h2>
+          <h2 className="text-4xl font-bold text-center mb-12">Recent News</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {featuredVTubers.map((vtuber) => (
               <div key={vtuber.id} className="card bg-base-200 shadow-xl hover:shadow-2xl transition-shadow">
@@ -124,7 +124,7 @@ export default function Home() {
       {/* Featured Artists Section */}
       <div className="bg-base-200 py-16 relative" style={{ zIndex: 2 }}>
         <Container>
-          <h2 className="text-4xl font-bold text-center mb-12">Featured Artists</h2>
+          <h2 className="text-4xl font-bold text-center mb-12">Featured Art</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {featuredArtists.map((artist) => (
               <div key={artist.id} className="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow">
@@ -165,8 +165,12 @@ export default function Home() {
             </Link>
           </div>
         </Container>
-      </div>
+        <div className="bg-base-100 py-16 relative" style={{ zIndex: 2 }}>
+          <Container>
 
+          </Container>
+        </div>
+      </div>
       <Footer />
     </div>
   );

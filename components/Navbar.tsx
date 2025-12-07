@@ -76,6 +76,7 @@ export default function Navbar() {
             <details >
               <summary>More</summary>
               <ul className="bg-base-100 shadow-lg">
+                <li><Link href="/faq">Shop</Link></li>
                 <li><Link href="/about">About Us</Link></li>
                 <li><Link href="/career">Career</Link></li>
                 <li><Link href="/faq">FAQ</Link></li>

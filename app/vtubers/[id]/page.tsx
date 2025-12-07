@@ -106,6 +106,18 @@ export default async function VTuberProfilePage({ params }: { params: Promise<{ 
           </div>
         </div>
 
+        <div className="card bg-base-200 shadow-xl mb-8">
+          <div className="card-body">
+            <h2 className="card-title text-2xl mb-4">Introduction / Lore</h2>
+          </div>
+        </div>
+
+        <div className="card bg-base-200 shadow-xl mb-8">
+          <div className="card-body">
+            <h2 className="card-title text-2xl mb-4">Info</h2>
+          </div>
+        </div>
+
         {/* Streaming Schedule */}
         {vtuber.schedule && vtuber.schedule.length > 0 && (
           <div className="card bg-base-200 shadow-xl mb-8">

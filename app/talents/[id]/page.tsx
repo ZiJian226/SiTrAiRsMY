@@ -5,6 +5,13 @@ import Container from "@/components/Container";
 import Footer from "@/components/Footer";
 import { vtubers } from "@/data/mockData";
 
+// Generate static params for all vtuber IDs
+export function generateStaticParams() {
+  return vtubers.map((vtuber) => ({
+    id: vtuber.id,
+  }));
+}
+
 export default async function TalentProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const vtuber = vtubers.find((v) => v.id === id);

@@ -148,10 +148,29 @@ The app currently uses **session-based mock authentication**:
 
 ```bash
 npm run dev          # Start development server
-npm run build        # Build for production
+npm run build        # Build for production (static export)
 npm start            # Run production build
 npm run lint         # Run ESLint
 ```
+
+---
+
+## 🌐 Deployment
+
+### GitHub Pages (CI/CD)
+
+This project is configured for automatic deployment to GitHub Pages:
+
+**Live Site**: `https://ZiJian226.github.io/StarMy`
+
+#### Quick Deploy Steps:
+1. Push to `main` branch
+2. Enable GitHub Pages in Settings → Pages → Source: "GitHub Actions"
+3. Wait ~2-5 minutes for deployment
+4. Visit your site!
+
+📖 **Detailed Guide**: See [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) for full instructions  
+⚡ **Quick Reference**: See [QUICK_DEPLOY.md](QUICK_DEPLOY.md) for essential steps
 
 ---
 
@@ -193,8 +212,9 @@ Need help?
 ## 🌐 Links
 
 - **Repository**: [github.com/ZiJian226/StarMy](https://github.com/ZiJian226/StarMy)
-- **Live Demo**: Coming soon
-- **Documentation**: Coming soon
+- **Live Demo**: [ZiJian226.github.io/StarMy](https://ZiJian226.github.io/StarMy)
+- **Deployment Guide**: [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)
+- **Optimization Guide**: [OPTIMIZATION_GUIDE.md](OPTIMIZATION_GUIDE.md)
 
 ---
 

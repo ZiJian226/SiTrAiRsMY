@@ -1,4 +1,4 @@
-import Image from "next/image";
+import { ASSETS } from "@/lib/assetPath";
 
 interface PageBackgroundProps {
   rotate?: boolean;
@@ -14,17 +14,14 @@ export default function PageBackground({
   return (
     <div className="fixed inset-0 z-0 pointer-events-none">
       <div className="absolute inset-0">
-        <Image
-          src="/assets/images/background/starmy-background.png"
+        <img
+          src={ASSETS.images.background.starmy}
           alt="StarMy Background"
-          fill
-          className={`object-cover ${rotate ? 'rotate-90' : ''} ${blur ? 'blur-[50%]' : ''}`}
+          className={`w-full h-full object-cover ${rotate ? 'rotate-90' : ''} ${blur ? 'blur-[50%]' : ''}`}
           style={{
             filter: blur ? 'blur(8px)' : 'none',
             transform: rotate ? 'rotate(90deg) scale(1.5)' : 'none',
           }}
-          priority
-          quality={90}
         />
       </div>
       {/* Overlay for opacity control */}

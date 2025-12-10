@@ -1,5 +1,5 @@
 import Link from "next/link";
-import Image from "next/image";
+import { ASSETS } from "@/lib/assetPath";
 
 export default function Footer() {
   return (
@@ -13,13 +13,12 @@ export default function Footer() {
             className="flex items-center px-4 transition-all duration-300 hover:drop-shadow-[0_0_8px_rgba(141,118,209,0.8)] hover:scale-110"
             aria-label="StarMy Home"
           >
-            <Image
-              src="/assets/images/icons/starmy-logo.svg"
+            <img
+              src={ASSETS.images.icons.logo}
               alt="StarMy Logo"
-              width={120}
-              height={48}
+              width="120"
+              height="48"
               className="object-contain"
-              priority
             />
           </Link>
             <p className="mt-4 text-sm opacity-70">

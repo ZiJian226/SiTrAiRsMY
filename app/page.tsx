@@ -6,7 +6,7 @@ import Navbar from "@/components/Navbar";
 import Container from "@/components/Container";
 import Footer from "@/components/Footer";
 import { vtubers, artists, newsEvents } from "@/data/mockData";
-import Image from "next/image";
+import { ASSETS } from "@/lib/assetPath";
 
 export default function Home() {
   // Get recent events (most recent first, limit to 2)
@@ -61,13 +61,10 @@ export default function Home() {
       >
         {/* Background Image */}
         <div className="absolute inset-0 z-0">
-          <Image
-            src="/assets/images/background/starmy-background.png"
+          <img
+            src={ASSETS.images.background.starmy}
             alt="StarMy Background"
-            fill
-            className="object-cover"
-            priority
-            quality={100}
+            className="w-full h-full object-cover"
           />
         </div>
         {/* Overlay for better text readability */}

@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
+import { ASSETS } from "@/lib/assetPath";
 
 export default function FloatingPoffu() {
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -413,22 +413,22 @@ export default function FloatingPoffu() {
         onMouseEnter={() => !isTransitioning && setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        <Image
+        <img
           src={
             // During transition phases, show specific sprites and ignore direction
             phase === "moving" || phase === "closing" || phase === "holding"
-              ? "/assets/images/mascot/starmy-poffu-notice.svg"
+              ? ASSETS.images.mascot.notice
               : phase === "poffuEffect" || phase === "opening"
-              ? "/assets/images/mascot/starmy-poffu-default.svg"
+              ? ASSETS.images.mascot.default
               : isHovered
-              ? "/assets/images/mascot/starmy-poffu-notice.svg"
+              ? ASSETS.images.mascot.notice
               : direction === "north"
-              ? "/assets/images/mascot/starmy-poffu-back.svg"
+              ? ASSETS.images.mascot.back
               : direction === "east"
-              ? "/assets/images/mascot/starmy-poffu-side.svg"
+              ? ASSETS.images.mascot.side
               : direction === "west"
-              ? "/assets/images/mascot/starmy-poffu-side.svg"
-              : "/assets/images/mascot/starmy-poffu-default.svg" // south
+              ? ASSETS.images.mascot.side
+              : ASSETS.images.mascot.default // south
           }
           alt="Poffu Mascot"
           width={poffuSize}
@@ -438,7 +438,6 @@ export default function FloatingPoffu() {
             transform: direction === "east" && phase === "idle" ? "scaleX(-1)" : "scaleX(1)", // Only flip when idle
           }}
           draggable={false}
-          priority
         />
       </div>
 

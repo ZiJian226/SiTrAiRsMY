@@ -1,5 +1,5 @@
 import Link from "next/link";
-import Image from "next/image";
+import { ASSETS } from "@/lib/assetPath";
 
 export default function Navbar() {
   return (
@@ -62,13 +62,12 @@ export default function Navbar() {
             className="flex items-center transition-all duration-300 hover:drop-shadow-[0_0_8px_rgba(141,118,209,0.8)] hover:scale-110"
             aria-label="StarMy Home"
           >
-          <Image
-            src="/assets/images/icons/starmy-logo.svg"
+          <img
+            src={ASSETS.images.icons.logo}
             alt="StarMy Logo"
-            width={100}
-            height={48}
+            width="100"
+            height="48"
             className="object-contain"
-            priority
           />
           </Link>
           <Link className="hover:drop-shadow-[0_0_8px_rgba(141,118,209,0.8)] hover:scale-110 duration-300" href="/talents">Talents</Link>

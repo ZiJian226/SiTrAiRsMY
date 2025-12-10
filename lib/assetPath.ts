@@ -1,27 +1,26 @@
 /**
  * Asset Path Utility
  * 
- * Generates correct asset paths based on the environment.
- * In production (GitHub Pages), assets are served from /SiTrAiRsMY/
- * In development, assets are served from the root /
+ * Generates correct asset paths for Next.js.
+ * Since next.config.ts already handles basePath and assetPrefix,
+ * we just need to ensure paths start from root (/).
+ * Next.js will automatically add the base path in production.
  */
 
-const BASE_PATH = process.env.NODE_ENV === 'production' ? '/SiTrAiRsMY' : '';
-
 /**
- * Generate an asset path with the correct base path for the current environment
+ * Generate an asset path (normalized to start with /)
  * @param path - The path to the asset (should start with /)
- * @returns The full asset path including the base path if in production
+ * @returns The normalized asset path
  * 
  * @example
  * assetPath('/assets/images/icons/starmy-logo.svg')
- * // Development: '/assets/images/icons/starmy-logo.svg'
- * // Production: '/SiTrAiRsMY/assets/images/icons/starmy-logo.svg'
+ * // Returns: '/assets/images/icons/starmy-logo.svg'
+ * // Next.js will automatically handle the basePath in production
  */
 export function assetPath(path: string): string {
   // Ensure path starts with /
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-  return `${BASE_PATH}${normalizedPath}`;
+  return normalizedPath;
 }
 
 /**

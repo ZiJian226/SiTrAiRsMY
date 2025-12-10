@@ -7,6 +7,7 @@ const nextConfig: NextConfig = {
   },
   // Only use basePath in production (GitHub Pages)
   basePath: process.env.NODE_ENV === 'production' ? '/SiTrAiRsMY' : '',
+  trailingSlash: true, // Add trailing slashes to prevent double basePath issues
   // Note: assetPrefix is intentionally NOT set to avoid double paths for public assets
 };
 

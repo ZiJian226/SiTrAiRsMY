@@ -5,8 +5,9 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true, // GitHub Pages doesn't support Next.js Image Optimization
   },
-  // No basePath needed - GitHub Pages serves from repository name automatically
-  // Repository: ZiJian226/SiTrAiRsMY → URL: https://zijian226.github.io/SiTrAiRsMY/
+  // Only use basePath in production (GitHub Pages)
+  basePath: process.env.NODE_ENV === 'production' ? '/SiTrAiRsMY' : '',
+  // Note: assetPrefix is intentionally NOT set to avoid double paths for public assets
 };
 
 export default nextConfig;

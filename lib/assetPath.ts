@@ -1,27 +1,32 @@
 /**
  * Asset Path Utility
  * 
- * For GitHub Pages project sites, assets are served from the repository path automatically.
- * Repository: ZiJian226/SiTrAiRsMY → Deployed at: https://zijian226.github.io/SiTrAiRsMY/
+ * For GitHub Pages project sites, we need to add the base path to public assets.
  * 
- * Since the repository name becomes part of the URL path, we just need normalized paths.
- * GitHub Pages handles the base path automatically.
+ * IMPORTANT: 
+ * - next.config.ts basePath handles ROUTES (pages navigation)
+ * - This utility handles PUBLIC ASSETS (images, icons, etc. in /public folder)
+ * 
+ * Development: http://localhost:3000/
+ * Production (GitHub Pages): https://zijian226.github.io/SiTrAiRsMY/
  */
 
+const BASE_PATH = process.env.NODE_ENV === 'production' ? '/SiTrAiRsMY' : '';
+
 /**
- * Generate a normalized asset path
+ * Generate an asset path with the base path (only in production)
  * @param path - The path to the asset (should start with /)
- * @returns The normalized asset path
+ * @returns The full asset path with base path in production, or just the path in development
  * 
  * @example
  * assetPath('/assets/images/icons/starmy-logo.svg')
- * // Returns: '/assets/images/icons/starmy-logo.svg'
- * // GitHub Pages serves it from: /SiTrAiRsMY/assets/images/icons/starmy-logo.svg
+ * // Development: '/assets/images/icons/starmy-logo.svg'
+ * // Production: '/SiTrAiRsMY/assets/images/icons/starmy-logo.svg'
  */
 export function assetPath(path: string): string {
   // Ensure path starts with /
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-  return normalizedPath;
+  return `${BASE_PATH}${normalizedPath}`;
 }
 
 /**

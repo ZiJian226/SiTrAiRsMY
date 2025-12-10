@@ -108,13 +108,76 @@ export default async function TalentProfilePage({ params }: { params: Promise<{ 
 
         <div className="card bg-base-200 shadow-xl mb-8">
           <div className="card-body">
-            <h2 className="card-title text-2xl mb-4">Introduction / Lore</h2>
+            <h2 className="card-title text-2xl mb-4">📖 Introduction / Lore</h2>
+            {vtuber.lore ? (
+              <p className="text-lg leading-relaxed whitespace-pre-line">{vtuber.lore}</p>
+            ) : (
+              <p className="text-base opacity-70 italic">
+                Lore coming soon! Stay tuned for {vtuber.name}'s backstory...
+              </p>
+            )}
           </div>
         </div>
 
         <div className="card bg-base-200 shadow-xl mb-8">
           <div className="card-body">
-            <h2 className="card-title text-2xl mb-4">Info</h2>
+            <h2 className="card-title text-2xl mb-4">ℹ️ Character Info</h2>
+            {vtuber.characterInfo ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {vtuber.characterInfo.dateOfBirth && (
+                  <div>
+                    <span className="font-semibold text-primary">Date of Birth:</span>
+                    <p className="text-lg">{vtuber.characterInfo.dateOfBirth}</p>
+                  </div>
+                )}
+                {vtuber.characterInfo.debutDate && (
+                  <div>
+                    <span className="font-semibold text-primary">Debut Date:</span>
+                    <p className="text-lg">{vtuber.characterInfo.debutDate}</p>
+                  </div>
+                )}
+                {vtuber.characterInfo.height && (
+                  <div>
+                    <span className="font-semibold text-primary">Height:</span>
+                    <p className="text-lg">{vtuber.characterInfo.height}</p>
+                  </div>
+                )}
+                {vtuber.characterInfo.species && (
+                  <div>
+                    <span className="font-semibold text-primary">Species:</span>
+                    <p className="text-lg">{vtuber.characterInfo.species}</p>
+                  </div>
+                )}
+                {vtuber.characterInfo.likes && vtuber.characterInfo.likes.length > 0 && (
+                  <div className="md:col-span-2">
+                    <span className="font-semibold text-primary">Likes:</span>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {vtuber.characterInfo.likes.map((like, idx) => (
+                        <span key={idx} className="badge badge-success badge-lg">
+                          ❤️ {like}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {vtuber.characterInfo.dislikes && vtuber.characterInfo.dislikes.length > 0 && (
+                  <div className="md:col-span-2">
+                    <span className="font-semibold text-primary">Dislikes:</span>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {vtuber.characterInfo.dislikes.map((dislike, idx) => (
+                        <span key={idx} className="badge badge-error badge-lg">
+                          💔 {dislike}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className="text-base opacity-70 italic">
+                Character information coming soon!
+              </p>
+            )}
           </div>
         </div>
 

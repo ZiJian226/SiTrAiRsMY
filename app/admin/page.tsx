@@ -1,233 +1,114 @@
-"use client";
+'use client'
 
-import { useState } from "react";
-import Link from "next/link";
-import Navbar from "@/components/Navbar";
-import Container from "@/components/Container";
-import { vtubers, artists } from "@/data/mockData";
-import { VTuber, Artist } from "@/lib/types";
+import { useAuth } from '@/contexts/AuthContext'
+import { useRouter } from 'next/navigation'
+import { useEffect } from 'react'
+import Navbar from '@/components/Navbar'
+import Container from '@/components/Container'
+import Footer from '@/components/Footer'
+import PageBackground from '@/components/PageBackground'
+import Link from 'next/link'
 
 export default function AdminPage() {
-  const [activeTab, setActiveTab] = useState<"vtubers" | "artists">("vtubers");
-  const [vtuberList, setVtuberList] = useState<VTuber[]>(vtubers);
-  const [artistList, setArtistList] = useState<Artist[]>(artists);
+  const { user, profile, loading, signOut } = useAuth()
+  const router = useRouter()
 
-  const handleDeleteVTuber = (id: string) => {
-    if (confirm("Are you sure you want to delete this VTuber?")) {
-      setVtuberList(vtuberList.filter((v) => v.id !== id));
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login')
+    } else if (!loading && profile && profile.role !== 'admin') {
+      router.push('/dashboard')
     }
-  };
+  }, [user, profile, loading, router])
 
-  const handleDeleteArtist = (id: string) => {
-    if (confirm("Are you sure you want to delete this artist?")) {
-      setArtistList(artistList.filter((a) => a.id !== id));
-    }
-  };
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-base-100 flex items-center justify-center">
+        <span className="loading loading-spinner loading-lg text-primary"></span>
+      </div>
+    )
+  }
 
-  const handleToggleFeatured = (id: string) => {
-    setVtuberList(
-      vtuberList.map((v) => (v.id === id ? { ...v, featured: !v.featured } : v))
-    );
-  };
+  if (!user || !profile || profile.role !== 'admin') {
+    return null
+  }
 
-  const handleToggleCommissions = (id: string) => {
-    setArtistList(
-      artistList.map((a) =>
-        a.id === id ? { ...a, commissionsOpen: !a.commissionsOpen } : a
-      )
-    );
-  };
+  async function handleSignOut() {
+    await signOut()
+    router.push('/')
+  }
 
   return (
-    <div className="min-h-screen bg-base-100">
-      <Navbar />
-
-      <Container className="py-12">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-5xl font-bold text-primary">Admin Panel</h1>
-          <Link href="/" className="btn btn-ghost">
-            ← Back to Home
-          </Link>
-        </div>
-
-        <div className="alert alert-info mb-8">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-          </svg>
-          <span>This is a demo admin panel. In production, this would be protected by authentication.</span>
-        </div>
-
-        {/* Tabs */}
-        <div className="tabs tabs-boxed mb-8">
-          <a
-            className={`tab tab-lg ${activeTab === "vtubers" ? "tab-active" : ""}`}
-            onClick={() => setActiveTab("vtubers")}
-          >
-            VTubers ({vtuberList.length})
-          </a>
-          <a
-            className={`tab tab-lg ${activeTab === "artists" ? "tab-active" : ""}`}
-            onClick={() => setActiveTab("artists")}
-          >
-            Artists ({artistList.length})
-          </a>
-        </div>
-
-        {/* VTubers Management */}
-        {activeTab === "vtubers" && (
-          <div>
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-3xl font-bold">Manage VTubers</h2>
-              <button className="btn btn-primary">
-                + Add New VTuber
+    <div className="min-h-screen bg-base-100 relative flex flex-col">
+      <PageBackground rotate={true} blur={true} opacity={50} />
+      <div className="relative z-10 flex flex-col min-h-screen">
+        <Navbar />
+        <Container className="py-12 flex-grow">
+          <div className="flex justify-between items-center mb-8">
+            <div>
+              <h1 className="text-4xl font-bold text-primary flex items-center gap-3">
+                Admin Panel
+              </h1>
+              <p className="text-lg opacity-70 mt-2">
+                Full system control and management
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <Link href="/dashboard" className="btn btn-outline btn-primary">
+                My Dashboard
+              </Link>
+              <button onClick={handleSignOut} className="btn btn-outline btn-error">
+                Sign Out
               </button>
             </div>
-
-            <div className="overflow-x-auto">
-              <table className="table table-zebra">
-                <thead>
-                  <tr>
-                    <th>Avatar</th>
-                    <th>Name</th>
-                    <th>Tags</th>
-                    <th>Featured</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {vtuberList.map((vtuber) => (
-                    <tr key={vtuber.id}>
-                      <td>
-                        <div className="avatar">
-                          <div className="w-12 rounded-full">
-                            <img src={vtuber.avatar} alt={vtuber.name} />
-                          </div>
-                        </div>
-                      </td>
-                      <td>
-                        <div className="font-bold">{vtuber.name}</div>
-                        <div className="text-sm opacity-70 truncate max-w-xs">
-                          {vtuber.description}
-                        </div>
-                      </td>
-                      <td>
-                        <div className="flex flex-wrap gap-1">
-                          {vtuber.tags.map((tag) => (
-                            <span key={tag} className="badge badge-sm">
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                      </td>
-                      <td>
-                        <input
-                          type="checkbox"
-                          className="toggle toggle-primary"
-                          checked={vtuber.featured}
-                          onChange={() => handleToggleFeatured(vtuber.id)}
-                        />
-                      </td>
-                      <td>
-                        <div className="flex gap-2">
-                          <button className="btn btn-sm btn-ghost">Edit</button>
-                          <button
-                            className="btn btn-sm btn-error"
-                            onClick={() => handleDeleteVTuber(vtuber.id)}
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
           </div>
-        )}
 
-        {/* Artists Management */}
-        {activeTab === "artists" && (
-          <div>
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-3xl font-bold">Manage Artists</h2>
-              <button className="btn btn-secondary">
-                + Add New Artist
-              </button>
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <Link href="/admin/users" className="card bg-base-200 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all">
+              <div className="card-body">
+                <h2 className="card-title text-primary">👥 Users</h2>
+                <p className="opacity-70">Manage user accounts and roles</p>
+              </div>
+            </Link>
 
-            <div className="overflow-x-auto">
-              <table className="table table-zebra">
-                <thead>
-                  <tr>
-                    <th>Avatar</th>
-                    <th>Name</th>
-                    <th>Specialty</th>
-                    <th>Price Range</th>
-                    <th>Commissions</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {artistList.map((artist) => (
-                    <tr key={artist.id}>
-                      <td>
-                        <div className="avatar">
-                          <div className="w-12 rounded-full">
-                            <img src={artist.avatar} alt={artist.name} />
-                          </div>
-                        </div>
-                      </td>
-                      <td>
-                        <div className="font-bold">{artist.name}</div>
-                        <div className="text-sm opacity-70 truncate max-w-xs">
-                          {artist.description}
-                        </div>
-                      </td>
-                      <td>
-                        <div className="flex flex-wrap gap-1">
-                          {artist.specialty.slice(0, 2).map((spec) => (
-                            <span key={spec} className="badge badge-sm">
-                              {spec}
-                            </span>
-                          ))}
-                        </div>
-                      </td>
-                      <td className="text-sm">{artist.priceRange}</td>
-                      <td>
-                        <input
-                          type="checkbox"
-                          className="toggle toggle-secondary"
-                          checked={artist.commissionsOpen}
-                          onChange={() => handleToggleCommissions(artist.id)}
-                        />
-                      </td>
-                      <td>
-                        <div className="flex gap-2">
-                          <button className="btn btn-sm btn-ghost">Edit</button>
-                          <button
-                            className="btn btn-sm btn-error"
-                            onClick={() => handleDeleteArtist(artist.id)}
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <Link href="/admin/profiles" className="card bg-base-200 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all">
+              <div className="card-body">
+                <h2 className="card-title text-secondary">📋 Profiles</h2>
+                <p className="opacity-70">View all talent and artist profiles</p>
+              </div>
+            </Link>
+
+            <Link href="/admin/events" className="card bg-base-200 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all">
+              <div className="card-body">
+                <h2 className="card-title text-accent">📅 Events</h2>
+                <p className="opacity-70">Create and manage events</p>
+              </div>
+            </Link>
+
+            <Link href="/admin/gallery" className="card bg-base-200 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all">
+              <div className="card-body">
+                <h2 className="card-title text-primary">🖼️ Gallery</h2>
+                <p className="opacity-70">Upload and organize gallery items</p>
+              </div>
+            </Link>
+
+            <Link href="/admin/merchandise" className="card bg-base-200 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all">
+              <div className="card-body">
+                <h2 className="card-title text-secondary">🛍️ Merchandise</h2>
+                <p className="opacity-70">Manage store products</p>
+              </div>
+            </Link>
+
+            <Link href="/admin/statistics" className="card bg-gradient-to-br from-primary to-secondary shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all">
+              <div className="card-body">
+                <h2 className="card-title text-white">📊 Statistics</h2>
+                <p className="text-white opacity-90">View analytics and reports</p>
+              </div>
+            </Link>
           </div>
-        )}
-      </Container>
-
-      <footer className="footer footer-center p-10 bg-base-300 text-base-content mt-16">
-        <aside>
-          <p className="font-bold text-xl text-primary">⭐ StarMy</p>
-          <p className="mt-2">Admin Panel</p>
-        </aside>
-      </footer>
+        </Container>
+        <Footer />
+      </div>
     </div>
-  );
+  )
 }

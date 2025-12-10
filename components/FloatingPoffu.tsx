@@ -108,7 +108,7 @@ export default function FloatingPoffu() {
         // Scatter particles around Poffu's center with random offset
         const scatterX = (Math.random() - 0.5) * 20; // -10 to +10 px
         const scatterY = (Math.random() - 0.5) * 20; // -10 to +10 px
-        const particleSize = 4 + Math.random() * 4; // 4-8px random size
+        const particleSize = 7 + Math.random() * 7; // 7-14px random size
         setParticles((p) => [
           ...p.slice(-100),
           { 
@@ -264,7 +264,7 @@ export default function FloatingPoffu() {
           // Scatter particles around Poffu's center with random offset
           const scatterX = (Math.random() - 0.5) * 20; // -10 to +10 px
           const scatterY = (Math.random() - 0.5) * 20; // -10 to +10 px
-          const particleSize = 4 + Math.random() * 4; // 4-8px random size
+          const particleSize = 7 + Math.random() * 7; // 7-14px random size
           setParticles((p) => [
             ...p.slice(-100),
             { 
@@ -375,18 +375,23 @@ export default function FloatingPoffu() {
       {particles.map((particle) => (
         <div
           key={particle.id}
-          className="fixed pointer-events-none rounded-full"
+          className="fixed pointer-events-none"
           style={{
             left: particle.x,
             top: particle.y,
             width: `${particle.size}px`,
             height: `${particle.size}px`,
-            backgroundColor: "#8D76D1", // Primary color
+            // Use the global CSS color variable
+            backgroundColor: "var(--color-primary)",
+            // Create a 4-edge star-like dust shape via clip-path (keeps the element size responsive)
+            clipPath: "polygon(50% 0%, 65% 40%, 100% 50%, 65% 60%, 50% 100%, 35% 60%, 0% 50%, 35% 40%)",
+            WebkitClipPath: "polygon(50% 0%, 65% 40%, 100% 50%, 65% 60%, 50% 100%, 35% 60%, 0% 50%, 35% 40%)",
             opacity: particle.opacity,
             transform: "translate(-50%, -50%)",
-            boxShadow: `0 0 ${particle.size * 1.5}px #8D76D1`,
+            // Subtle glow using the same primary color
+            boxShadow: `0 0 ${particle.size * 1.2}px var(--color-primary)`,
             zIndex: 10000, // Above black screen and star overlay
-            transition: "opacity 0.3s ease-out",
+            transition: "opacity 0.3s ease-out, transform 150ms linear",
           }}
         />
       ))}

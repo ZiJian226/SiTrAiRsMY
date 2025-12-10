@@ -32,8 +32,8 @@ export default function Footer() {
             <h3 className="font-bold text-lg mb-4 text-primary">Discover</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="/vtubers" className="link link-hover text-sm">
-                  VTubers
+                <Link href="/talents" className="link link-hover text-sm">
+                  Talents
                 </Link>
               </li>
               <li>
@@ -42,16 +42,21 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/news" className="link link-hover text-sm">
-                  News
+                <Link href="/events" className="link link-hover text-sm">
+                  Events
+                </Link>
+              </li>
+              <li>
+                <Link href="/gallery" className="link link-hover text-sm">
+                  Gallery
                 </Link>
               </li>
             </ul>
           </div>
 
-          {/* Company Section */}
+          {/* Community Section */}
           <div>
-            <h3 className="font-bold text-lg mb-4 text-secondary">Company</h3>
+            <h3 className="font-bold text-lg mb-4 text-secondary">Community</h3>
             <ul className="space-y-2">
               <li>
                 <Link href="/about" className="link link-hover text-sm">
@@ -59,8 +64,8 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/career" className="link link-hover text-sm">
-                  Career / Join Us
+                <Link href="/contact" className="link link-hover text-sm">
+                  Contact
                 </Link>
               </li>
               <li>

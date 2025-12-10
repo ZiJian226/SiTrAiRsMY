@@ -6,58 +6,15 @@ import Navbar from "@/components/Navbar";
 import Container from "@/components/Container";
 import Footer from "@/components/Footer";
 import PageBackground from "@/components/PageBackground";
-
-// Mock news data - will be replaced with Supabase data
-const newsArticles = [
-  {
-    id: "1",
-    title: "Welcome to StarMy - Malaysia's Premier VTuber & Artist Hub",
-    excerpt: "We're excited to announce the launch of StarMy, a platform dedicated to connecting Malaysia's VTuber and artist community.",
-    content: "Full article content here...",
-    date: "2025-12-01",
-    category: "Announcement",
-    image: "https://placehold.co/800x400/a855f7/ffffff?text=StarMy+Launch",
-    author: "StarMy Team",
-  },
-  {
-    id: "2",
-    title: "Featured VTuber Spotlight: Luna Sparkle",
-    excerpt: "Get to know Luna Sparkle, one of our featured gaming and singing VTubers who's been making waves in the community.",
-    content: "Full article content here...",
-    date: "2025-12-03",
-    category: "Spotlight",
-    image: "https://placehold.co/800x400/8b5cf6/ffffff?text=Luna+Sparkle",
-    author: "Community Team",
-  },
-  {
-    id: "3",
-    title: "Commission Tips: How to Work with Artists",
-    excerpt: "A comprehensive guide on how to request commissions, communicate effectively, and get the best results from our talented artists.",
-    content: "Full article content here...",
-    date: "2025-12-05",
-    category: "Guide",
-    image: "https://placehold.co/800x400/facc15/000000?text=Commission+Guide",
-    author: "Artist Relations",
-  },
-  {
-    id: "4",
-    title: "Upcoming Events: December 2025",
-    excerpt: "Check out the exciting community events, streams, and collaborations happening this month!",
-    content: "Full article content here...",
-    date: "2025-12-06",
-    category: "Events",
-    image: "https://placehold.co/800x400/a855f7/ffffff?text=December+Events",
-    author: "Events Team",
-  },
-];
+import { newsEvents } from "@/data/mockData";
 
 export default function EventsPage() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const categories = ["All", "Announcement", "Spotlight", "Guide", "Events"];
+  const categories = ["All", "Announcement", "Spotlight", "Guide", "Events", "News"];
 
   const filteredNews = selectedCategory && selectedCategory !== "All"
-    ? newsArticles.filter((article) => article.category === selectedCategory)
-    : newsArticles;
+    ? newsEvents.filter((article) => article.category === selectedCategory)
+    : newsEvents;
 
   return (
     <div className="min-h-screen bg-base-100 relative flex flex-col">

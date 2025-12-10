@@ -1,4 +1,4 @@
-import { VTuber, Artist } from "@/lib/types";
+import { VTuber, Artist, NewsEvent } from "@/lib/types";
 
 export const vtubers: VTuber[] = [
   {
@@ -11,6 +11,15 @@ export const vtubers: VTuber[] = [
     twitchUrl: "https://www.twitch.tv/lunasparkle",
     youtubeUrl: "https://www.youtube.com/@lunasparkle",
     featured: true,
+    lore: "Luna Sparkle is a celestial being who descended from the stars to share her love of gaming and music with the world. Born in a distant galaxy where songs power the cosmos, she discovered Earth's games and immediately fell in love with RPGs and their epic stories. Now she streams to bridge the gap between her starry home and her new friends on Earth, bringing cosmic energy and sparkles to every stream!",
+    characterInfo: {
+      dateOfBirth: "December 25",
+      debutDate: "January 15, 2023",
+      height: "158 cm",
+      species: "Star Spirit",
+      likes: ["RPGs", "Karaoke", "Cute plushies", "Stargazing"],
+      dislikes: ["Bugs (in games)", "Loud noises", "Dark chocolate"],
+    },
     schedule: [
       { id: "1", day: "Monday", time: "20:00 - 22:00", title: "RPG Marathon", platform: "twitch" },
       { id: "2", day: "Wednesday", time: "19:00 - 21:00", title: "Karaoke Night", platform: "youtube" },
@@ -27,6 +36,15 @@ export const vtubers: VTuber[] = [
     twitchUrl: "https://www.twitch.tv/nekostarlight",
     youtubeUrl: "https://www.youtube.com/@nekostarlight",
     featured: true,
+    lore: "Neko Starlight is a mystical cat spirit who was once the guardian of an ancient art temple. For centuries, she protected sacred paintings and sculptures, learning the ways of creativity from the masters who visited. When the temple closed, she decided to share her artistic knowledge with the modern world through streaming, bringing cozy vibes and artistic inspiration to all her viewers!",
+    characterInfo: {
+      dateOfBirth: "March 3",
+      debutDate: "February 14, 2023",
+      height: "152 cm (with ears: 165 cm)",
+      species: "Cat Spirit",
+      likes: ["Drawing", "Warm blankets", "Fish dishes", "Head pats"],
+      dislikes: ["Water", "Cucumbers", "Sudden movements"],
+    },
     schedule: [
       { id: "1", day: "Tuesday", time: "15:00 - 18:00", title: "Art Stream", platform: "youtube" },
       { id: "2", day: "Thursday", time: "15:00 - 17:00", title: "Cozy Chat", platform: "twitch" },
@@ -150,5 +168,58 @@ export const artists: Artist[] = [
       instagram: "https://instagram.com/sketchandcolor",
       website: "https://sketchandcolor.example.com",
     },
+  },
+];
+
+export const newsEvents: NewsEvent[] = [
+  {
+    id: "1",
+    title: "Welcome to StarMy - Malaysia's Premier VTuber & Artist Hub",
+    excerpt: "We're excited to announce the launch of StarMy, a platform dedicated to connecting Malaysia's VTuber and artist community.",
+    content: "Full article content here...",
+    date: "2025-12-01",
+    category: "Announcement",
+    image: "https://placehold.co/800x400/a855f7/ffffff?text=StarMy+Launch",
+    author: "StarMy Team",
+  },
+  {
+    id: "2",
+    title: "Featured VTuber Spotlight: Luna Sparkle",
+    excerpt: "Get to know Luna Sparkle, one of our featured gaming and singing VTubers who's been making waves in the community.",
+    content: "Full article content here...",
+    date: "2025-12-03",
+    category: "Spotlight",
+    image: "https://placehold.co/800x400/8b5cf6/ffffff?text=Luna+Sparkle",
+    author: "Community Team",
+  },
+  {
+    id: "3",
+    title: "Commission Tips: How to Work with Artists",
+    excerpt: "A comprehensive guide on how to request commissions, communicate effectively, and get the best results from our talented artists.",
+    content: "Full article content here...",
+    date: "2025-12-05",
+    category: "Guide",
+    image: "https://placehold.co/800x400/facc15/000000?text=Commission+Guide",
+    author: "Artist Relations",
+  },
+  {
+    id: "4",
+    title: "Upcoming Events: December 2025",
+    excerpt: "Check out the exciting community events, streams, and collaborations happening this month!",
+    content: "Full article content here...",
+    date: "2025-12-06",
+    category: "Events",
+    image: "https://placehold.co/800x400/a855f7/ffffff?text=December+Events",
+    author: "Events Team",
+  },
+  {
+    id: "5",
+    title: "Artist Collaboration Event: VTuber Model Design Contest",
+    excerpt: "Join our first community event where artists compete to create the best VTuber model design. Prizes and recognition await!",
+    content: "Full article content here...",
+    date: "2025-12-08",
+    category: "Events",
+    image: "https://placehold.co/800x400/8b5cf6/ffffff?text=Design+Contest",
+    author: "Events Team",
   },
 ];

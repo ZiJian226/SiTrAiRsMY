@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "@/app/globals.css";
 import FloatingPoffu from "@/components/FloatingPoffu";
+import { AuthProvider } from "@/contexts/AuthContext";
 
 export const metadata: Metadata = {
   title: "StarMy - VTuber & Artist Community",
@@ -15,8 +16,10 @@ export default function RootLayout({
   return (
     <html lang="en" data-theme="starmy">
       <body className="antialiased">
-        {children}
-        <FloatingPoffu />
+        <AuthProvider>
+          {children}
+          <FloatingPoffu />
+        </AuthProvider>
       </body>
     </html>
   );

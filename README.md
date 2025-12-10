@@ -1,102 +1,204 @@
-# 🌟 StarMy (StarMyriad)
+# 🌟 StarMy
 
 **Malaysia's Premier VTuber & Artist Community Platform**
 
-StarMy is a comprehensive Next.js web application designed to connect VTubers, digital artists, and fans in Malaysia. The platform provides discovery, showcasing, and collaboration opportunities for the creative community.
+A modern Next.js web application connecting VTubers, digital artists, and fans. Discover talents, explore artwork, attend events, and commission artists all in one place.
 
-## 🎨 Design Theme
+---
 
-- **Main Colors**: Purple (#a855f7), Yellow (#facc15)
-- **Secondary Colors**: Dark, White
-- **Framework**: Next.js 16, DaisyUI, TailwindCSS 4
-- **Animations**: AnimeJS
-- **Database**: Supabase (PostgreSQL)
-- **Media Storage**: Cloudflare R2
+## 🎯 What is StarMy?
 
-## ✨ Features
+StarMy is a community-driven platform designed to:
+- **Showcase Talents** - VTubers and streamers can create profiles, display schedules, and grow their audience
+- **Feature Artists** - Digital artists can showcase portfolios and accept commissions
+- **Host Events** - Community events, collaborations, and news in one central hub
+- **Connect Fans** - Discover new creators and support the Malaysian creative community
 
-### Main Website Flow
-- ✅ **Homepage** - Hero section with featured VTubers and Artists
-- ✅ **News Page** - Community news and announcements with category filtering
-- ✅ **VTubers Directory** - Searchable list with tag filtering
-- ✅ **VTuber Profiles** - Individual profiles with streaming schedules, social links, TikTok/Twitch/YouTube placeholders
-- ✅ **Artists Directory** - Searchable list with specialty and commission status filtering
-- ✅ **Artist Profiles** - Portfolio showcase with commission request forms
-- ✅ **About Us** - Company information, mission, values, and team
-- ✅ **Career Page** - Application forms for VTubers, Artists, and Team positions
-- ✅ **FAQ** - Comprehensive frequently asked questions
-- ✅ **Privacy Policy** - Detailed privacy information
-- ✅ **Terms of Service** - Legal terms and conditions
-- ✅ **Loading States** - Custom loading page with animations
-- ✅ **Error Pages** - Custom error and 404 pages
+---
 
-### Admin Flow (Separate Authentication)
-- ✅ **Admin Login/Register** - Authentication pages with validation
-- ✅ **Admin Dashboard** - Statistics and quick actions overview
-- 🚧 **VTuber Management** - Full CRUD for VTuber profiles
-- 🚧 **Artist Management** - Full CRUD for artist profiles
-- 🚧 **News Management** - Create, edit, and publish news articles
-- 🚧 **Application Review** - Review career applications
-- 🚧 **Commission Management** - View and manage commission requests
-
-### Layout Features
-- ✅ Sticky top navigation bar with dropdown menus
-- ✅ Horizontally centered content with Container component
-- ✅ Standardized footer across all pages
-- ✅ Fully responsive mobile design
-- ✅ Smooth scroll animations with AnimeJS
-
-## 🚀 Getting Started
+## 🚀 Quick Start (For New Users)
 
 ### Prerequisites
-- Node.js 18+ 
-- npm or yarn
-- Supabase account (for database)
-- Cloudflare R2 account (for media storage)
+- [Node.js 18+](https://nodejs.org/) installed
+- Basic command line knowledge
 
-### Installation
+### Installation Steps
 
-1. **Clone the repository**
+1. **Clone the Repository**
    ```bash
    git clone https://github.com/ZiJian226/StarMy.git
    cd StarMy
    ```
 
-2. **Install dependencies**
+2. **Install Dependencies**
    ```bash
    npm install
    ```
 
-3. **Set up environment variables**
-   
-   Copy `.env.local.example` to `.env.local` and fill in your credentials:
-   ```bash
-   cp .env.local.example .env.local
-   ```
-
-   Required environment variables:
-   - `NEXT_PUBLIC_SUPABASE_URL` - Your Supabase project URL
-   - `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Your Supabase anon key
-   - `SUPABASE_SERVICE_ROLE_KEY` - Your Supabase service role key
-   - `R2_ACCOUNT_ID` - Cloudflare R2 account ID
-   - `R2_ACCESS_KEY_ID` - R2 access key
-   - `R2_SECRET_ACCESS_KEY` - R2 secret key
-   - `R2_BUCKET_NAME` - R2 bucket name
-
-4. **Set up the database**
-   
-   Follow the instructions in `DATABASE_SCHEMA.md` to set up your Supabase database
-
-5. **Run the development server**
+3. **Run Development Server**
    ```bash
    npm run dev
    ```
 
-6. **Open your browser**
+4. **Open in Browser**
    
-   Navigate to [http://localhost:3000](http://localhost:3000)
+   Visit [http://localhost:3000](http://localhost:3000)
+
+That's it! The app runs with mock data by default.
+
+---
+
+## 📖 Key Features
+
+### Public Pages
+- **Homepage** - Hero banner, recent events, featured artwork
+- **Talents** - Browse VTuber profiles with search and tag filters
+- **Artists** - Explore artist portfolios and commission status
+- **Events** - Latest news, announcements, and community events
+- **Gallery** - Curated artwork showcase
+- **Store** - Merchandise from talents and artists
+
+### User Dashboard (Login Required)
+- **Profile Editor** - Manage your talent/artist profile
+- **Merchandise** - Create and manage your products
+
+### Admin Panel (Admin Only)
+- **User Management** - View and edit all user accounts
+- **Profile Management** - Edit talent and artist profiles with role-specific fields
+- **Events Management** - Create and publish events/news
+- **Gallery Management** - Curate gallery submissions
+- **Merchandise Management** - Approve and manage products
+- **Statistics Dashboard** - Platform analytics and metrics
+
+### Demo Accounts
+```
+Admin:  admin@starmy.com    / password: admin123
+Talent: talent@starmy.com   / password: talent123
+Artist: artist@starmy.com   / password: artist123
+```
+
+---
+
+## � Tech Stack
+
+- **Framework**: Next.js 16 (App Router)
+- **UI**: React 19, TypeScript
+- **Styling**: Tailwind CSS 4, DaisyUI 5
+- **Animations**: Framer Motion, AnimeJS
+- **State**: React Context (Mock Auth)
+- **Database**: Ready for Supabase integration
+- **Storage**: Ready for Cloudflare R2 integration
+
+---
 
 ## 📁 Project Structure
+
+```
+StarMy/
+├── app/                    # Next.js app router pages
+│   ├── page.tsx           # Homepage
+│   ├── talents/           # VTuber profiles
+│   ├── artists/           # Artist portfolios
+│   ├── events/            # News & events
+│   ├── gallery/           # Art gallery
+│   ├── store/             # Merchandise
+│   ├── login/             # Authentication
+│   ├── dashboard/         # User dashboard
+│   └── admin/             # Admin panel
+├── components/            # Reusable components
+│   ├── Navbar.tsx        # Navigation bar
+│   ├── Footer.tsx        # Footer
+│   ├── Container.tsx     # Layout wrapper
+│   └── FloatingPoffu.tsx # Mascot animation
+├── contexts/              # React Context (Auth)
+├── data/                  # Mock data
+│   └── mockData.ts       # Sample talents, artists, events
+├── lib/                   # Utilities & types
+│   └── types.ts          # TypeScript interfaces
+└── public/               # Static assets
+```
+
+---
+
+## 🎨 Design System
+
+**Color Palette**
+- Primary: Purple `#a855f7`
+- Secondary: Yellow `#facc15`
+- Theme: Dark/Light mode support
+
+**Components**
+- Built with DaisyUI component library
+- Custom animations and transitions
+- Fully responsive mobile-first design
+
+---
+
+## 🔑 Authentication (Mock Mode)
+
+The app currently uses **session-based mock authentication**:
+- No real password validation
+- Data stored in sessionStorage
+- Perfect for development and demo
+- Ready for Supabase Auth integration
+
+---
+
+## 📦 Available Scripts
+
+```bash
+npm run dev          # Start development server
+npm run build        # Build for production
+npm start            # Run production build
+npm run lint         # Run ESLint
+```
+
+---
+
+## 🚧 Roadmap
+
+- [ ] Supabase database integration
+- [ ] Real authentication system
+- [ ] Image upload with Cloudflare R2
+- [ ] Real-time notifications
+- [ ] Advanced search filters
+- [ ] Payment integration for commissions
+- [ ] Mobile app (React Native)
+
+---
+
+## 📄 License
+
+This project is open source and available under the [MIT License](LICENSE).
+
+---
+
+## 👥 Contributing
+
+We welcome contributions! Feel free to:
+1. Fork the repository
+2. Create a feature branch
+3. Submit a pull request
+
+---
+
+## 🤝 Support
+
+Need help? 
+- Open an issue on [GitHub](https://github.com/ZiJian226/StarMy/issues)
+- Check existing issues for solutions
+
+---
+
+## 🌐 Links
+
+- **Repository**: [github.com/ZiJian226/StarMy](https://github.com/ZiJian226/StarMy)
+- **Live Demo**: Coming soon
+- **Documentation**: Coming soon
+
+---
+
+**Built with ❤️ for the Malaysian VTuber & Artist Community**
 
 ```
 StarMy/

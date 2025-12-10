@@ -9,12 +9,22 @@ export interface VTuber {
   youtubeUrl?: string;
   featured: boolean;
   schedule?: StreamSchedule[];
+  lore?: string;
+  characterInfo?: {
+    dateOfBirth?: string;
+    debutDate?: string;
+    height?: string;
+    species?: string;
+    likes?: string[];
+    dislikes?: string[];
+    [key: string]: any;
+  };
 }
 
 export interface StreamSchedule {
   id: string;
-  day: string; // Monday, Tuesday, etc.
-  time: string; // e.g., "20:00 - 22:00"
+  day: string;
+  time: string;
   title: string;
   platform: "youtube" | "twitch" | "tiktok";
 }
@@ -42,4 +52,15 @@ export interface CommissionRequest {
   description: string;
   budget: string;
   deadline?: string;
+}
+
+export interface NewsEvent {
+  id: string;
+  title: string;
+  excerpt: string;
+  content: string;
+  date: string;
+  category: "Announcement" | "Spotlight" | "Guide" | "Events" | "News";
+  image: string;
+  author: string;
 }

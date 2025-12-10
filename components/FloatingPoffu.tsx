@@ -52,7 +52,16 @@ export default function FloatingPoffu() {
     if (!href) return;
     // Prevent concurrent transitions
     if (phase !== "idle") return;
-    transitionTarget.current = href;
+    
+    // Strip basePath if present (for production GitHub Pages)
+    // In production, static HTML has /SiTrAiRsMY in hrefs, but router.push() will add it again
+    const basePath = process.env.NODE_ENV === 'production' ? '/SiTrAiRsMY' : '';
+    let cleanHref = href;
+    if (basePath && href.startsWith(basePath)) {
+      cleanHref = href.slice(basePath.length) || '/';
+    }
+    
+    transitionTarget.current = cleanHref;
 
     // STEP 1: Poffu changes to "notice" sprite and moves to center
     setPhase("moving");
@@ -140,9 +149,9 @@ export default function FloatingPoffu() {
     await new Promise((r) => setTimeout(r, TIMING.navigationDelay));
     
     try {
-      await router.push(href);
+      await router.push(cleanHref);
     } catch (err) {
-      window.location.href = href;
+      window.location.href = cleanHref;
     }
 
     // Wait for new page to mount

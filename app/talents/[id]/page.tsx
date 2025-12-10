@@ -5,7 +5,7 @@ import Container from "@/components/Container";
 import Footer from "@/components/Footer";
 import { vtubers } from "@/data/mockData";
 
-export default async function VTuberProfilePage({ params }: { params: Promise<{ id: string }> }) {
+export default async function TalentProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const vtuber = vtubers.find((v) => v.id === id);
 
@@ -44,8 +44,8 @@ export default async function VTuberProfilePage({ params }: { params: Promise<{ 
       <Navbar />
 
       <Container className="py-12">
-        <Link href="/vtubers" className="btn btn-ghost mb-6">
-          ← Back to VTubers
+        <Link href="/talents" className="btn btn-ghost mb-6">
+          ← Back to Talents
         </Link>
 
         {/* Profile Header */}

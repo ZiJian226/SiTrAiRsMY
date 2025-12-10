@@ -14,7 +14,7 @@ export default function Footer() {
             aria-label="StarMy Home"
           >
             <Image
-              src="/assets/images/icons/starmy-logo.png"
+              src="/assets/images/icons/starmy-logo.svg"
               alt="StarMy Logo"
               width={120}
               height={48}

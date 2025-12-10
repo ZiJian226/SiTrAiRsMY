@@ -51,7 +51,7 @@ const newsArticles = [
   },
 ];
 
-export default function NewsPage() {
+export default function EventsPage() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const categories = ["All", "Announcement", "Spotlight", "Guide", "Events"];
 
@@ -67,10 +67,10 @@ export default function NewsPage() {
 
         <Container className="py-12 flex-grow">
           <h1 className="text-5xl font-bold text-center mb-4 text-primary">
-            Latest News
+            Events & News
           </h1>
           <p className="text-center text-lg mb-12 max-w-2xl mx-auto opacity-70">
-            Stay updated with the latest news, announcements, and stories from the StarMy community.
+            Stay updated with the latest events, announcements, and stories from the StarMy community.
           </p>
 
           {/* Category Filter */}

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "@/app/globals.css";
+import FloatingPoffu from "@/components/FloatingPoffu";
 
 export const metadata: Metadata = {
   title: "StarMy - VTuber & Artist Community",
@@ -15,6 +16,7 @@ export default function RootLayout({
     <html lang="en" data-theme="starmy">
       <body className="antialiased">
         {children}
+        <FloatingPoffu />
       </body>
     </html>
   );

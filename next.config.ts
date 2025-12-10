@@ -5,8 +5,8 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true, // GitHub Pages doesn't support Next.js Image Optimization
   },
-  basePath: process.env.NODE_ENV === 'production' ? '/StarMy' : '', // Replace 'StarMy' with your repo name
-  assetPrefix: process.env.NODE_ENV === 'production' ? '/StarMy' : '',
+  basePath: process.env.NODE_ENV === 'production' ? '/SiTrAiRsMY' : '', // GitHub Pages subdirectory
+  assetPrefix: process.env.NODE_ENV === 'production' ? '/SiTrAiRsMY' : '',
 };
 
 export default nextConfig;

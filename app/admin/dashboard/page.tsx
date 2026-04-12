@@ -7,7 +7,7 @@ export default function AdminDashboard() {
   const router = useRouter();
 
   const handleLogout = () => {
-    // TODO: Implement actual logout with Supabase
+    // TODO: Implement actual logout with your Oracle-backed auth/session endpoint
     router.push("/admin/login");
   };
 

@@ -8,6 +8,7 @@ import Container from '@/components/Container'
 import Footer from '@/components/Footer'
 import PageBackground from '@/components/PageBackground'
 import Link from 'next/link'
+import type { UserRole } from '@/lib/auth/types'
 
 export default function AdminUsersPage() {
   const { user, profile, loading } = useAuth()
@@ -51,7 +52,7 @@ export default function AdminUsersPage() {
   const [formData, setFormData] = useState({
     email: '',
     full_name: '',
-    role: 'talent' as 'talent' | 'artist' | 'admin',
+    role: 'talent' as UserRole,
     avatar_url: '',
     bio: ''
   })

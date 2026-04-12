@@ -8,6 +8,7 @@ import Container from '@/components/Container'
 import Footer from '@/components/Footer'
 import PageBackground from '@/components/PageBackground'
 import Link from 'next/link'
+import type { UserRole } from '@/lib/auth/types'
 
 interface Profile {
   id: string
@@ -15,7 +16,7 @@ interface Profile {
   full_name: string
   avatar_url: string
   bio: string
-  role: 'admin' | 'talent' | 'artist'
+  role: UserRole
   lore?: string
   characterInfo?: {
     dateOfBirth?: string
@@ -538,7 +539,7 @@ export default function AdminProfilesPage() {
                         <select
                           className="select select-bordered"
                           value={editForm.role}
-                          onChange={(e) => setEditForm({ ...editForm, role: e.target.value as 'admin' | 'talent' | 'artist' })}
+                          onChange={(e) => setEditForm({ ...editForm, role: e.target.value as UserRole })}
                           disabled={saving}
                         >
                           <option value="admin">Admin</option>

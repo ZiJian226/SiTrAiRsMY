@@ -4,7 +4,7 @@ import { useState } from 'react';
  * Custom hook for managing form state with generic typing
  * Reduces boilerplate in forms throughout the app
  */
-export function useFormState<T extends Record<string, any>>(initialState: T) {
+export function useFormState<T extends Record<string, unknown>>(initialState: T) {
   const [formData, setFormData] = useState<T>(initialState);
 
   const updateField = <K extends keyof T>(field: K, value: T[K]) => {

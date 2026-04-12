@@ -1,15 +1,14 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-
-type Role = 'admin' | 'talent' | 'artist';
+import type { UserRole } from '@/lib/auth/types';
 
 /**
  * Custom hook for route protection with role-based access
  * Reduces duplication in protected pages
  */
 export function useProtectedRoute(options?: {
-  requiredRole?: Role;
+  requiredRole?: UserRole;
   redirectTo?: string;
 }) {
   const { user, profile, loading } = useAuth();

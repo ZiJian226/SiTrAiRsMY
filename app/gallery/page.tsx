@@ -6,7 +6,7 @@ import Container from "@/components/Container";
 import Footer from "@/components/Footer";
 import PageBackground from "@/components/PageBackground";
 
-// Mock gallery data - will be replaced with Supabase data
+// Mock gallery data - will be replaced with Oracle PostgreSQL data
 const galleryItems = [
   {
     id: "1",

@@ -6,7 +6,7 @@ import Container from "@/components/Container";
 import Footer from "@/components/Footer";
 import PageBackground from "@/components/PageBackground";
 
-// Mock merchandise data - will be replaced with Supabase data
+// Mock merchandise data - will be replaced with Oracle PostgreSQL data
 const merchandise = [
   {
     id: "1",

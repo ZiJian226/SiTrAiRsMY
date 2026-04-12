@@ -17,7 +17,7 @@ export interface VTuber {
     species?: string;
     likes?: string[];
     dislikes?: string[];
-    [key: string]: any;
+    [key: string]: unknown;
   };
 }
 

@@ -89,7 +89,7 @@ export default function ProfileEditorPage() {
     await new Promise(resolve => setTimeout(resolve, 800))
 
     // In mock mode, we just show success message
-    // In real implementation, this would call: await supabase.from('profiles').update({...})
+    // In real implementation, this would call your backend API to update Oracle PostgreSQL records
     
     setSaving(false)
     setSuccess(true)

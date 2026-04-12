@@ -27,8 +27,8 @@ export default function AnimatedSection({
               if (animation === "fadeInUp") {
                 fadeInUp(entry.target as HTMLElement, delay);
               } else if (animation === "stagger") {
-                const children = entry.target.children;
-                staggerFadeInUp(children as any);
+                const children = (entry.target as HTMLElement).querySelectorAll<HTMLElement>(":scope > *");
+                staggerFadeInUp(children);
               }
               observer.unobserve(entry.target);
             }

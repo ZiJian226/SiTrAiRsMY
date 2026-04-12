@@ -86,8 +86,8 @@ Artist: artist@starmy.com   / password: artist123
 - **Styling**: Tailwind CSS 4, DaisyUI 5
 - **Animations**: Framer Motion, AnimeJS
 - **State**: React Context (Mock Auth)
-- **Database**: Ready for Supabase integration
-- **Storage**: Ready for Cloudflare R2 integration
+- **Database**: Oracle-hosted PostgreSQL (self-managed)
+- **Storage**: Oracle Object Storage (S3-compatible)
 
 ---
 
@@ -140,7 +140,7 @@ The app currently uses **session-based mock authentication**:
 - No real password validation
 - Data stored in sessionStorage
 - Perfect for development and demo
-- Ready for Supabase Auth integration
+- Ready for backend auth/session integration
 
 ---
 
@@ -157,28 +157,25 @@ npm run lint         # Run ESLint
 
 ## 🌐 Deployment
 
-### GitHub Pages (CI/CD)
+### Oracle VM (Docker)
 
-This project is configured for automatic deployment to GitHub Pages:
-
-**Live Site**: `https://ZiJian226.github.io/StarMy`
+This project is ready to run on an Oracle Cloud VM using Docker + Docker Compose.
 
 #### Quick Deploy Steps:
-1. Push to `main` branch
-2. Enable GitHub Pages in Settings → Pages → Source: "GitHub Actions"
-3. Wait ~2-5 minutes for deployment
-4. Visit your site!
+1. Configure `.env.local` from `.env.local.example`
+2. Start services with `docker compose up -d --build`
+3. Open port 3000 in Oracle Security List / NSG
+4. Visit `http://<your-oracle-vm-public-ip>:3000`
 
-📖 **Detailed Guide**: See [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) for full instructions  
-⚡ **Quick Reference**: See [QUICK_DEPLOY.md](QUICK_DEPLOY.md) for essential steps
+📖 **Detailed Guide**: See [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) for full instructions
 
 ---
 
 ## 🚧 Roadmap
 
-- [ ] Supabase database integration
+- [ ] Oracle PostgreSQL integration
 - [ ] Real authentication system
-- [ ] Image upload with Cloudflare R2
+- [ ] Image upload with Oracle Object Storage
 - [ ] Real-time notifications
 - [ ] Advanced search filters
 - [ ] Payment integration for commissions
@@ -242,11 +239,12 @@ StarMy/
 │   ├── Container.tsx        # Content container wrapper
 │   ├── Footer.tsx           # Site footer
 │   └── Navbar.tsx           # Navigation bar
-├── data/                    # Mock data (will be replaced with Supabase)
+├── data/                    # Mock data (will be replaced with PostgreSQL)
 │   └── mockData.ts          # VTubers and Artists data
 ├── lib/                     # Utility libraries
 │   ├── animations.ts        # AnimeJS animation helpers
-│   ├── supabase.ts          # Supabase client configuration
+│   ├── database.ts          # PostgreSQL connection helper
+│   ├── objectStorage.ts     # Oracle Object Storage client helper
 │   └── types.ts             # TypeScript type definitions
 ├── public/                  # Static assets
 ├── .env.local.example       # Environment variables template
@@ -267,10 +265,10 @@ StarMy/
 - [x] Animation utilities
 
 ### Phase 2: Database Integration
-- [ ] Connect Supabase for all data
+- [ ] Connect Oracle PostgreSQL for all data
 - [ ] Implement full CRUD in admin panel
-- [ ] User authentication with Supabase Auth
-- [ ] File uploads to Cloudflare R2
+- [ ] User authentication with server sessions/JWT
+- [ ] File uploads to Oracle Object Storage
 - [ ] Real-time updates
 
 ### Phase 3: Enhanced Features
@@ -285,9 +283,9 @@ StarMy/
 - **Frontend**: Next.js 16, React 19, TypeScript
 - **Styling**: TailwindCSS 4, DaisyUI 5
 - **Animations**: AnimeJS
-- **Database**: Supabase (PostgreSQL)
-- **Storage**: Cloudflare R2
-- **Deployment**: Vercel (recommended)
+- **Database**: PostgreSQL (Oracle VM)
+- **Storage**: Oracle Object Storage
+- **Deployment**: Oracle Cloud VM (Docker)
 ├── lib/                   # Utility functions and types
 │   └── types.ts           # TypeScript type definitions
 └── public/                # Static assets

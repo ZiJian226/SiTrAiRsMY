@@ -1,0 +1,29 @@
+version: "3.9"
+
+services:
+  starmy-web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: starmy-web
+    restart: unless-stopped
+    env_file:
+      - .env.local
+    ports:
+      - "3000:3000"
+
+  starmy-db:
+    image: postgres:16-alpine
+    container_name: starmy-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: starmy
+      POSTGRES_USER: starmy_admin
+      POSTGRES_PASSWORD: starmy2025
+    ports:
+      - "5432:5432"
+    volumes:
+      - starmy_pg_data:/var/lib/postgresql/data
+
+volumes:
+  starmy_pg_data:

@@ -1,12 +1,24 @@
--- StarMy Database Schema with Row Level Security (RLS)
--- Run this SQL in your Supabase SQL Editor
+-- StarMy Database Schema for self-hosted PostgreSQL (Oracle VM)
+-- Run this SQL in your PostgreSQL instance
 
 -- ============================================
 -- PROFILES TABLE
 -- ============================================
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+CREATE TABLE users (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email TEXT UNIQUE NOT NULL,
+  password_hash TEXT NOT NULL,
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE TABLE profiles (
-  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  email TEXT NOT NULL,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  email TEXT UNIQUE NOT NULL,
   full_name TEXT,
   role TEXT NOT NULL CHECK (role IN ('talent', 'artist', 'admin')),
   avatar_url TEXT,
@@ -15,40 +27,12 @@ CREATE TABLE profiles (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- RLS Policies for profiles
-ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
-
--- Anyone can view profiles
-CREATE POLICY "Profiles are viewable by everyone"
-  ON profiles FOR SELECT
-  USING (true);
-
--- Users can insert their own profile
-CREATE POLICY "Users can insert own profile"
-  ON profiles FOR INSERT
-  WITH CHECK (auth.uid() = id);
-
--- Users can update their own profile
-CREATE POLICY "Users can update own profile"
-  ON profiles FOR UPDATE
-  USING (auth.uid() = id);
-
--- Admins can update any profile
-CREATE POLICY "Admins can update any profile"
-  ON profiles FOR UPDATE
-  USING (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
-
 -- ============================================
 -- TALENT PROFILES TABLE
 -- ============================================
 CREATE TABLE talent_profiles (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   stage_name TEXT NOT NULL,
   character_description TEXT,
   debut_date DATE,
@@ -58,59 +42,6 @@ CREATE TABLE talent_profiles (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-
--- RLS Policies for talent_profiles
-ALTER TABLE talent_profiles ENABLE ROW LEVEL SECURITY;
-
--- Anyone can view published talent profiles
-CREATE POLICY "Published talent profiles are viewable"
-  ON talent_profiles FOR SELECT
-  USING (is_published = true);
-
--- Talent/Artist can view their own unpublished profiles
-CREATE POLICY "Users can view own talent profiles"
-  ON talent_profiles FOR SELECT
-  USING (auth.uid() = user_id);
-
--- Talent/Artist can insert their own profiles
-CREATE POLICY "Users can insert own talent profiles"
-  ON talent_profiles FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
-
--- Talent/Artist can update their own profiles
-CREATE POLICY "Users can update own talent profiles"
-  ON talent_profiles FOR UPDATE
-  USING (auth.uid() = user_id);
-
--- Admins can view all talent profiles
-CREATE POLICY "Admins can view all talent profiles"
-  ON talent_profiles FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
-
--- Admins can update any talent profile
-CREATE POLICY "Admins can update any talent profile"
-  ON talent_profiles FOR UPDATE
-  USING (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
-
--- Admins can delete any talent profile
-CREATE POLICY "Admins can delete any talent profile"
-  ON talent_profiles FOR DELETE
-  USING (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
 
 -- ============================================
 -- MERCHANDISE TABLE
@@ -129,81 +60,6 @@ CREATE TABLE merchandise (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- RLS Policies for merchandise
-ALTER TABLE merchandise ENABLE ROW LEVEL SECURITY;
-
--- Anyone can view published merchandise
-CREATE POLICY "Published merchandise is viewable"
-  ON merchandise FOR SELECT
-  USING (is_published = true);
-
--- Talent/Artist can view their own unpublished merchandise
-CREATE POLICY "Users can view own merchandise"
-  ON merchandise FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM talent_profiles
-      WHERE id = talent_id AND user_id = auth.uid()
-    )
-  );
-
--- Talent/Artist can insert their own merchandise
-CREATE POLICY "Users can insert own merchandise"
-  ON merchandise FOR INSERT
-  WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM talent_profiles
-      WHERE id = talent_id AND user_id = auth.uid()
-    )
-  );
-
--- Talent/Artist can update their own merchandise
-CREATE POLICY "Users can update own merchandise"
-  ON merchandise FOR UPDATE
-  USING (
-    EXISTS (
-      SELECT 1 FROM talent_profiles
-      WHERE id = talent_id AND user_id = auth.uid()
-    )
-  );
-
--- Admins can do everything with merchandise
-CREATE POLICY "Admins can view all merchandise"
-  ON merchandise FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
-
-CREATE POLICY "Admins can insert any merchandise"
-  ON merchandise FOR INSERT
-  WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
-
-CREATE POLICY "Admins can update any merchandise"
-  ON merchandise FOR UPDATE
-  USING (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
-
-CREATE POLICY "Admins can delete any merchandise"
-  ON merchandise FOR DELETE
-  USING (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
-
 -- ============================================
 -- EVENTS TABLE
 -- ============================================
@@ -220,51 +76,6 @@ CREATE TABLE events (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- RLS Policies for events
-ALTER TABLE events ENABLE ROW LEVEL SECURITY;
-
--- Anyone can view published events
-CREATE POLICY "Published events are viewable"
-  ON events FOR SELECT
-  USING (is_published = true);
-
--- Admins can do everything with events
-CREATE POLICY "Admins can view all events"
-  ON events FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
-
-CREATE POLICY "Admins can insert events"
-  ON events FOR INSERT
-  WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
-
-CREATE POLICY "Admins can update any event"
-  ON events FOR UPDATE
-  USING (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
-
-CREATE POLICY "Admins can delete any event"
-  ON events FOR DELETE
-  USING (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
-
 -- ============================================
 -- GALLERY ITEMS TABLE
 -- ============================================
@@ -280,51 +91,6 @@ CREATE TABLE gallery_items (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-
--- RLS Policies for gallery_items
-ALTER TABLE gallery_items ENABLE ROW LEVEL SECURITY;
-
--- Anyone can view published gallery items
-CREATE POLICY "Published gallery items are viewable"
-  ON gallery_items FOR SELECT
-  USING (is_published = true);
-
--- Admins can do everything with gallery items
-CREATE POLICY "Admins can view all gallery items"
-  ON gallery_items FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
-
-CREATE POLICY "Admins can insert gallery items"
-  ON gallery_items FOR INSERT
-  WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
-
-CREATE POLICY "Admins can update any gallery item"
-  ON gallery_items FOR UPDATE
-  USING (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
-
-CREATE POLICY "Admins can delete any gallery item"
-  ON gallery_items FOR DELETE
-  USING (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
 
 -- ============================================
 -- FUNCTIONS & TRIGGERS
@@ -366,3 +132,7 @@ CREATE INDEX idx_events_published ON events(is_published);
 CREATE INDEX idx_events_date ON events(event_date);
 CREATE INDEX idx_gallery_items_published ON gallery_items(is_published);
 CREATE INDEX idx_gallery_items_category ON gallery_items(category);
+
+CREATE INDEX idx_profiles_user_id ON profiles(user_id);
+CREATE UNIQUE INDEX idx_profiles_email ON profiles(email);
+CREATE UNIQUE INDEX idx_users_email ON users(email);

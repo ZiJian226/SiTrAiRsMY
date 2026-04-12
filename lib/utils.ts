@@ -1,6 +1,7 @@
 /**
  * Common utility functions used throughout the app
  */
+import type { UserRole } from './auth/types';
 
 /**
  * Simulate API delay for mock operations
@@ -22,7 +23,7 @@ export const formatDate = (date: string | Date): string => {
 /**
  * Get role badge color
  */
-export const getRoleBadgeClass = (role: string): string => {
+export const getRoleBadgeClass = (role: UserRole): string => {
   switch (role) {
     case 'admin':
       return 'badge-error';
@@ -53,7 +54,7 @@ export const getAvatarUrl = (avatarUrl: string | undefined, id: string, name: st
 /**
  * Filter items by search term
  */
-export const filterBySearch = <T extends Record<string, any>>(
+export const filterBySearch = <T extends Record<string, unknown>>(
   items: T[],
   searchTerm: string,
   fields: (keyof T)[]

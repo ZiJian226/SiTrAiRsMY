@@ -5,81 +5,23 @@ import Navbar from "@/components/Navbar";
 import Container from "@/components/Container";
 import Footer from "@/components/Footer";
 import PageBackground from "@/components/PageBackground";
-
-// Mock merchandise data - will be replaced with Oracle PostgreSQL data
-const merchandise = [
-  {
-    id: "1",
-    name: "Luna Sparkle Acrylic Stand",
-    talent: "Luna Sparkle",
-    price: 45.00,
-    currency: "MYR",
-    image: "https://placehold.co/400x400/a855f7/ffffff?text=Acrylic+Stand",
-    category: "Accessories",
-    inStock: true,
-    description: "Official acrylic stand featuring Luna Sparkle's signature look.",
-  },
-  {
-    id: "2",
-    name: "StarMy Official T-Shirt",
-    talent: "StarMy",
-    price: 89.00,
-    currency: "MYR",
-    image: "https://placehold.co/400x400/8b5cf6/ffffff?text=T-Shirt",
-    category: "Apparel",
-    inStock: true,
-    description: "High-quality cotton t-shirt with StarMy logo.",
-  },
-  {
-    id: "3",
-    name: "Mia River Voice Pack Vol.1",
-    talent: "Mia River",
-    price: 25.00,
-    currency: "MYR",
-    image: "https://placehold.co/400x400/facc15/000000?text=Voice+Pack",
-    category: "Digital",
-    inStock: true,
-    description: "Digital voice pack with 50+ exclusive voice lines.",
-  },
-  {
-    id: "4",
-    name: "Stella Nova Keychain",
-    talent: "Stella Nova",
-    price: 35.00,
-    currency: "MYR",
-    image: "https://placehold.co/400x400/a855f7/ffffff?text=Keychain",
-    category: "Accessories",
-    inStock: false,
-    description: "Cute keychain featuring Stella Nova chibi design.",
-  },
-  {
-    id: "5",
-    name: "Hana Yuki Poster Set",
-    talent: "Hana Yuki",
-    price: 55.00,
-    currency: "MYR",
-    image: "https://placehold.co/400x400/8b5cf6/ffffff?text=Poster+Set",
-    category: "Prints",
-    inStock: true,
-    description: "Set of 3 high-quality A3 posters.",
-  },
-  {
-    id: "6",
-    name: "StarMy Sticker Pack",
-    talent: "StarMy",
-    price: 20.00,
-    currency: "MYR",
-    image: "https://placehold.co/400x400/facc15/000000?text=Stickers",
-    category: "Accessories",
-    inStock: true,
-    description: "Pack of 10 waterproof vinyl stickers featuring all talents.",
-  },
-];
+import { fallbackStoreItems } from "@/lib/content/fallback";
+import type { StoreItem } from "@/lib/content/types";
+import { useCachedApiResource } from "@/lib/hooks";
 
 export default function StorePage() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedTalent, setSelectedTalent] = useState<string | null>(null);
-  const categories = ["All", "Apparel", "Accessories", "Digital", "Prints"];
+
+  const { data: merchandise, loading } = useCachedApiResource<StoreItem[]>({
+    cacheKey: 'starmy:content:store:v1',
+    url: '/api/content/store',
+    fallbackData: fallbackStoreItems,
+    maxAgeMs: 60_000,
+    staleWhileRevalidateMs: 3_600_000,
+  });
+
+  const categories = ["All", ...Array.from(new Set(merchandise.map(m => m.category)))];
   const talents = ["All", ...Array.from(new Set(merchandise.map(m => m.talent)))];
 
   const filteredMerchandise = merchandise.filter((item) => {
@@ -146,6 +88,12 @@ export default function StorePage() {
           </div>
 
           {/* Merchandise Grid */}
+          {loading && (
+            <div className="flex justify-center py-4">
+              <span className="loading loading-spinner loading-md text-primary"></span>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredMerchandise.map((item) => (
               <div

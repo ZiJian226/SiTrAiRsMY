@@ -1,11 +1,11 @@
-import { MockAuthService } from './mockAuthService';
+import { ApiAuthService } from './apiAuthService';
 import type { AuthService } from './types';
 
 let authService: AuthService | null = null;
 
 export function getAuthService(): AuthService {
   if (!authService) {
-    authService = new MockAuthService();
+    authService = new ApiAuthService();
   }
 
   return authService;

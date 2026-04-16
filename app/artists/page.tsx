@@ -6,12 +6,22 @@ import Navbar from "@/components/Navbar";
 import Container from "@/components/Container";
 import Footer from "@/components/Footer";
 import PageBackground from "@/components/PageBackground";
-import { artists } from "@/data/mockData";
+import { fallbackArtists } from "@/lib/content/fallback";
+import { useCachedApiResource } from "@/lib/hooks";
+import type { ArtistProfile } from "@/lib/content/types";
 
 export default function ArtistsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSpecialty, setSelectedSpecialty] = useState<string | null>(null);
   const [openOnly, setOpenOnly] = useState(false);
+
+  const { data: artists, loading } = useCachedApiResource<ArtistProfile[]>({
+    cacheKey: 'starmy:content:artists:v4',
+    url: '/api/content/artists',
+    fallbackData: fallbackArtists,
+    maxAgeMs: 60_000,
+    staleWhileRevalidateMs: 3_600_000,
+  });
 
   const allSpecialties = Array.from(new Set(artists.flatMap((a) => a.specialty)));
 
@@ -83,6 +93,12 @@ export default function ArtistsPage() {
           </div>
 
           {/* Artists Grid */}
+          {loading && (
+            <div className="flex justify-center py-4">
+              <span className="loading loading-spinner loading-md text-secondary"></span>
+            </div>
+          )}
+
           {filteredArtists.length === 0 ? (
             <div className="text-center py-16">
               <p className="text-xl opacity-70">No artists found matching your criteria.</p>

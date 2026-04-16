@@ -3,19 +3,12 @@ import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Container from "@/components/Container";
 import Footer from "@/components/Footer";
-import { artists } from "@/data/mockData";
 import CommissionForm from "./CommissionForm";
-
-// Generate static params for all artist IDs
-export function generateStaticParams() {
-  return artists.map((artist) => ({
-    id: artist.id,
-  }));
-}
+import { getArtistById } from "@/lib/content/repository";
 
 export default async function ArtistProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const artist = artists.find((a) => a.id === id);
+  const artist = await getArtistById(id);
 
   if (!artist) {
     notFound();

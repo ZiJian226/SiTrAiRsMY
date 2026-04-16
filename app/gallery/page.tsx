@@ -5,62 +5,22 @@ import Navbar from "@/components/Navbar";
 import Container from "@/components/Container";
 import Footer from "@/components/Footer";
 import PageBackground from "@/components/PageBackground";
-
-// Mock gallery data - will be replaced with Oracle PostgreSQL data
-const galleryItems = [
-  {
-    id: "1",
-    title: "StarMy Community Meetup 2025",
-    description: "Our first offline community gathering featuring talents and fans!",
-    image: "https://placehold.co/800x600/a855f7/ffffff?text=Community+Meetup",
-    category: "Offline Event",
-    date: "2025-11-15",
-  },
-  {
-    id: "2",
-    title: "Collaboration Stream with Guest VTubers",
-    description: "Epic collab stream with special guest appearances.",
-    image: "https://placehold.co/800x600/8b5cf6/ffffff?text=Collab+Stream",
-    category: "Collab Event",
-    date: "2025-11-20",
-  },
-  {
-    id: "3",
-    title: "StarMy Anniversary Celebration",
-    description: "Celebrating one year of amazing content and community!",
-    image: "https://placehold.co/800x600/facc15/000000?text=Anniversary",
-    category: "Offline Event",
-    date: "2025-12-01",
-  },
-  {
-    id: "4",
-    title: "Charity Stream Marathon",
-    description: "24-hour charity stream raising funds for a good cause.",
-    image: "https://placehold.co/800x600/a855f7/ffffff?text=Charity+Stream",
-    category: "Collab Event",
-    date: "2025-12-08",
-  },
-  {
-    id: "5",
-    title: "Fan Art Exhibition",
-    description: "Showcasing incredible fan art from our community.",
-    image: "https://placehold.co/800x600/8b5cf6/ffffff?text=Fan+Art",
-    category: "Offline Event",
-    date: "2025-12-10",
-  },
-  {
-    id: "6",
-    title: "Gaming Tournament",
-    description: "Competitive gaming tournament with our talents.",
-    image: "https://placehold.co/800x600/facc15/000000?text=Gaming+Tournament",
-    category: "Collab Event",
-    date: "2025-12-12",
-  },
-];
+import { fallbackGalleryItems } from "@/lib/content/fallback";
+import type { GalleryEntry } from "@/lib/content/types";
+import { useCachedApiResource } from "@/lib/hooks";
 
 export default function GalleryPage() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const categories = ["All", "Collab Event", "Offline Event"];
+
+  const { data: galleryItems, loading } = useCachedApiResource<GalleryEntry[]>({
+    cacheKey: 'starmy:content:gallery:v3',
+    url: '/api/content/gallery',
+    fallbackData: fallbackGalleryItems,
+    maxAgeMs: 60_000,
+    staleWhileRevalidateMs: 3_600_000,
+  });
+
+  const categories = ["All", ...Array.from(new Set(galleryItems.map(item => item.category)))];
 
   const filteredGallery = selectedCategory && selectedCategory !== "All"
     ? galleryItems.filter((item) => item.category === selectedCategory)
@@ -98,6 +58,12 @@ export default function GalleryPage() {
           </div>
 
           {/* Gallery Grid */}
+          {loading && (
+            <div className="flex justify-center py-4">
+              <span className="loading loading-spinner loading-md text-primary"></span>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredGallery.map((item) => (
               <div

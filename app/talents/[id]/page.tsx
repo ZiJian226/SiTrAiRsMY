@@ -3,18 +3,11 @@ import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Container from "@/components/Container";
 import Footer from "@/components/Footer";
-import { vtubers } from "@/data/mockData";
-
-// Generate static params for all vtuber IDs
-export function generateStaticParams() {
-  return vtubers.map((vtuber) => ({
-    id: vtuber.id,
-  }));
-}
+import { getTalentById } from "@/lib/content/repository";
 
 export default async function TalentProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const vtuber = vtubers.find((v) => v.id === id);
+  const vtuber = await getTalentById(id);
 
   if (!vtuber) {
     notFound();
@@ -229,27 +222,68 @@ export default async function TalentProfilePage({ params }: { params: Promise<{ 
           </div>
         )}
 
-        {/* Content Embeds */}
+        {/* Content Embeds & Portfolio */}
         <div className="space-y-8">
+          {/* Portfolio Gallery */}
+          {vtuber.portfolio && vtuber.portfolio.length > 0 && (
+            <div className="card bg-base-200 shadow-xl">
+              <div className="card-body">
+                <h2 className="card-title text-2xl mb-4">🎨 Portfolio</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {vtuber.portfolio.map((link, idx) => (
+                    <div key={idx} className="relative overflow-hidden rounded-lg group aspect-video bg-base-300">
+                      {/* Try to embed or display portfolio links */}
+                      {link.includes('youtube.com') || link.includes('youtu.be') ? (
+                        <iframe
+                          className="w-full h-full"
+                          src={link.replace('youtube.com/watch?v=', 'youtube.com/embed/').replace('youtu.be/', 'youtube.com/embed/')}
+                          allowFullScreen
+                          title={`Portfolio ${idx + 1}`}
+                        />
+                      ) : link.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                        <img
+                          src={link}
+                          alt={`Portfolio ${idx + 1}`}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.src = 'https://placehold.co/400x300/333/FFF/png?text=Portfolio+' + (idx + 1)
+                          }}
+                        />
+                      ) : (
+                        <a
+                          href={link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-full h-full flex items-center justify-center hover:bg-base-200 transition-colors"
+                        >
+                          <div className="text-center">
+                            <p className="text-sm mb-2">Portfolio Link</p>
+                            <p className="text-xs opacity-70 truncate max-w-xs">{link}</p>
+                          </div>
+                        </a>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* TikTok Embed Example */}
           {vtuber.tiktokUrl && (
             <div className="card bg-base-200 shadow-xl">
               <div className="card-body">
-                <h2 className="card-title text-2xl mb-4">TikTok Content</h2>
+                <h2 className="card-title text-2xl mb-4">🎵 TikTok</h2>
                 <div className="aspect-video bg-base-300 rounded-lg flex items-center justify-center">
                   <div className="text-center">
-                    <p className="text-lg mb-4">TikTok Embed Preview</p>
-                    <p className="text-sm opacity-70 max-w-md">
-                      In a production environment, TikTok videos would be embedded here using their embed API.
-                      Click the button below to visit their TikTok profile.
-                    </p>
+                    <p className="text-lg mb-4">TikTok Profile</p>
                     <a
                       href={vtuber.tiktokUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="btn btn-primary mt-4"
+                      className="btn btn-accent"
                     >
-                      Visit TikTok Profile
+                      Visit TikTok
                     </a>
                   </div>
                 </div>
@@ -261,19 +295,15 @@ export default async function TalentProfilePage({ params }: { params: Promise<{ 
           {vtuber.twitchUrl && (
             <div className="card bg-base-200 shadow-xl">
               <div className="card-body">
-                <h2 className="card-title text-2xl mb-4">Live Stream</h2>
+                <h2 className="card-title text-2xl mb-4">🎮 Twitch</h2>
                 <div className="aspect-video bg-base-300 rounded-lg flex items-center justify-center">
                   <div className="text-center">
-                    <p className="text-lg mb-4">Twitch Stream Embed Preview</p>
-                    <p className="text-sm opacity-70 max-w-md">
-                      In a production environment, Twitch streams would be embedded here using their embed API.
-                      Click the button below to watch on Twitch.
-                    </p>
+                    <p className="text-lg mb-4">Live Stream</p>
                     <a
                       href={vtuber.twitchUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="btn btn-secondary mt-4"
+                      className="btn btn-secondary"
                     >
                       Watch on Twitch
                     </a>
@@ -287,21 +317,17 @@ export default async function TalentProfilePage({ params }: { params: Promise<{ 
           {vtuber.youtubeUrl && (
             <div className="card bg-base-200 shadow-xl">
               <div className="card-body">
-                <h2 className="card-title text-2xl mb-4">YouTube Channel</h2>
+                <h2 className="card-title text-2xl mb-4">🎥 YouTube Channel</h2>
                 <div className="aspect-video bg-base-300 rounded-lg flex items-center justify-center">
                   <div className="text-center">
-                    <p className="text-lg mb-4">YouTube Embed Preview</p>
-                    <p className="text-sm opacity-70 max-w-md">
-                      In a production environment, YouTube videos would be embedded here using their embed API.
-                      Click the button below to visit their YouTube channel.
-                    </p>
+                    <p className="text-lg mb-4">YouTube Channel</p>
                     <a
                       href={vtuber.youtubeUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="btn btn-primary mt-4"
+                      className="btn btn-primary"
                     >
-                      Visit YouTube Channel
+                      Visit YouTube
                     </a>
                   </div>
                 </div>

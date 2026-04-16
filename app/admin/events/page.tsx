@@ -16,36 +16,30 @@ interface Event {
   event_date: string
   location: string
   image_url: string
+  image_object_key?: string
   category: string
   is_published: boolean
+  featured: boolean
+}
+
+function invalidateContentCaches() {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  window.localStorage.removeItem('starmy:content:events:v2')
+  window.localStorage.removeItem('starmy:content:events:v3')
 }
 
 export default function AdminEventsPage() {
   const { user, profile, loading } = useAuth()
   const router = useRouter()
   
-  const [events, setEvents] = useState<Event[]>([
-    {
-      id: '1',
-      title: 'Winter Showcase 2025',
-      description: 'Join us for an amazing winter showcase featuring all our talents!',
-      event_date: '2025-12-25T18:00:00',
-      location: 'Virtual Event - Discord',
-      image_url: 'https://placehold.co/600x400/5B21B6/FFFFFF/png?text=Winter+Showcase',
-      category: 'showcase',
-      is_published: true
-    },
-    {
-      id: '2',
-      title: 'Karaoke Night',
-      description: 'Sing along with your favorite talents in this special karaoke event!',
-      event_date: '2025-12-15T20:00:00',
-      location: 'YouTube Live',
-      image_url: 'https://placehold.co/600x400/7C3AED/FFFFFF/png?text=Karaoke+Night',
-      category: 'community',
-      is_published: true
-    }
-  ])
+  const [events, setEvents] = useState<Event[]>([])
+  const [dataLoading, setDataLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [imageUploading, setImageUploading] = useState(false)
+  const [imageUploadError, setImageUploadError] = useState<string | null>(null)
   
   const [showModal, setShowModal] = useState(false)
   const [editingEvent, setEditingEvent] = useState<Event | null>(null)
@@ -55,8 +49,10 @@ export default function AdminEventsPage() {
     event_date: '',
     location: '',
     image_url: '',
+    image_object_key: '',
     category: 'showcase',
-    is_published: false
+    is_published: false,
+    featured: false
   })
 
   useEffect(() => {
@@ -66,6 +62,32 @@ export default function AdminEventsPage() {
       router.push('/dashboard')
     }
   }, [user, profile, loading, router])
+
+  useEffect(() => {
+    if (!user || !profile || profile.role !== 'admin') {
+      return
+    }
+
+    void refreshEvents()
+  }, [user, profile])
+
+  async function refreshEvents() {
+    setDataLoading(true)
+    try {
+      const response = await fetch('/api/admin/events', { cache: 'no-store' })
+      if (!response.ok) {
+        throw new Error('Failed to load events')
+      }
+
+      const data = (await response.json()) as Event[]
+      setEvents(data)
+    } catch (error) {
+      console.error(error)
+      setEvents([])
+    } finally {
+      setDataLoading(false)
+    }
+  }
 
   if (loading) {
     return (
@@ -87,8 +109,10 @@ export default function AdminEventsPage() {
       event_date: '',
       location: '',
       image_url: '',
+      image_object_key: '',
       category: 'showcase',
-      is_published: false
+      is_published: false,
+      featured: false
     })
     setShowModal(true)
   }
@@ -101,41 +125,104 @@ export default function AdminEventsPage() {
       event_date: event.event_date,
       location: event.location,
       image_url: event.image_url,
+      image_object_key: event.image_object_key || '',
       category: event.category,
-      is_published: event.is_published
+      is_published: event.is_published,
+      featured: event.featured
     })
     setShowModal(true)
   }
 
-  function handleSave() {
-    if (editingEvent) {
-      setEvents(events.map(e => 
-        e.id === editingEvent.id 
-          ? { ...e, ...formData }
-          : e
-      ))
-    } else {
-      const newEvent: Event = {
-        id: Date.now().toString(),
-        ...formData
+  async function handleSave() {
+    setSaving(true)
+
+    try {
+      const response = await fetch(
+        editingEvent ? `/api/admin/events/${editingEvent.id}` : '/api/admin/events',
+        {
+          method: editingEvent ? 'PATCH' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData),
+        },
+      )
+
+      if (!response.ok) {
+        throw new Error('Failed to save event')
       }
-      setEvents([...events, newEvent])
+
+      invalidateContentCaches()
+      await refreshEvents()
+      setShowModal(false)
+    } catch (error) {
+      console.error(error)
+      alert('Unable to save event. Please try again.')
+    } finally {
+      setSaving(false)
     }
-    setShowModal(false)
   }
 
-  function handleDelete(id: string) {
+  async function handleDelete(id: string) {
     if (confirm('Are you sure you want to delete this event?')) {
-      setEvents(events.filter(e => e.id !== id))
+      try {
+        const response = await fetch(`/api/admin/events/${id}`, { method: 'DELETE' })
+        if (!response.ok) {
+          throw new Error('Failed to delete event')
+        }
+
+        await refreshEvents()
+      } catch (error) {
+        console.error(error)
+        alert('Unable to delete event. Please try again.')
+      }
     }
   }
 
-  function togglePublish(id: string) {
-    setEvents(events.map(e =>
-      e.id === id
-        ? { ...e, is_published: !e.is_published }
-        : e
-    ))
+  async function togglePublish(event: Event) {
+    const nextPublished = !event.is_published
+    setEvents(prev => prev.map(item => item.id === event.id ? { ...item, is_published: nextPublished } : item))
+    try {
+      const response = await fetch(`/api/admin/events/${event.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_published: nextPublished }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to toggle event publish status')
+      }
+
+      const updated = (await response.json()) as Event
+      setEvents(prev => prev.map(item => item.id === event.id ? updated : item))
+      invalidateContentCaches()
+    } catch (error) {
+      console.error(error)
+      setEvents(prev => prev.map(item => item.id === event.id ? { ...item, is_published: event.is_published } : item))
+      alert('Unable to update publish status.')
+    }
+  }
+
+  async function toggleFeatured(event: Event) {
+    const nextFeatured = !event.featured
+    setEvents(prev => prev.map(item => item.id === event.id ? { ...item, featured: nextFeatured } : item))
+    try {
+      const response = await fetch(`/api/admin/events/${event.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ featured: nextFeatured }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to toggle event featured status')
+      }
+
+      const updated = (await response.json()) as Event
+      setEvents(prev => prev.map(item => item.id === event.id ? updated : item))
+      invalidateContentCaches()
+    } catch (error) {
+      console.error(error)
+      await refreshEvents()
+      alert('Unable to update featured status. Please try again.')
+    }
   }
 
   function formatDate(dateString: string) {
@@ -146,6 +233,34 @@ export default function AdminEventsPage() {
       hour: '2-digit',
       minute: '2-digit'
     })
+  }
+
+  async function handleEventImageFileChange(file: File) {
+    setImageUploading(true)
+    setImageUploadError(null)
+
+    try {
+      const payload = new FormData()
+      payload.append('file', file)
+      payload.append('folder', 'events')
+
+      const response = await fetch('/api/admin/uploads/image', {
+        method: 'POST',
+        body: payload,
+      })
+
+      if (!response.ok) {
+        const errorData = (await response.json().catch(() => null)) as { error?: string } | null
+        throw new Error(errorData?.error || 'Failed to upload event image')
+      }
+
+      const data = (await response.json()) as { url: string; key: string }
+      setFormData({ ...formData, image_url: data.url, image_object_key: data.key })
+    } catch (error) {
+      setImageUploadError(error instanceof Error ? error.message : 'Failed to upload event image')
+    } finally {
+      setImageUploading(false)
+    }
   }
 
   return (
@@ -170,15 +285,17 @@ export default function AdminEventsPage() {
             </button>
           </div>
 
-          <div className="alert alert-warning mb-6">
-            <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-            <span>⚠️ Mock Mode: Changes won't persist after refresh</span>
+          <div className="alert alert-info mb-6">
+            <span>Events are loaded from PostgreSQL via admin API.</span>
           </div>
 
           {/* Events List */}
           <div className="space-y-4">
+            {dataLoading && (
+              <div className="flex justify-center py-8">
+                <span className="loading loading-spinner loading-lg text-primary"></span>
+              </div>
+            )}
             {events.map(event => (
               <div key={event.id} className="card bg-base-200 shadow-xl">
                 <div className="card-body">
@@ -203,6 +320,9 @@ export default function AdminEventsPage() {
                           <div className="flex gap-2 mt-2">
                             <div className={`badge ${event.is_published ? 'badge-success' : 'badge-ghost'}`}>
                               {event.is_published ? '✓ Published' : '✗ Draft'}
+                            </div>
+                            <div className={`badge ${event.featured ? 'badge-secondary' : 'badge-ghost'}`}>
+                              {event.featured ? '★ Featured' : '☆ Not Featured'}
                             </div>
                             <div className="badge badge-primary capitalize">{event.category}</div>
                           </div>
@@ -235,10 +355,21 @@ export default function AdminEventsPage() {
                               type="checkbox" 
                               className="toggle toggle-primary" 
                               checked={event.is_published}
-                              onChange={() => togglePublish(event.id)}
+                                onChange={() => togglePublish(event)}
                             />
                           </label>
                         </div>
+                          <div className="form-control">
+                            <label className="label cursor-pointer gap-2">
+                              <span className="label-text">Featured</span>
+                              <input 
+                                type="checkbox" 
+                                className="toggle toggle-secondary" 
+                                checked={event.featured}
+                                onChange={() => toggleFeatured(event)}
+                              />
+                            </label>
+                          </div>
                         <div className="flex gap-2">
                           <button 
                             onClick={() => openEditModal(event)}
@@ -364,8 +495,35 @@ export default function AdminEventsPage() {
                   className="input input-bordered"
                   placeholder="https://example.com/event-image.jpg"
                   value={formData.image_url}
-                  onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+                  onChange={(e) => setFormData({ ...formData, image_url: e.target.value, image_object_key: '' })}
+                  disabled={imageUploading}
                 />
+                <label className="label">
+                  <span className="label-text-alt opacity-70">Or upload event image to Oracle Object Storage</span>
+                </label>
+                <input
+                  type="file"
+                  className="file-input file-input-bordered"
+                  accept="image/*"
+                  disabled={imageUploading}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) {
+                      void handleEventImageFileChange(file)
+                    }
+                    e.currentTarget.value = ''
+                  }}
+                />
+                {imageUploading && (
+                  <label className="label">
+                    <span className="label-text-alt text-primary">Uploading event image...</span>
+                  </label>
+                )}
+                {imageUploadError && (
+                  <label className="label">
+                    <span className="label-text-alt text-error">{imageUploadError}</span>
+                  </label>
+                )}
               </div>
 
               <div className="form-control">
@@ -380,12 +538,24 @@ export default function AdminEventsPage() {
                 </label>
               </div>
 
+              <div className="form-control">
+                <label className="label cursor-pointer justify-start gap-3">
+                  <input
+                    type="checkbox"
+                    className="checkbox checkbox-secondary"
+                    checked={formData.featured}
+                    onChange={(e) => setFormData({ ...formData, featured: e.target.checked })}
+                  />
+                  <span className="label-text font-semibold">Pin to Featured News</span>
+                </label>
+              </div>
+
               <div className="modal-action">
                 <button type="button" onClick={() => setShowModal(false)} className="btn btn-ghost">
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary">
-                  {editingEvent ? 'Save Changes' : 'Create Event'}
+                <button type="submit" className="btn btn-primary" disabled={saving}>
+                  {saving ? 'Saving...' : editingEvent ? 'Save Changes' : 'Create Event'}
                 </button>
               </div>
             </form>

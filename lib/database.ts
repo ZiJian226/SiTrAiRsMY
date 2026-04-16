@@ -3,19 +3,21 @@ import type { UserRole } from './auth/types';
 
 const connectionString = process.env.DATABASE_URL;
 
-if (!connectionString) {
-  throw new Error('DATABASE_URL is not set. Configure it in your environment variables.');
-}
-
 const max = Number(process.env.DATABASE_POOL_MAX || '20');
 
-export const dbPool = new Pool({
-  connectionString,
-  max,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-});
+export const dbPool = connectionString
+  ? new Pool({
+      connectionString,
+      max,
+      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+    })
+  : null;
 
 export async function dbQuery(text: string, params: unknown[] = []) {
+  if (!dbPool) {
+    throw new Error('DATABASE_URL is not set. Configure it in your environment variables.');
+  }
+
   const result = await dbPool.query(text, params);
   return result;
 }

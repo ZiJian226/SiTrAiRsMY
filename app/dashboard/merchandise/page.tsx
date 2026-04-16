@@ -17,6 +17,7 @@ interface MerchandiseItem {
   category: string
   stock: number
   image_url: string
+  image_object_key?: string
   is_published: boolean
 }
 
@@ -24,29 +25,8 @@ export default function MerchandiseManagerPage() {
   const { user, profile, loading } = useAuth()
   const router = useRouter()
   
-  const [items, setItems] = useState<MerchandiseItem[]>([
-    {
-      id: '1',
-      name: 'Acrylic Stand',
-      description: 'Cute acrylic standee featuring character artwork',
-      price: 15.99,
-      category: 'collectibles',
-      stock: 50,
-      image_url: 'https://placehold.co/200x200/5B21B6/FFFFFF/png?text=Acrylic',
-      is_published: true
-    },
-    {
-      id: '2',
-      name: 'Sticker Pack',
-      description: 'Set of 10 waterproof vinyl stickers',
-      price: 8.99,
-      category: 'stickers',
-      stock: 100,
-      image_url: 'https://placehold.co/200x200/7C3AED/FFFFFF/png?text=Stickers',
-      is_published: true
-    }
-  ])
-  
+  const [items, setItems] = useState<MerchandiseItem[]>([])
+  const [loadingItems, setLoadingItems] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [editingItem, setEditingItem] = useState<MerchandiseItem | null>(null)
   const [formData, setFormData] = useState({
@@ -56,8 +36,11 @@ export default function MerchandiseManagerPage() {
     category: 'collectibles',
     stock: 0,
     image_url: '',
+    image_object_key: '',
     is_published: false
   })
+  const [formError, setFormError] = useState<string | null>(null)
+  const [imageuploading, setImageUploading] = useState(false)
 
   useEffect(() => {
     if (!loading && !user) {
@@ -65,16 +48,32 @@ export default function MerchandiseManagerPage() {
     }
   }, [user, loading, router])
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-base-100 flex items-center justify-center">
-        <span className="loading loading-spinner loading-lg text-primary"></span>
-      </div>
-    )
-  }
+  useEffect(() => {
+    if (user && !loading) {
+      loadMerchandise()
+    }
+  }, [user, loading])
 
-  if (!user || !profile) {
-    return null
+  async function loadMerchandise() {
+    if (!user) return
+    
+    setLoadingItems(true)
+    try {
+      const response = await fetch('/api/dashboard/merchandise', {
+        headers: {
+          'x-user-id': user.id
+        }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setItems(data)
+      }
+    } catch (err) {
+      console.error('Failed to load merchandise:', err)
+    } finally {
+      setLoadingItems(false)
+    }
   }
 
   function openCreateModal() {
@@ -86,8 +85,10 @@ export default function MerchandiseManagerPage() {
       category: 'collectibles',
       stock: 0,
       image_url: '',
+      image_object_key: '',
       is_published: false
     })
+    setFormError(null)
     setShowModal(true)
   }
 
@@ -100,42 +101,154 @@ export default function MerchandiseManagerPage() {
       category: item.category,
       stock: item.stock,
       image_url: item.image_url,
+      image_object_key: item.image_object_key || '',
       is_published: item.is_published
     })
+    setFormError(null)
     setShowModal(true)
   }
 
-  function handleSave() {
-    if (editingItem) {
-      // Update existing item
-      setItems(items.map(item => 
-        item.id === editingItem.id 
-          ? { ...item, ...formData }
-          : item
-      ))
-    } else {
-      // Create new item
-      const newItem: MerchandiseItem = {
-        id: Date.now().toString(),
-        ...formData
+  async function handleImageUpload(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    setImageUploading(true)
+    setFormError(null)
+
+    try {
+      const formDataObj = new FormData()
+      formDataObj.append('file', file)
+      formDataObj.append('folder', 'user-merchandise')
+
+      const response = await fetch('/api/admin/uploads/image', {
+        method: 'POST',
+        body: formDataObj
+      })
+
+      if (!response.ok) {
+        setFormError('Failed to upload image')
+        return
       }
-      setItems([...items, newItem])
+
+      const { url, key } = await response.json()
+      setFormData(prev => ({
+        ...prev,
+        image_url: url,
+        image_object_key: key
+      }))
+    } catch (err) {
+      console.error('Upload error:', err)
+      setFormError('Error uploading image')
+    } finally {
+      setImageUploading(false)
     }
-    setShowModal(false)
   }
 
-  function handleDelete(id: string) {
-    if (confirm('Are you sure you want to delete this item?')) {
-      setItems(items.filter(item => item.id !== id))
+  async function handleSave() {
+    if (!user) return
+
+    setFormError(null)
+
+    if (!formData.name || !formData.category || formData.price < 0) {
+      setFormError('Name, category, and price are required')
+      return
+    }
+
+    try {
+      if (editingItem) {
+        // Update existing item
+        const response = await fetch(`/api/dashboard/merchandise/${editingItem.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-user-id': user.id
+          },
+          body: JSON.stringify(formData)
+        })
+
+        if (!response.ok) {
+          setFormError('Failed to update product')
+          return
+        }
+
+        const updated = await response.json()
+        setItems(items.map(item => item.id === editingItem.id ? updated : item))
+      } else {
+        // Create new item
+        const response = await fetch('/api/dashboard/merchandise', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-user-id': user.id
+          },
+          body: JSON.stringify(formData)
+        })
+
+        if (!response.ok) {
+          setFormError('Failed to create product')
+          return
+        }
+
+        const newItem = await response.json()
+        setItems([...items, newItem])
+      }
+      setShowModal(false)
+    } catch (err) {
+      console.error('Save error:', err)
+      setFormError('Failed to save product')
+    }
+  }
+
+  async function handleDelete(id: string) {
+    if (!user || !confirm('Are you sure you want to delete this item?')) return
+
+    try {
+      const response = await fetch(`/api/dashboard/merchandise/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'x-user-id': user.id
+        }
+      })
+
+      if (response.ok) {
+        setItems(items.filter(item => item.id !== id))
+      }
+    } catch (err) {
+      console.error('Delete error:', err)
     }
   }
 
   function togglePublish(id: string) {
-    setItems(items.map(item =>
-      item.id === id
-        ? { ...item, is_published: !item.is_published }
-        : item
-    ))
+    const item = items.find(i => i.id === id)
+    if (!item || !user) return
+
+    const updatedItem = { ...item, is_published: !item.is_published }
+    
+    fetch(`/api/dashboard/merchandise/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-user-id': user.id
+      },
+      body: JSON.stringify({ is_published: !item.is_published })
+    })
+      .then(res => res.json())
+      .then(updated => {
+        setItems(items.map(i => i.id === id ? updated : i))
+      })
+      .catch(err => console.error('Toggle error:', err))
+  }
+
+  if (loading || loadingItems) {
+    return (
+      <div className="min-h-screen bg-base-100 flex items-center justify-center">
+        <span className="loading loading-spinner loading-lg text-primary"></span>
+      </div>
+    )
+  }
+
+  if (!user || !profile) {
+    return null
   }
 
   return (
@@ -160,11 +273,11 @@ export default function MerchandiseManagerPage() {
             </button>
           </div>
 
-          <div className="alert alert-warning mb-6">
+          <div className="alert alert-success mb-6">
             <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <span>⚠️ Mock Mode: Changes won't persist after refresh</span>
+            <span>✓ Your merchandise persists in PostgreSQL database with Oracle Object Storage for images</span>
           </div>
 
           {/* Merchandise Grid */}
@@ -247,8 +360,45 @@ export default function MerchandiseManagerPage() {
             <h3 className="font-bold text-2xl mb-6">
               {editingItem ? 'Edit Product' : 'Create New Product'}
             </h3>
+
+            {formError && (
+              <div className="alert alert-error mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l-2-2m0 0l-2-2m2 2l2-2m-2 2l-2 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>{formError}</span>
+              </div>
+            )}
             
             <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="space-y-4">
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text font-semibold">Product Image</span>
+                </label>
+                {formData.image_url && (
+                  <div className="mb-3 relative">
+                    <img 
+                      src={formData.image_url} 
+                      alt="Preview" 
+                      className="rounded-lg max-h-40 object-cover"
+                      onError={(e) => {
+                        e.currentTarget.src = 'https://placehold.co/400x300/333/FFF/png?text=No+Image'
+                      }}
+                    />
+                  </div>
+                )}
+                <div className="join w-full">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="file-input file-input-bordered join-item flex-1"
+                    onChange={handleImageUpload}
+                    disabled={imageuploading}
+                  />
+                  {imageuploading && <span className="join-item flex items-center px-3"><span className="loading loading-spinner loading-sm"></span></span>}
+                </div>
+              </div>
+
               <div className="form-control">
                 <label className="label">
                   <span className="label-text font-semibold">Product Name</span>

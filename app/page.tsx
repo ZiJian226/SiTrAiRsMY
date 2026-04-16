@@ -5,26 +5,43 @@ import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Container from "@/components/Container";
 import Footer from "@/components/Footer";
-import { vtubers, artists, newsEvents } from "@/data/mockData";
 import { ASSETS } from "@/lib/assetPath";
+import { fallbackArtists, fallbackEvents, fallbackGalleryItems } from "@/lib/content/fallback";
+import { useCachedApiResource } from "@/lib/hooks";
+import type { ArtistProfile, EventArticle, GalleryEntry } from "@/lib/content/types";
 
 export default function Home() {
-  // Get recent events (most recent first, limit to 2)
-  const recentEvents = newsEvents
-    .filter(event => event.category === "Events")
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+  const { data: artists } = useCachedApiResource<ArtistProfile[]>({
+    cacheKey: 'starmy:content:artists:v2',
+    url: '/api/content/artists',
+    fallbackData: fallbackArtists,
+    maxAgeMs: 60_000,
+    staleWhileRevalidateMs: 3_600_000,
+  });
+
+  const { data: newsEvents } = useCachedApiResource<EventArticle[]>({
+    cacheKey: 'starmy:content:events:v3',
+    url: '/api/content/events',
+    fallbackData: fallbackEvents,
+    maxAgeMs: 60_000,
+    staleWhileRevalidateMs: 3_600_000,
+  });
+
+  const { data: galleryItems } = useCachedApiResource<GalleryEntry[]>({
+    cacheKey: 'starmy:content:gallery:v3',
+    url: '/api/content/gallery',
+    fallbackData: fallbackGalleryItems,
+    maxAgeMs: 60_000,
+    staleWhileRevalidateMs: 3_600_000,
+  });
+
+  const featuredNews = newsEvents
+    .filter(event => event.featured)
     .slice(0, 2);
-  
-  // Get featured artwork from all artists' portfolios
-  const featuredArtwork = artists.flatMap(artist => 
-    artist.portfolio.slice(0, 2).map((portfolioUrl, index) => ({
-      id: `${artist.id}-${index}`,
-      imageUrl: portfolioUrl,
-      artistName: artist.name,
-      artistId: artist.id,
-      specialty: artist.specialty[0] || 'Artwork'
-    }))
-  ).slice(0, 6); // Show 6 artworks
+
+  const featuredGallery = galleryItems
+    .filter(item => item.featured)
+    .slice(0, 3);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -97,75 +114,49 @@ export default function Home() {
         </Container>
       </div>
 
-      {/* Recent Events Section */}
+      {/* Featured News Section */}
       <div className="bg-base-200 py-16 relative" style={{ zIndex: 2 }}>
         <Container>
-          <h2 className="text-4xl font-bold text-center mb-12">Recent Events</h2>
+          <h2 className="text-4xl font-bold text-center mb-12">Featured News</h2>
+          {featuredNews.length === 0 && (
+            <p className="text-center opacity-70 mb-8">No featured news has been pinned yet.</p>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {recentEvents.map((event) => (
-              <div key={event.id} className="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow">
+            {featuredNews.map((event) => (
+              <div key={event.id} className="card bg-base-100 shadow-xl">
                 <figure>
                   <img src={event.image} alt={event.title} className="w-full h-64 object-cover" />
                 </figure>
                 <div className="card-body">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="badge badge-primary">{event.category}</span>
-                    <span className="text-sm opacity-70">{new Date(event.date).toLocaleDateString()}</span>
-                  </div>
+                  <div className="badge badge-secondary w-fit">{event.category}</div>
                   <h3 className="card-title text-primary">{event.title}</h3>
-                  <p className="text-sm opacity-70 mb-3">{event.excerpt}</p>
-                  <div className="card-actions justify-between items-center">
-                    <span className="text-xs opacity-50">By {event.author}</span>
-                    <Link href="/events" className="btn btn-primary btn-sm">
-                      Read More
-                    </Link>
-                  </div>
+                  <p className="text-sm opacity-70">{event.excerpt}</p>
                 </div>
               </div>
             ))}
           </div>
-          <div className="text-center mt-8">
-            <Link href="/events" className="btn btn-outline btn-primary">
-              View All Events
-            </Link>
-          </div>
         </Container>
       </div>
 
-      {/* Featured Art Section */}
+      {/* Featured Gallery Section */}
       <div className="bg-base-100 py-16 relative" style={{ zIndex: 2 }}>
         <Container>
-          <h2 className="text-4xl font-bold text-center mb-12">Featured Art</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {featuredArtwork.map((artwork) => (
-              <Link 
-                key={artwork.id} 
-                href={`/artists/${artwork.artistId}`}
-                className="card bg-base-200 shadow-xl hover:shadow-2xl transition-all hover:scale-105 cursor-pointer"
-              >
-                <figure className="aspect-square overflow-hidden">
-                  <img 
-                    src={artwork.imageUrl} 
-                    alt={`${artwork.specialty} by ${artwork.artistName}`}
-                    className="w-full h-full object-cover"
-                  />
+          <h2 className="text-4xl font-bold text-center mb-12">Featured Gallery</h2>
+          {featuredGallery.length === 0 && (
+            <p className="text-center opacity-70 mb-8">No featured gallery items have been pinned yet.</p>
+          )}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {featuredGallery.map((item) => (
+              <div key={item.id} className="card bg-base-200 shadow-xl overflow-hidden">
+                <figure className="aspect-square">
+                  <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
                 </figure>
                 <div className="card-body p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-semibold text-secondary">{artwork.artistName}</p>
-                      <p className="text-xs opacity-70">{artwork.specialty}</p>
-                    </div>
-                    <span className="badge badge-accent badge-sm">View Artist</span>
-                  </div>
+                  <h3 className="card-title text-lg">{item.title}</h3>
+                  <p className="text-sm opacity-70">{item.description}</p>
                 </div>
-              </Link>
+              </div>
             ))}
-          </div>
-          <div className="text-center mt-8">
-            <Link href="/gallery" className="btn btn-outline btn-secondary">
-              View Gallery
-            </Link>
           </div>
         </Container>
       </div>

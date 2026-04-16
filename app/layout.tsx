@@ -15,7 +15,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" data-theme="starmy">
-      <body className="antialiased">
+      <body className="antialiased" style={{ cursor: 'auto' }} suppressHydrationWarning>
         <AuthProvider>
           {children}
           <FloatingPoffu />

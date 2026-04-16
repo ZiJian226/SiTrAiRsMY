@@ -1,4 +1,4 @@
-import type { AuthSession, AuthService, Profile } from './types';
+import type { AuthService, Profile } from './types';
 
 type MockUserRecord = {
   password: string;
@@ -65,26 +65,19 @@ export class MockAuthService implements AuthService {
       return { error: 'Invalid password' };
     }
 
-    return { error: null };
+    return {
+      error: null,
+      session: {
+        user: {
+          id: user.profile.id,
+          email: user.profile.email,
+        },
+        profile: user.profile,
+      },
+    };
   }
 
   async signOut() {
     return Promise.resolve();
-  }
-
-  getSession(email: string): AuthSession | null {
-    const user = MOCK_USERS[email];
-
-    if (!user) {
-      return null;
-    }
-
-    return {
-      user: {
-        id: user.profile.id,
-        email: user.profile.email,
-      },
-      profile: user.profile,
-    };
   }
 }

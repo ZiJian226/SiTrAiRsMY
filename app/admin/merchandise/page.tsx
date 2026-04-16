@@ -17,6 +17,7 @@ interface MerchandiseItem {
   category: string
   stock: number
   image_url: string
+  image_object_key?: string
   talent_name: string
   is_published: boolean
 }
@@ -25,41 +26,11 @@ export default function AdminMerchandisePage() {
   const { user, profile, loading } = useAuth()
   const router = useRouter()
   
-  const [items, setItems] = useState<MerchandiseItem[]>([
-    {
-      id: '1',
-      name: 'Acrylic Stand',
-      description: 'Cute acrylic standee featuring character artwork',
-      price: 15.99,
-      category: 'collectibles',
-      stock: 50,
-      image_url: 'https://placehold.co/200x200/5B21B6/FFFFFF/png?text=Acrylic',
-      talent_name: 'Sakura Hoshino',
-      is_published: true
-    },
-    {
-      id: '2',
-      name: 'T-Shirt - Black',
-      description: 'Premium cotton t-shirt with character print',
-      price: 29.99,
-      category: 'apparel',
-      stock: 25,
-      image_url: 'https://placehold.co/200x200/7C3AED/FFFFFF/png?text=T-Shirt',
-      talent_name: 'Luna Artworks',
-      is_published: true
-    },
-    {
-      id: '3',
-      name: 'Sticker Pack',
-      description: 'Set of 10 waterproof vinyl stickers',
-      price: 8.99,
-      category: 'stickers',
-      stock: 100,
-      image_url: 'https://placehold.co/200x200/A78BFA/FFFFFF/png?text=Stickers',
-      talent_name: 'Sakura Hoshino',
-      is_published: false
-    }
-  ])
+  const [items, setItems] = useState<MerchandiseItem[]>([])
+  const [dataLoading, setDataLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [imageUploading, setImageUploading] = useState(false)
+  const [imageUploadError, setImageUploadError] = useState<string | null>(null)
   
   const [showModal, setShowModal] = useState(false)
   const [editingItem, setEditingItem] = useState<MerchandiseItem | null>(null)
@@ -70,6 +41,7 @@ export default function AdminMerchandisePage() {
     category: 'collectibles',
     stock: 0,
     image_url: '',
+    image_object_key: '',
     talent_name: '',
     is_published: false
   })
@@ -82,6 +54,32 @@ export default function AdminMerchandisePage() {
       router.push('/dashboard')
     }
   }, [user, profile, loading, router])
+
+  useEffect(() => {
+    if (!user || !profile || profile.role !== 'admin') {
+      return
+    }
+
+    void refreshItems()
+  }, [user, profile])
+
+  async function refreshItems() {
+    setDataLoading(true)
+    try {
+      const response = await fetch('/api/admin/merchandise', { cache: 'no-store' })
+      if (!response.ok) {
+        throw new Error('Failed to load merchandise')
+      }
+
+      const data = (await response.json()) as MerchandiseItem[]
+      setItems(data)
+    } catch (error) {
+      console.error(error)
+      setItems([])
+    } finally {
+      setDataLoading(false)
+    }
+  }
 
   if (loading) {
     return (
@@ -108,6 +106,7 @@ export default function AdminMerchandisePage() {
       category: 'collectibles',
       stock: 0,
       image_url: '',
+      image_object_key: '',
       talent_name: '',
       is_published: false
     })
@@ -123,41 +122,101 @@ export default function AdminMerchandisePage() {
       category: item.category,
       stock: item.stock,
       image_url: item.image_url,
+      image_object_key: item.image_object_key || '',
       talent_name: item.talent_name,
       is_published: item.is_published
     })
     setShowModal(true)
   }
 
-  function handleSave() {
-    if (editingItem) {
-      setItems(items.map(item => 
-        item.id === editingItem.id 
-          ? { ...item, ...formData }
-          : item
-      ))
-    } else {
-      const newItem: MerchandiseItem = {
-        id: Date.now().toString(),
-        ...formData
+  async function handleSave() {
+    setSaving(true)
+
+    try {
+      const response = await fetch(
+        editingItem ? `/api/admin/merchandise/${editingItem.id}` : '/api/admin/merchandise',
+        {
+          method: editingItem ? 'PATCH' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData),
+        },
+      )
+
+      if (!response.ok) {
+        throw new Error('Failed to save merchandise')
       }
-      setItems([...items, newItem])
+
+      await refreshItems()
+      setShowModal(false)
+    } catch (error) {
+      console.error(error)
+      alert('Unable to save merchandise. Please try again.')
+    } finally {
+      setSaving(false)
     }
-    setShowModal(false)
   }
 
-  function handleDelete(id: string) {
+  async function handleDelete(id: string) {
     if (confirm('Are you sure you want to delete this product?')) {
-      setItems(items.filter(item => item.id !== id))
+      try {
+        const response = await fetch(`/api/admin/merchandise/${id}`, { method: 'DELETE' })
+        if (!response.ok) {
+          throw new Error('Failed to delete merchandise')
+        }
+
+        await refreshItems()
+      } catch (error) {
+        console.error(error)
+        alert('Unable to delete merchandise. Please try again.')
+      }
     }
   }
 
-  function togglePublish(id: string) {
-    setItems(items.map(item =>
-      item.id === id
-        ? { ...item, is_published: !item.is_published }
-        : item
-    ))
+  async function togglePublish(item: MerchandiseItem) {
+    try {
+      const response = await fetch(`/api/admin/merchandise/${item.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...item, is_published: !item.is_published }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to toggle merchandise publish status')
+      }
+
+      await refreshItems()
+    } catch (error) {
+      console.error(error)
+      alert('Unable to update publish status.')
+    }
+  }
+
+  async function handleMerchImageFileChange(file: File) {
+    setImageUploading(true)
+    setImageUploadError(null)
+
+    try {
+      const payload = new FormData()
+      payload.append('file', file)
+      payload.append('folder', 'merchandise')
+
+      const response = await fetch('/api/admin/uploads/image', {
+        method: 'POST',
+        body: payload,
+      })
+
+      if (!response.ok) {
+        const errorData = (await response.json().catch(() => null)) as { error?: string } | null
+        throw new Error(errorData?.error || 'Failed to upload merchandise image')
+      }
+
+      const data = (await response.json()) as { url: string; key: string }
+      setFormData({ ...formData, image_url: data.url, image_object_key: data.key })
+    } catch (error) {
+      setImageUploadError(error instanceof Error ? error.message : 'Failed to upload merchandise image')
+    } finally {
+      setImageUploading(false)
+    }
   }
 
   const totalValue = items.reduce((sum, item) => sum + (item.price * item.stock), 0)
@@ -184,11 +243,8 @@ export default function AdminMerchandisePage() {
             </button>
           </div>
 
-          <div className="alert alert-warning mb-6">
-            <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-            <span>⚠️ Mock Mode: Changes won't persist after refresh</span>
+          <div className="alert alert-info mb-6">
+            <span>Merchandise is loaded from PostgreSQL via admin API.</span>
           </div>
 
           {/* Stats */}
@@ -266,6 +322,13 @@ export default function AdminMerchandisePage() {
                     </tr>
                   </thead>
                   <tbody>
+                    {dataLoading && (
+                      <tr>
+                        <td colSpan={7} className="text-center py-8">
+                          <span className="loading loading-spinner loading-md text-primary"></span>
+                        </td>
+                      </tr>
+                    )}
                     {filteredItems.map(item => (
                       <tr key={item.id}>
                         <td>
@@ -305,7 +368,7 @@ export default function AdminMerchandisePage() {
                               type="checkbox" 
                               className="toggle toggle-sm toggle-primary" 
                               checked={item.is_published}
-                              onChange={() => togglePublish(item.id)}
+                              onChange={() => togglePublish(item)}
                             />
                           </div>
                         </td>
@@ -455,8 +518,35 @@ export default function AdminMerchandisePage() {
                   className="input input-bordered"
                   placeholder="https://example.com/image.jpg"
                   value={formData.image_url}
-                  onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+                  onChange={(e) => setFormData({ ...formData, image_url: e.target.value, image_object_key: '' })}
+                  disabled={imageUploading}
                 />
+                <label className="label">
+                  <span className="label-text-alt opacity-70">Or upload image to Oracle Object Storage</span>
+                </label>
+                <input
+                  type="file"
+                  className="file-input file-input-bordered"
+                  accept="image/*"
+                  disabled={imageUploading}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) {
+                      void handleMerchImageFileChange(file)
+                    }
+                    e.currentTarget.value = ''
+                  }}
+                />
+                {imageUploading && (
+                  <label className="label">
+                    <span className="label-text-alt text-primary">Uploading merchandise image...</span>
+                  </label>
+                )}
+                {imageUploadError && (
+                  <label className="label">
+                    <span className="label-text-alt text-error">{imageUploadError}</span>
+                  </label>
+                )}
               </div>
 
               <div className="form-control">
@@ -475,8 +565,8 @@ export default function AdminMerchandisePage() {
                 <button type="button" onClick={() => setShowModal(false)} className="btn btn-ghost">
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary">
-                  {editingItem ? 'Save Changes' : 'Create Product'}
+                <button type="submit" className="btn btn-primary" disabled={saving}>
+                  {saving ? 'Saving...' : editingItem ? 'Save Changes' : 'Create Product'}
                 </button>
               </div>
             </form>

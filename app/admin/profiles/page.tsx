@@ -15,6 +15,7 @@ interface Profile {
   email: string
   full_name: string
   avatar_url: string
+  avatar_object_key?: string
   bio: string
   role: UserRole
   lore?: string
@@ -48,65 +49,23 @@ interface Profile {
   created_at: string
 }
 
+function invalidateContentCaches() {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  window.localStorage.removeItem('starmy:content:talents:v2')
+  window.localStorage.removeItem('starmy:content:talents:v3')
+  window.localStorage.removeItem('starmy:content:artists:v2')
+  window.localStorage.removeItem('starmy:content:artists:v3')
+}
+
 export default function AdminProfilesPage() {
   const { user, profile, loading } = useAuth()
   const router = useRouter()
   
-  const [profiles, setProfiles] = useState<Profile[]>([
-    {
-      id: '1',
-      email: 'admin@starmy.com',
-      full_name: 'Admin User',
-      avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=admin',
-      bio: 'Platform administrator',
-      role: 'admin',
-      created_at: '2024-01-01T00:00:00Z'
-    },
-    {
-      id: '2',
-      email: 'talent@starmy.com',
-      full_name: 'Luna Sparkle',
-      avatar_url: 'https://placehold.co/400x400/a855f7/ffffff?text=LS',
-      bio: 'Gaming and singing VTuber',
-      role: 'talent',
-      lore: 'Luna Sparkle is a celestial being who descended from the stars...',
-      characterInfo: {
-        dateOfBirth: 'December 25',
-        debutDate: 'January 15, 2023',
-        height: '158 cm',
-        species: 'Star Spirit',
-        likes: ['RPGs', 'Karaoke', 'Cute plushies'],
-        dislikes: ['Bugs in games', 'Loud noises']
-      },
-      tags: ['Gaming', 'Singing', 'Cozy Streams'],
-      youtubeUrl: 'https://youtube.com/@lunasparkle',
-      twitchUrl: 'https://twitch.tv/lunasparkle',
-      tiktokUrl: 'https://tiktok.com/@lunasparkle',
-      showLore: true,
-      showCharacterInfo: true,
-      showSocialLinks: true,
-      created_at: '2024-02-01T00:00:00Z'
-    },
-    {
-      id: '3',
-      email: 'artist@starmy.com',
-      full_name: 'Aria Designs',
-      avatar_url: 'https://placehold.co/400x400/8b5cf6/ffffff?text=AD',
-      bio: 'Professional character designer',
-      role: 'artist',
-      specialty: ['Character Design', '2D Illustration', 'Live2D'],
-      portfolio: ['https://example.com/art1.jpg', 'https://example.com/art2.jpg'],
-      commissionsOpen: true,
-      priceRange: '$50 - $200',
-      contactEmail: 'aria@starmy.com',
-      websiteUrl: 'https://ariadesigns.com',
-      twitterUrl: 'https://twitter.com/ariadesigns',
-      instagramUrl: 'https://instagram.com/ariadesigns',
-      showSocialLinks: true,
-      showPortfolio: true,
-      created_at: '2024-02-15T00:00:00Z'
-    }
-  ])
+  const [profiles, setProfiles] = useState<Profile[]>([])
+  const [dataLoading, setDataLoading] = useState(true)
 
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null)
   const [isViewModalOpen, setIsViewModalOpen] = useState(false)
@@ -115,6 +74,8 @@ export default function AdminProfilesPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [roleFilter, setRoleFilter] = useState<string>('all')
   const [saving, setSaving] = useState(false)
+  const [imageUploading, setImageUploading] = useState(false)
+  const [imageUploadError, setImageUploadError] = useState<string | null>(null)
 
   // Edit form input helpers
   const [tagInput, setTagInput] = useState('')
@@ -130,6 +91,32 @@ export default function AdminProfilesPage() {
       router.push('/dashboard')
     }
   }, [user, profile, loading, router])
+
+  useEffect(() => {
+    if (!user || !profile || profile.role !== 'admin') {
+      return
+    }
+
+    void refreshProfiles()
+  }, [user, profile])
+
+  async function refreshProfiles() {
+    setDataLoading(true)
+    try {
+      const response = await fetch('/api/admin/profiles', { cache: 'no-store' })
+      if (!response.ok) {
+        throw new Error('Failed to load profiles')
+      }
+
+      const data = (await response.json()) as Profile[]
+      setProfiles(data)
+    } catch (error) {
+      console.error(error)
+      setProfiles([])
+    } finally {
+      setDataLoading(false)
+    }
+  }
 
   if (loading) {
     return (
@@ -184,17 +171,75 @@ export default function AdminProfilesPage() {
     if (!editForm) return
     
     setSaving(true)
-    await new Promise(resolve => setTimeout(resolve, 500)) // Simulate API call
-    
-    setProfiles(profiles.map(p => p.id === editForm.id ? editForm : p))
-    setSaving(false)
-    setIsEditModalOpen(false)
-    setEditForm(null)
+    try {
+      const response = await fetch(`/api/admin/profiles/${editForm.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editForm),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to save profile')
+      }
+
+      invalidateContentCaches()
+      await refreshProfiles()
+      setIsEditModalOpen(false)
+      setEditForm(null)
+    } catch (error) {
+      console.error(error)
+      alert('Unable to save profile. Please try again.')
+    } finally {
+      setSaving(false)
+    }
   }
 
-  function handleDeleteProfile(id: string) {
+  async function handleProfileAvatarFileChange(file: File) {
+    if (!editForm) {
+      return
+    }
+
+    setImageUploading(true)
+    setImageUploadError(null)
+
+    try {
+      const payload = new FormData()
+      payload.append('file', file)
+      payload.append('folder', 'profiles/avatars')
+
+      const response = await fetch('/api/admin/uploads/image', {
+        method: 'POST',
+        body: payload,
+      })
+
+      if (!response.ok) {
+        const errorData = (await response.json().catch(() => null)) as { error?: string } | null
+        throw new Error(errorData?.error || 'Failed to upload avatar')
+      }
+
+      const data = (await response.json()) as { url: string; key: string }
+      setEditForm({ ...editForm, avatar_url: data.url, avatar_object_key: data.key })
+    } catch (error) {
+      setImageUploadError(error instanceof Error ? error.message : 'Failed to upload avatar')
+    } finally {
+      setImageUploading(false)
+    }
+  }
+
+  async function handleDeleteProfile(id: string) {
     if (confirm('Are you sure you want to delete this profile?')) {
-      setProfiles(profiles.filter(p => p.id !== id))
+      try {
+        const response = await fetch(`/api/admin/profiles/${id}`, { method: 'DELETE' })
+        if (!response.ok) {
+          throw new Error('Failed to delete profile')
+        }
+
+        invalidateContentCaches()
+        await refreshProfiles()
+      } catch (error) {
+        console.error(error)
+        alert('Unable to delete profile. Please try again.')
+      }
     }
   }
 
@@ -267,6 +312,13 @@ export default function AdminProfilesPage() {
                     </tr>
                   </thead>
                   <tbody>
+                    {dataLoading && (
+                      <tr>
+                        <td colSpan={5} className="text-center py-8">
+                          <span className="loading loading-spinner loading-md text-primary"></span>
+                        </td>
+                      </tr>
+                    )}
                     {filteredProfiles.map((p) => (
                       <tr key={p.id} className="hover">
                         <td>
@@ -513,9 +565,35 @@ export default function AdminProfilesPage() {
                           type="url"
                           className="input input-bordered"
                           value={editForm.avatar_url}
-                          onChange={(e) => setEditForm({ ...editForm, avatar_url: e.target.value })}
-                          disabled={saving}
+                          onChange={(e) => setEditForm({ ...editForm, avatar_url: e.target.value, avatar_object_key: '' })}
+                          disabled={saving || imageUploading}
                         />
+                        <label className="label">
+                          <span className="label-text-alt opacity-70">Or upload avatar to Oracle Object Storage</span>
+                        </label>
+                        <input
+                          type="file"
+                          className="file-input file-input-bordered"
+                          accept="image/*"
+                          disabled={saving || imageUploading}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0]
+                            if (file) {
+                              void handleProfileAvatarFileChange(file)
+                            }
+                            e.currentTarget.value = ''
+                          }}
+                        />
+                        {imageUploading && (
+                          <label className="label">
+                            <span className="label-text-alt text-primary">Uploading avatar...</span>
+                          </label>
+                        )}
+                        {imageUploadError && (
+                          <label className="label">
+                            <span className="label-text-alt text-error">{imageUploadError}</span>
+                          </label>
+                        )}
                       </div>
 
                       <div className="form-control">

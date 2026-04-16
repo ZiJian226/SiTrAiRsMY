@@ -8,48 +8,14 @@ import Container from '@/components/Container'
 import Footer from '@/components/Footer'
 import PageBackground from '@/components/PageBackground'
 import Link from 'next/link'
+import type { AdminStatistics } from '@/lib/admin/types'
 
 export default function AdminStatisticsPage() {
   const { user, profile, loading } = useAuth()
   const router = useRouter()
   
-  // Mock statistics data
-  const [stats] = useState({
-    users: {
-      total: 127,
-      admins: 3,
-      talents: 58,
-      artists: 66,
-      newThisMonth: 12
-    },
-    content: {
-      totalEvents: 45,
-      upcomingEvents: 8,
-      galleryItems: 234,
-      merchandiseItems: 89,
-      publishedMerch: 67
-    },
-    engagement: {
-      pageViews: 15420,
-      uniqueVisitors: 3248,
-      avgSessionDuration: '4m 32s',
-      bounceRate: '42%'
-    },
-    revenue: {
-      totalSales: 24580,
-      avgOrderValue: 125.50,
-      topSellingItems: 12,
-      conversionRate: '3.2%'
-    }
-  })
-
-  const [recentActivity] = useState([
-    { id: 1, type: 'user', action: 'New talent registered', user: 'Neko Starlight', time: '2 hours ago' },
-    { id: 2, type: 'event', action: 'Event published', title: 'Summer Festival 2025', time: '5 hours ago' },
-    { id: 3, type: 'gallery', action: 'New artwork uploaded', user: 'Aria Designs', time: '1 day ago' },
-    { id: 4, type: 'merch', action: 'Merchandise restocked', item: 'Luna Sparkle Acrylic Stand', time: '1 day ago' },
-    { id: 5, type: 'user', action: 'Profile updated', user: 'Cyber Phoenix', time: '2 days ago' }
-  ])
+  const [stats, setStats] = useState<AdminStatistics | null>(null)
+  const [dataLoading, setDataLoading] = useState(true)
 
   useEffect(() => {
     if (!loading && !user) {
@@ -58,6 +24,32 @@ export default function AdminStatisticsPage() {
       router.push('/dashboard')
     }
   }, [user, profile, loading, router])
+
+  useEffect(() => {
+    if (!user || !profile || profile.role !== 'admin') {
+      return
+    }
+
+    void fetchStats()
+  }, [user, profile])
+
+  async function fetchStats() {
+    setDataLoading(true)
+    try {
+      const response = await fetch('/api/admin/statistics', { cache: 'no-store' })
+      if (!response.ok) {
+        throw new Error('Failed to load statistics')
+      }
+
+      const data = (await response.json()) as AdminStatistics
+      setStats(data)
+    } catch (error) {
+      console.error(error)
+      setStats(null)
+    } finally {
+      setDataLoading(false)
+    }
+  }
 
   if (loading) {
     return (
@@ -69,6 +61,14 @@ export default function AdminStatisticsPage() {
 
   if (!user || !profile || profile.role !== 'admin') {
     return null
+  }
+
+  if (dataLoading || !stats) {
+    return (
+      <div className="min-h-screen bg-base-100 flex items-center justify-center">
+        <span className="loading loading-spinner loading-lg text-primary"></span>
+      </div>
+    )
   }
 
   return (
@@ -248,7 +248,7 @@ export default function AdminStatisticsPage() {
             <div className="card bg-base-200 shadow-xl">
               <div className="card-body">
                 <div className="space-y-4">
-                  {recentActivity.map((activity) => (
+                  {stats.recentActivity.map((activity) => (
                     <div key={activity.id} className="flex items-start gap-4 p-4 bg-base-100 rounded-lg">
                       <div className="text-3xl">
                         {activity.type === 'user' && '👤'}
@@ -259,7 +259,7 @@ export default function AdminStatisticsPage() {
                       <div className="flex-1">
                         <p className="font-semibold">{activity.action}</p>
                         <p className="text-sm opacity-70">
-                          {activity.user || activity.title || activity.item}
+                          {activity.detail}
                         </p>
                       </div>
                       <div className="text-sm opacity-70 whitespace-nowrap">
@@ -347,9 +347,9 @@ export default function AdminStatisticsPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
             <div>
-              <div className="font-semibold">Mock Statistics Mode</div>
+              <div className="font-semibold">Database-backed Statistics</div>
               <div className="text-sm">
-                These statistics are mock data for demonstration. In production, they would be fetched from your database and analytics service.
+                Core metrics are fetched from PostgreSQL. Engagement metrics remain placeholders until analytics tracking is wired.
               </div>
             </div>
           </div>

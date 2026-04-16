@@ -6,15 +6,25 @@ import Navbar from "@/components/Navbar";
 import Container from "@/components/Container";
 import Footer from "@/components/Footer";
 import PageBackground from "@/components/PageBackground";
-import { vtubers } from "@/data/mockData";
+import { fallbackTalents } from "@/lib/content/fallback";
+import { useCachedApiResource } from "@/lib/hooks";
+import type { Talent } from "@/lib/content/types";
 
 export default function TalentsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
 
-  const allTags = Array.from(new Set(vtubers.flatMap((v) => v.tags)));
+  const { data: talents, loading } = useCachedApiResource<Talent[]>({
+    cacheKey: 'starmy:content:talents:v4',
+    url: '/api/content/talents',
+    fallbackData: fallbackTalents,
+    maxAgeMs: 60_000,
+    staleWhileRevalidateMs: 3_600_000,
+  });
 
-  const filteredTalents = vtubers.filter((talent) => {
+  const allTags = Array.from(new Set(talents.flatMap((v) => v.tags)));
+
+  const filteredTalents = talents.filter((talent) => {
     const matchesSearch =
       talent.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       talent.description.toLowerCase().includes(searchTerm.toLowerCase());
@@ -70,6 +80,12 @@ export default function TalentsPage() {
         </div>
 
         {/* Talents Grid */}
+        {loading && (
+          <div className="flex justify-center py-4">
+            <span className="loading loading-spinner loading-md text-primary"></span>
+          </div>
+        )}
+
         {filteredTalents.length === 0 ? (
           <div className="text-center py-16">
             <p className="text-xl opacity-70">No talents found matching your criteria.</p>

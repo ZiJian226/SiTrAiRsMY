@@ -2,7 +2,6 @@
 
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { getAuthService } from '@/lib/auth/createAuthService'
-import { MockAuthService } from '@/lib/auth/mockAuthService'
 import { BrowserSessionStorage } from '@/lib/auth/sessionStorage'
 import type { AuthUser, Profile, SignInResult } from '@/lib/auth/types'
 
@@ -19,58 +18,68 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({
   user: null,
   profile: null,
-  loading: false,
+  loading: true,
   signIn: async () => ({ error: null }),
   signOut: async () => {},
 })
 
-function getInitialSession() {
-  if (typeof window === 'undefined') {
-    return null
-  }
-
-  return new BrowserSessionStorage().load()
-}
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const initialSession = useMemo(() => getInitialSession(), [])
-  const [user, setUser] = useState<AuthUser | null>(initialSession?.user ?? null)
-  const [profile, setProfile] = useState<Profile | null>(initialSession?.profile ?? null)
-  const [loading] = useState(false)
+  const [user, setUser] = useState<AuthUser | null>(null)
+  const [profile, setProfile] = useState<Profile | null>(null)
+  const [hydrated, setHydrated] = useState(false)
+  const [authBusy, setAuthBusy] = useState(false)
+  const loading = !hydrated || authBusy
 
   const authService = useMemo(() => getAuthService(), [])
   const sessionStorageService = useMemo(() => new BrowserSessionStorage(), [])
 
+  // Hydrate auth session on client after mount to keep SSR and initial client render identical.
+  useEffect(() => {
+    const session = sessionStorageService.load()
+    setUser(session?.user ?? null)
+    setProfile(session?.profile ?? null)
+    setHydrated(true)
+  }, [sessionStorageService])
+
   // Save session to sessionStorage whenever it changes
   useEffect(() => {
+    if (!hydrated) {
+      return
+    }
+
     if (user && profile) {
       sessionStorageService.save({ user, profile })
     } else {
       sessionStorageService.clear()
     }
-  }, [profile, sessionStorageService, user])
+  }, [hydrated, profile, sessionStorageService, user])
 
   const signIn = async (email: string, password: string) => {
-    const result = await authService.signIn(email, password)
+    setAuthBusy(true)
+    try {
+      const result = await authService.signIn(email, password)
 
-    if (!result.error) {
-      const maybeMockAuthService = authService as MockAuthService
-      const session = maybeMockAuthService.getSession?.(email)
-
-      if (session) {
-        setUser(session.user)
-        setProfile(session.profile)
+      if (!result.error && result.session) {
+        setUser(result.session.user)
+        setProfile(result.session.profile)
       }
-    }
 
-    return result
+      return result
+    } finally {
+      setAuthBusy(false)
+    }
   }
 
   const signOut = async () => {
-    await authService.signOut()
-    setUser(null)
-    setProfile(null)
-    sessionStorageService.clear()
+    setAuthBusy(true)
+    try {
+      await authService.signOut()
+      setUser(null)
+      setProfile(null)
+      sessionStorageService.clear()
+    } finally {
+      setAuthBusy(false)
+    }
   }
 
   return (

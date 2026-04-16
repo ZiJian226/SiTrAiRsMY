@@ -44,7 +44,27 @@ StarMy is a community-driven platform designed to:
    
    Visit [http://localhost:3000](http://localhost:3000)
 
-That's it! The app runs with mock data by default.
+That's it! The app runs with local database-backed data when PostgreSQL is available.
+
+### Local PostgreSQL (Development)
+
+To run full database-backed flow locally (including login/auth):
+
+1. Copy environment file:
+   - `.env.local.example` → `.env.local`
+2. Start local DB:
+   - `docker compose up -d starmy-db`
+3. Start app:
+   - `npm run dev`
+
+The DB container auto-runs:
+- [database-schema.sql](database-schema.sql)
+- [docker/postgres-init/02-seed.sql](docker/postgres-init/02-seed.sql)
+
+Seeded login accounts:
+- Admin: `admin@starmy.com` / `admin123`
+- Talent: `talent@starmy.com` / `talent123`
+- Artist: `artist@starmy.com` / `artist123`
 
 ---
 

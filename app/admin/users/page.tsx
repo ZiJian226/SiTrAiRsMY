@@ -14,38 +14,17 @@ export default function AdminUsersPage() {
   const { user, profile, loading } = useAuth()
   const router = useRouter()
   
-  const [users, setUsers] = useState<Profile[]>([
-    {
-      id: '1',
-      email: 'admin@starmy.com',
-      full_name: 'Admin User',
-      role: 'admin',
-      avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=admin',
-      bio: 'System administrator',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    },
-    {
-      id: '2',
-      email: 'talent@starmy.com',
-      full_name: 'Sakura Hoshino',
-      role: 'talent',
-      avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=talent',
-      bio: 'Virtual talent and content creator',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    },
-    {
-      id: '3',
-      email: 'artist@starmy.com',
-      full_name: 'Luna Artworks',
-      role: 'artist',
-      avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=artist',
-      bio: 'Digital artist and illustrator',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    }
-  ])
+  const [users, setUsers] = useState<Profile[]>([])
+  const [dataLoading, setDataLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [imageUploading, setImageUploading] = useState(false)
+  const [imageUploadError, setImageUploadError] = useState<string | null>(null)
+
+  const [createdUserCredentials, setCreatedUserCredentials] = useState<{
+    email: string
+    tempPassword: string
+  } | null>(null)
+  const [sendingResetEmail, setSendingResetEmail] = useState<string | null>(null)
 
   const [showModal, setShowModal] = useState(false)
   const [editingUser, setEditingUser] = useState<Profile | null>(null)
@@ -54,8 +33,20 @@ export default function AdminUsersPage() {
     full_name: '',
     role: 'talent' as UserRole,
     avatar_url: '',
+    avatar_object_key: '',
     bio: ''
   })
+
+  function invalidateContentCaches() {
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    window.localStorage.removeItem('starmy:content:talents:v2')
+    window.localStorage.removeItem('starmy:content:talents:v3')
+    window.localStorage.removeItem('starmy:content:artists:v2')
+    window.localStorage.removeItem('starmy:content:artists:v3')
+  }
 
   useEffect(() => {
     if (!loading && !user) {
@@ -64,6 +55,32 @@ export default function AdminUsersPage() {
       router.push('/dashboard')
     }
   }, [user, profile, loading, router])
+
+  useEffect(() => {
+    if (!user || !profile || profile.role !== 'admin') {
+      return
+    }
+
+    void refreshUsers()
+  }, [user, profile])
+
+  async function refreshUsers() {
+    setDataLoading(true)
+    try {
+      const response = await fetch('/api/admin/users', { cache: 'no-store' })
+      if (!response.ok) {
+        throw new Error('Failed to load users')
+      }
+
+      const data = (await response.json()) as Profile[]
+      setUsers(data)
+    } catch (error) {
+      console.error(error)
+      setUsers([])
+    } finally {
+      setDataLoading(false)
+    }
+  }
 
   if (loading) {
     return (
@@ -84,6 +101,7 @@ export default function AdminUsersPage() {
       full_name: '',
       role: 'talent',
       avatar_url: '',
+      avatar_object_key: '',
       bio: ''
     })
     setShowModal(true)
@@ -96,39 +114,98 @@ export default function AdminUsersPage() {
       full_name: user.full_name || '',
       role: user.role,
       avatar_url: user.avatar_url || '',
+      avatar_object_key: '',
       bio: user.bio || ''
     })
     setShowModal(true)
   }
 
-  function handleSave() {
-    if (editingUser) {
-      // Update existing user
-      setUsers(users.map(u => 
-        u.id === editingUser.id 
-          ? { ...u, ...formData, updated_at: new Date().toISOString() }
-          : u
-      ))
-    } else {
-      // Create new user
-      const newUser: Profile = {
-        id: Date.now().toString(),
-        ...formData,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+  async function handleSave() {
+    setSaving(true)
+
+    try {
+      if (editingUser) {
+        const response = await fetch(`/api/admin/users/${editingUser.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData),
+        })
+
+        if (!response.ok) {
+          throw new Error('Failed to update user')
+        }
+      } else {
+        const response = await fetch('/api/admin/users', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData),
+        })
+
+        if (!response.ok) {
+          throw new Error('Failed to create user')
+        }
+
+        const created = (await response.json()) as { email?: string; temporary_password?: string }
+        if (created.email && created.temporary_password) {
+          setCreatedUserCredentials({
+            email: created.email,
+            tempPassword: created.temporary_password,
+          })
+        }
       }
-      setUsers([...users, newUser])
+
+      invalidateContentCaches()
+      await refreshUsers()
+      setShowModal(false)
+    } catch (error) {
+      console.error(error)
+      alert('Unable to save user. Please try again.')
+    } finally {
+      setSaving(false)
     }
-    setShowModal(false)
   }
 
-  function handleDelete(id: string) {
+  async function handleDelete(id: string) {
     if (profile && id === profile.id) {
       alert('Cannot delete your own account!')
       return
     }
     if (confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
-      setUsers(users.filter(u => u.id !== id))
+      try {
+        const response = await fetch(`/api/admin/users/${id}`, {
+          method: 'DELETE',
+        })
+
+        if (!response.ok) {
+          throw new Error('Failed to delete user')
+        }
+
+        invalidateContentCaches()
+        await refreshUsers()
+      } catch (error) {
+        console.error(error)
+        alert('Unable to delete user. Please try again.')
+      }
+    }
+  }
+
+  async function handleSendResetEmail(userId: string) {
+    setSendingResetEmail(userId)
+    try {
+      const response = await fetch(`/api/admin/users/${userId}/send-reset-email`, {
+        method: 'POST',
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to send reset email')
+      }
+
+      alert('Password reset email sent')
+    } catch (error) {
+      console.error(error)
+      alert('Unable to send password reset email')
+    } finally {
+      setSendingResetEmail(null)
     }
   }
 
@@ -138,6 +215,34 @@ export default function AdminUsersPage() {
       case 'talent': return 'badge-primary'
       case 'artist': return 'badge-secondary'
       default: return 'badge-ghost'
+    }
+  }
+
+  async function handleAvatarFileChange(file: File) {
+    setImageUploading(true)
+    setImageUploadError(null)
+
+    try {
+      const payload = new FormData()
+      payload.append('file', file)
+      payload.append('folder', 'users/avatars')
+
+      const response = await fetch('/api/admin/uploads/image', {
+        method: 'POST',
+        body: payload,
+      })
+
+      if (!response.ok) {
+        const errorData = (await response.json().catch(() => null)) as { error?: string } | null
+        throw new Error(errorData?.error || 'Failed to upload avatar')
+      }
+
+      const data = (await response.json()) as { url: string; key: string }
+      setFormData({ ...formData, avatar_url: data.url, avatar_object_key: data.key })
+    } catch (error) {
+      setImageUploadError(error instanceof Error ? error.message : 'Failed to upload avatar')
+    } finally {
+      setImageUploading(false)
     }
   }
 
@@ -163,11 +268,22 @@ export default function AdminUsersPage() {
             </button>
           </div>
 
-          <div className="alert alert-warning mb-6">
-            <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 h-6" fill="none" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-            <span>⚠️ Mock Mode: Changes won't persist after refresh</span>
+          {createdUserCredentials && (
+            <div className="alert alert-success mb-6 items-start">
+              <div>
+                <div className="font-semibold">New account created and emailed successfully.</div>
+                <div className="text-sm mt-1">Email: <span className="font-mono">{createdUserCredentials.email}</span></div>
+                <div className="text-sm">Temporary password: <span className="font-mono">{createdUserCredentials.tempPassword}</span></div>
+                <div className="text-xs opacity-70 mt-1">The user should reset this password after first login.</div>
+              </div>
+              <button type="button" className="btn btn-sm btn-ghost" onClick={() => setCreatedUserCredentials(null)}>
+                ✕
+              </button>
+            </div>
+          )}
+
+          <div className="alert alert-info mb-6">
+            <span>Users are loaded from PostgreSQL via admin API.</span>
           </div>
 
           {/* Users Table */}
@@ -185,6 +301,13 @@ export default function AdminUsersPage() {
                     </tr>
                   </thead>
                   <tbody>
+                    {dataLoading && (
+                      <tr>
+                        <td colSpan={5} className="text-center py-8">
+                          <span className="loading loading-spinner loading-md text-primary"></span>
+                        </td>
+                      </tr>
+                    )}
                     {users.map(u => (
                       <tr key={u.id}>
                         <td>
@@ -221,6 +344,13 @@ export default function AdminUsersPage() {
                               className="btn btn-sm btn-ghost"
                             >
                               Edit
+                            </button>
+                            <button
+                              onClick={() => handleSendResetEmail(u.id)}
+                              className="btn btn-sm btn-secondary"
+                              disabled={sendingResetEmail === u.id}
+                            >
+                              {sendingResetEmail === u.id ? 'Sending...' : 'Send Reset Email'}
                             </button>
                             <button 
                               onClick={() => handleDelete(u.id)}
@@ -327,8 +457,35 @@ export default function AdminUsersPage() {
                   className="input input-bordered"
                   placeholder="https://example.com/avatar.jpg"
                   value={formData.avatar_url}
-                  onChange={(e) => setFormData({ ...formData, avatar_url: e.target.value })}
+                  onChange={(e) => setFormData({ ...formData, avatar_url: e.target.value, avatar_object_key: '' })}
+                  disabled={imageUploading}
                 />
+                <label className="label">
+                  <span className="label-text-alt opacity-70">Or upload avatar to Oracle Object Storage</span>
+                </label>
+                <input
+                  type="file"
+                  className="file-input file-input-bordered"
+                  accept="image/*"
+                  disabled={imageUploading}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) {
+                      void handleAvatarFileChange(file)
+                    }
+                    e.currentTarget.value = ''
+                  }}
+                />
+                {imageUploading && (
+                  <label className="label">
+                    <span className="label-text-alt text-primary">Uploading avatar...</span>
+                  </label>
+                )}
+                {imageUploadError && (
+                  <label className="label">
+                    <span className="label-text-alt text-error">{imageUploadError}</span>
+                  </label>
+                )}
               </div>
 
               <div className="form-control">
@@ -347,8 +504,8 @@ export default function AdminUsersPage() {
                 <button type="button" onClick={() => setShowModal(false)} className="btn btn-ghost">
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary">
-                  {editingUser ? 'Save Changes' : 'Create User'}
+                <button type="submit" className="btn btn-primary" disabled={saving}>
+                  {saving ? 'Saving...' : editingUser ? 'Save Changes' : 'Create User'}
                 </button>
               </div>
             </form>

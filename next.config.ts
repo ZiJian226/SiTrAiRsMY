@@ -1,13 +1,14 @@
 import type { NextConfig } from "next";
 
+const isStaticExport = process.env.NEXT_STATIC_EXPORT === 'true';
+
 const nextConfig: NextConfig = {
-  output: 'export', // Enable static exports for GitHub Pages
+  ...(isStaticExport ? { output: 'export' } : {}),
   images: {
-    unoptimized: true, // GitHub Pages doesn't support Next.js Image Optimization
+    unoptimized: isStaticExport,
   },
-  // Only use basePath in production (GitHub Pages)
-  basePath: process.env.NODE_ENV === 'production' ? '/SiTrAiRsMY' : '',
-  trailingSlash: true, // Add trailing slashes to prevent double basePath issues
+  basePath: isStaticExport ? '/SiTrAiRsMY' : '',
+  trailingSlash: isStaticExport,
   // Note: assetPrefix is intentionally NOT set to avoid double paths for public assets
 };
 

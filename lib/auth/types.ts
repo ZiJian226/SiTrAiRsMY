@@ -23,6 +23,7 @@ export interface AuthSession {
 
 export interface SignInResult {
   error: string | null;
+  session?: AuthSession;
 }
 
 export interface AuthService {

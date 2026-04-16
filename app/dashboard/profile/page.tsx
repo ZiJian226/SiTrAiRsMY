@@ -54,6 +54,9 @@ export default function ProfileEditorPage() {
   
   const [saving, setSaving] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [imageUploading, setImageUploading] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!loading && !user) {
@@ -62,12 +65,72 @@ export default function ProfileEditorPage() {
   }, [user, loading, router])
 
   useEffect(() => {
-    if (profile) {
-      setFullName(profile.full_name || '')
-      setAvatarUrl(profile.avatar_url || '')
-      setBio(profile.bio || '')
+    if (user && profile && !saving) {
+      loadProfileData()
     }
-  }, [profile])
+  }, [user, profile, saving])
+
+  async function loadProfileData() {
+    try {
+      const response = await fetch('/api/dashboard/profile', {
+        headers: {
+          'x-user-id': user!.id
+        }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setFullName(data.stage_name || profile?.full_name || '')
+        setAvatarUrl(data.avatar_url || profile?.avatar_url || '')
+        setBio(data.bio || profile?.bio || '')
+        setLore(data.lore || '')
+        setDateOfBirth(data.date_of_birth || '')
+        setHeight(data.height || '')
+        setSpecies(data.species || '')
+        setTags(data.tags || [])
+        setYoutubeUrl(data.social_links?.youtube || '')
+        setTwitchUrl(data.social_links?.twitch || '')
+        setTiktokUrl(data.social_links?.tiktok || '')
+        setLikes(data.likes || [])
+        setDislikes(data.dislikes || [])
+        setPortfolio(data.portfolio_links || [])
+      }
+    } catch (err) {
+      console.error('Failed to load profile:', err)
+    }
+  }
+
+  async function handleAvatarFileChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    setImageUploading(true)
+    setUploadError(null)
+
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('folder', 'user-avatars')
+
+      const response = await fetch('/api/admin/uploads/image', {
+        method: 'POST',
+        body: formData
+      })
+
+      if (!response.ok) {
+        setUploadError('Failed to upload image')
+        return
+      }
+
+      const { url, key } = await response.json()
+      setAvatarUrl(url)
+    } catch (err) {
+      console.error('Upload error:', err)
+      setUploadError('Error uploading image')
+    } finally {
+      setImageUploading(false)
+    }
+  }
 
   if (loading) {
     return (
@@ -82,20 +145,55 @@ export default function ProfileEditorPage() {
   }
 
   async function handleSave() {
+    if (!user) {
+      setError('User not authenticated')
+      return
+    }
+
     setSaving(true)
     setSuccess(false)
+    setError(null)
 
-    // Simulate saving delay
-    await new Promise(resolve => setTimeout(resolve, 800))
+    try {
+      const response = await fetch('/api/dashboard/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': user.id
+        },
+        body: JSON.stringify({
+          stage_name: fullName,
+          avatar_url: avatarUrl,
+          bio: bio,
+          lore: lore,
+          date_of_birth: dateOfBirth || null,
+          height: height || null,
+          species: species || null,
+          tags: tags,
+          likes: likes,
+          dislikes: dislikes,
+          portfolio_links: portfolio,
+          social_links: {
+            youtube: youtubeUrl || null,
+            twitch: twitchUrl || null,
+            tiktok: tiktokUrl || null
+          }
+        })
+      })
 
-    // In mock mode, we just show success message
-    // In real implementation, this would call your backend API to update Oracle PostgreSQL records
-    
-    setSaving(false)
-    setSuccess(true)
-    
-    // Hide success message after 3 seconds
-    setTimeout(() => setSuccess(false), 3000)
+      if (response.ok) {
+        setSuccess(true)
+        setTimeout(() => setSuccess(false), 3000)
+      } else {
+        const err = await response.json()
+        setError(err.error || 'Failed to save profile')
+      }
+    } catch (err) {
+      console.error('Save error:', err)
+      setError('Failed to save profile')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -138,6 +236,15 @@ export default function ProfileEditorPage() {
             </div>
           )}
 
+          {error && (
+            <div className="alert alert-error mb-6">
+              <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l-2-2m0 0l-2-2m2 2l2-2m-2 2l-2 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>{error}</span>
+            </div>
+          )}
+
           {/* Profile Header Card */}
           <div className="card bg-base-200 shadow-xl mb-8">
             <div className="card-body">
@@ -175,7 +282,23 @@ export default function ProfileEditorPage() {
 
                   <div className="form-control">
                     <label className="label">
-                      <span className="label-text font-semibold">Avatar URL</span>
+                      <span className="label-text font-semibold">Avatar</span>
+                    </label>
+                    <div className="join w-full">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="file-input file-input-bordered join-item flex-1"
+                        onChange={handleAvatarFileChange}
+                        disabled={saving || imageUploading}
+                      />
+                      <span className="join-item flex items-center px-3">
+                        {imageUploading && <span className="loading loading-spinner loading-sm"></span>}
+                      </span>
+                    </div>
+                    {uploadError && <span className="text-error text-sm mt-2">{uploadError}</span>}
+                    <label className="label mt-2">
+                      <span className="label-text font-semibold text-sm">Or paste URL</span>
                     </label>
                     <input
                       type="url"
@@ -183,7 +306,7 @@ export default function ProfileEditorPage() {
                       placeholder="https://example.com/avatar.jpg"
                       value={avatarUrl}
                       onChange={(e) => setAvatarUrl(e.target.value)}
-                      disabled={saving}
+                      disabled={saving || imageUploading}
                     />
                   </div>
 
@@ -826,7 +949,7 @@ export default function ProfileEditorPage() {
             <div>
               <div className="font-semibold">Account: {profile.role} • {profile.email}</div>
               <div className="text-sm opacity-70 mt-1">
-                ⚠️ Mock Mode: Changes won't persist after refresh
+                ✓ Changes save to PostgreSQL database
               </div>
             </div>
           </div>

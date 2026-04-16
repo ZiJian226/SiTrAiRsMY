@@ -6,11 +6,22 @@ import Navbar from "@/components/Navbar";
 import Container from "@/components/Container";
 import Footer from "@/components/Footer";
 import PageBackground from "@/components/PageBackground";
-import { newsEvents } from "@/data/mockData";
+import { fallbackEvents } from "@/lib/content/fallback";
+import { useCachedApiResource } from "@/lib/hooks";
+import type { EventArticle } from "@/lib/content/types";
 
 export default function EventsPage() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<EventArticle | null>(null);
   const categories = ["All", "Announcement", "Spotlight", "Guide", "Events", "News"];
+
+  const { data: newsEvents, loading } = useCachedApiResource<EventArticle[]>({
+    cacheKey: 'starmy:content:events:v3',
+    url: '/api/content/events',
+    fallbackData: fallbackEvents,
+    maxAgeMs: 60_000,
+    staleWhileRevalidateMs: 3_600_000,
+  });
 
   const filteredNews = selectedCategory && selectedCategory !== "All"
     ? newsEvents.filter((article) => article.category === selectedCategory)
@@ -47,6 +58,12 @@ export default function EventsPage() {
           </div>
 
           {/* News Grid */}
+          {loading && (
+            <div className="flex justify-center py-4">
+              <span className="loading loading-spinner loading-md text-primary"></span>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {filteredNews.map((article) => (
               <div key={article.id} className="card bg-base-200 shadow-xl hover:shadow-2xl transition-all">
@@ -62,9 +79,13 @@ export default function EventsPage() {
                   <p className="opacity-70">{article.excerpt}</p>
                   <div className="card-actions justify-between items-center mt-4">
                     <span className="text-sm opacity-70">By {article.author}</span>
-                    <Link href={`/news/${article.id}`} className="btn btn-primary btn-sm">
+                    <button
+                      type="button"
+                      className="btn btn-primary btn-sm"
+                      onClick={() => setSelectedEvent(article)}
+                    >
                       Read More
-                    </Link>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -80,6 +101,40 @@ export default function EventsPage() {
 
         <Footer />
       </div>
+
+      {selectedEvent && (
+        <div className="modal modal-open">
+          <div className="modal-box max-w-3xl">
+            <button
+              type="button"
+              className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
+              onClick={() => setSelectedEvent(null)}
+            >
+              ✕
+            </button>
+            <figure className="mb-4 rounded-xl overflow-hidden">
+              <img
+                src={selectedEvent.image}
+                alt={selectedEvent.title}
+                className="w-full h-64 object-cover"
+              />
+            </figure>
+            <div className="flex items-center gap-2 mb-3">
+              <span className="badge badge-primary">{selectedEvent.category}</span>
+              <span className="text-sm opacity-70">{new Date(selectedEvent.date).toLocaleDateString()}</span>
+            </div>
+            <h2 className="text-3xl font-bold mb-3">{selectedEvent.title}</h2>
+            <p className="opacity-80 whitespace-pre-line">{selectedEvent.content || selectedEvent.excerpt}</p>
+            <div className="mt-6 flex justify-between items-center">
+              <span className="text-sm opacity-70">By {selectedEvent.author}</span>
+              <button type="button" className="btn btn-primary" onClick={() => setSelectedEvent(null)}>
+                Close
+              </button>
+            </div>
+          </div>
+          <div className="modal-backdrop" onClick={() => setSelectedEvent(null)}></div>
+        </div>
+      )}
     </div>
   );
 }

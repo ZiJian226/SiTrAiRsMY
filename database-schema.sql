@@ -15,6 +15,15 @@ CREATE TABLE users (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE auth_sessions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token_hash TEXT NOT NULL,
+  expires_at TIMESTAMPTZ NOT NULL,
+  revoked_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE TABLE profiles (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -22,6 +31,7 @@ CREATE TABLE profiles (
   full_name TEXT,
   role TEXT NOT NULL CHECK (role IN ('talent', 'artist', 'admin')),
   avatar_url TEXT,
+  avatar_object_key TEXT,
   bio TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -44,6 +54,23 @@ CREATE TABLE talent_profiles (
 );
 
 -- ============================================
+-- ARTIST PROFILES TABLE
+-- ============================================
+CREATE TABLE artist_profiles (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  specialty TEXT[] DEFAULT '{}',
+  portfolio_links TEXT[] DEFAULT '{}',
+  commissions_open BOOLEAN DEFAULT false,
+  price_range TEXT,
+  contact_email TEXT,
+  social_media_links JSONB DEFAULT '{"twitter": null, "instagram": null, "website": null}',
+  is_published BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ============================================
 -- MERCHANDISE TABLE
 -- ============================================
 CREATE TABLE merchandise (
@@ -52,6 +79,7 @@ CREATE TABLE merchandise (
   description TEXT,
   price DECIMAL(10,2) NOT NULL,
   image_url TEXT,
+  image_object_key TEXT,
   category TEXT NOT NULL,
   talent_id UUID REFERENCES talent_profiles(id) ON DELETE SET NULL,
   stock INTEGER DEFAULT 0,
@@ -70,8 +98,10 @@ CREATE TABLE events (
   event_date TIMESTAMPTZ NOT NULL,
   location TEXT,
   image_url TEXT,
+  image_object_key TEXT,
   category TEXT,
   is_published BOOLEAN DEFAULT false,
+  featured BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -83,11 +113,13 @@ CREATE TABLE gallery_items (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   title TEXT NOT NULL,
   image_url TEXT NOT NULL,
+  image_object_key TEXT,
   thumbnail_url TEXT,
   description TEXT,
   category TEXT NOT NULL,
   artist_name TEXT,
   is_published BOOLEAN DEFAULT false,
+  featured BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -125,7 +157,10 @@ CREATE TRIGGER update_gallery_items_updated_at BEFORE UPDATE ON gallery_items
 -- INDEXES FOR PERFORMANCE
 -- ============================================
 CREATE INDEX idx_talent_profiles_user_id ON talent_profiles(user_id);
+CREATE UNIQUE INDEX idx_talent_profiles_user_id_unique ON talent_profiles(user_id);
 CREATE INDEX idx_talent_profiles_published ON talent_profiles(is_published);
+CREATE INDEX idx_auth_sessions_user_id ON auth_sessions(user_id);
+CREATE INDEX idx_auth_sessions_expires_at ON auth_sessions(expires_at);
 CREATE INDEX idx_merchandise_talent_id ON merchandise(talent_id);
 CREATE INDEX idx_merchandise_published ON merchandise(is_published);
 CREATE INDEX idx_events_published ON events(is_published);

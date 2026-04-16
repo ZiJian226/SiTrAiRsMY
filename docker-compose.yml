@@ -23,6 +23,11 @@ services:
     ports:
       - "5432:5432"
     volumes:
+      - ./database-schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./docker/postgres-init/02-seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+      - ./docker/postgres-init/03-media-object-keys.sql:/docker-entrypoint-initdb.d/03-media-object-keys.sql:ro
+      - ./docker/postgres-init/04-user-dashboard.sql:/docker-entrypoint-initdb.d/04-user-dashboard.sql:ro
+      - ./docker/postgres-init/05-password-reset.sql:/docker-entrypoint-initdb.d/05-password-reset.sql:ro
       - starmy_pg_data:/var/lib/postgresql/data
 
 volumes:

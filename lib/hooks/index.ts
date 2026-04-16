@@ -6,3 +6,4 @@
 export { useFormState } from './useFormState';
 export { useArrayInput } from './useArrayInput';
 export { useProtectedRoute } from './useProtectedRoute';
+export { useCachedApiResource } from './useCachedApiResource';

@@ -10,6 +10,7 @@ export interface VTuber {
   featured: boolean;
   schedule?: StreamSchedule[];
   lore?: string;
+  portfolio?: string[];
   characterInfo?: {
     dateOfBirth?: string;
     debutDate?: string;
@@ -63,4 +64,5 @@ export interface NewsEvent {
   category: "Announcement" | "Spotlight" | "Guide" | "Events" | "News";
   image: string;
   author: string;
+  featured?: boolean;
 }

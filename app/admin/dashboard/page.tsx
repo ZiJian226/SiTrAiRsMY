@@ -2,20 +2,52 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import type { AdminStatistics } from "@/lib/admin/types";
 
 export default function AdminDashboard() {
   const router = useRouter();
+  const [statsData, setStatsData] = useState<AdminStatistics | null>(null);
 
   const handleLogout = () => {
     // TODO: Implement actual logout with your Oracle-backed auth/session endpoint
     router.push("/admin/login");
   };
 
+  useEffect(() => {
+    let mounted = true;
+
+    async function fetchStats() {
+      try {
+        const response = await fetch('/api/admin/statistics', { cache: 'no-store' });
+        if (!response.ok) {
+          throw new Error('Failed to load dashboard stats');
+        }
+
+        const data = (await response.json()) as AdminStatistics;
+        if (mounted) {
+          setStatsData(data);
+        }
+      } catch (error) {
+        console.error(error);
+        if (mounted) {
+          setStatsData(null);
+        }
+      }
+    }
+
+    void fetchStats();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const stats = [
-    { label: "Total VTubers", value: "4", icon: "🎮", color: "text-primary" },
-    { label: "Total Artists", value: "4", icon: "🎨", color: "text-secondary" },
-    { label: "News Articles", value: "4", icon: "📰", color: "text-accent" },
-    { label: "Applications", value: "12", icon: "📝", color: "text-info" },
+    { label: "Total Users", value: String(statsData?.users.total ?? 0), icon: "👥", color: "text-primary" },
+    { label: "Talents", value: String(statsData?.users.talents ?? 0), icon: "🎮", color: "text-secondary" },
+    { label: "Artists", value: String(statsData?.users.artists ?? 0), icon: "🎨", color: "text-accent" },
+    { label: "Events", value: String(statsData?.content.totalEvents ?? 0), icon: "📅", color: "text-info" },
   ];
 
   const quickActions = [
@@ -90,20 +122,18 @@ export default function AdminDashboard() {
           <div className="card-body">
             <h2 className="card-title text-2xl mb-4">Recent Activity</h2>
             <div className="space-y-4">
-              {[
-                { action: "New application received", type: "VTuber", time: "5 minutes ago", color: "badge-primary" },
-                { action: "Commission request submitted", type: "Artist", time: "1 hour ago", color: "badge-secondary" },
-                { action: "New news article published", type: "News", time: "3 hours ago", color: "badge-accent" },
-                { action: "VTuber profile updated", type: "Luna Sparkle", time: "5 hours ago", color: "badge-info" },
-              ].map((activity, index) => (
-                <div key={index} className="flex items-center justify-between p-4 bg-base-100 rounded-lg">
+              {(statsData?.recentActivity ?? []).map((activity) => (
+                <div key={activity.id} className="flex items-center justify-between p-4 bg-base-100 rounded-lg">
                   <div className="flex items-center gap-4">
-                    <div className={`badge ${activity.color}`}>{activity.type}</div>
+                    <div className="badge badge-primary">{activity.type}</div>
                     <span>{activity.action}</span>
                   </div>
                   <span className="text-sm opacity-70">{activity.time}</span>
                 </div>
               ))}
+              {(statsData?.recentActivity.length ?? 0) === 0 && (
+                <div className="p-4 bg-base-100 rounded-lg text-sm opacity-70">No recent activity yet.</div>
+              )}
             </div>
           </div>
         </div>

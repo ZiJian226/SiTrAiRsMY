@@ -132,7 +132,8 @@ export default function AdminUsersPage() {
         })
 
         if (!response.ok) {
-          throw new Error('Failed to update user')
+          const errorData = (await response.json().catch(() => null)) as { error?: string } | null
+          throw new Error(errorData?.error || 'Failed to update user')
         }
       } else {
         const response = await fetch('/api/admin/users', {
@@ -142,15 +143,20 @@ export default function AdminUsersPage() {
         })
 
         if (!response.ok) {
-          throw new Error('Failed to create user')
+          const errorData = (await response.json().catch(() => null)) as { error?: string } | null
+          throw new Error(errorData?.error || 'Failed to create user')
         }
 
-        const created = (await response.json()) as { email?: string; temporary_password?: string }
+        const created = (await response.json()) as { email?: string; temporary_password?: string; warning?: string }
         if (created.email && created.temporary_password) {
           setCreatedUserCredentials({
             email: created.email,
             tempPassword: created.temporary_password,
           })
+        }
+
+        if (created.warning) {
+          alert(created.warning)
         }
       }
 
@@ -159,7 +165,7 @@ export default function AdminUsersPage() {
       setShowModal(false)
     } catch (error) {
       console.error(error)
-      alert('Unable to save user. Please try again.')
+      alert(error instanceof Error ? error.message : 'Unable to save user. Please try again.')
     } finally {
       setSaving(false)
     }
@@ -453,9 +459,9 @@ export default function AdminUsersPage() {
                   <span className="label-text font-semibold">Avatar URL</span>
                 </label>
                 <input
-                  type="url"
+                  type="text"
                   className="input input-bordered"
-                  placeholder="https://example.com/avatar.jpg"
+                  placeholder="https://example.com/avatar.jpg or /api/media/users/avatars/..."
                   value={formData.avatar_url}
                   onChange={(e) => setFormData({ ...formData, avatar_url: e.target.value, avatar_object_key: '' })}
                   disabled={imageUploading}

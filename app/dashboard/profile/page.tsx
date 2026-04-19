@@ -78,19 +78,75 @@ export default function ProfileEditorPage() {
         }
       })
 
-      if (response.ok) {
-        const data = await response.json()
-        setFullName(data.stage_name || profile?.full_name || '')
-        setAvatarUrl(data.avatar_url || profile?.avatar_url || '')
+      if (!response.ok) {
+        setFullName(profile?.full_name || '')
+        setAvatarUrl(profile?.avatar_url || '')
+        setBio(profile?.bio || '')
+        return
+      }
+
+      const data = await response.json() as {
+        stage_name?: string
+        full_name?: string
+        avatar_url?: string
+        bio?: string
+        character_description?: string
+        lore?: string
+        date_of_birth?: string
+        debut_date?: string
+        height?: string
+        species?: string
+        tags?: string[]
+        likes?: string[]
+        dislikes?: string[]
+        portfolio_links?: string[]
+        social_links?: {
+          youtube?: string | null
+          youtubeUrl?: string | null
+          twitch?: string | null
+          twitchUrl?: string | null
+          tiktok?: string | null
+          tiktokUrl?: string | null
+        }
+        specialty?: string[]
+        commissions_open?: boolean
+        price_range?: string | null
+        contact_email?: string | null
+        social_media_links?: {
+          website?: string | null
+          twitter?: string | null
+          x?: string | null
+          instagram?: string | null
+        }
+      }
+
+      setAvatarUrl(data.avatar_url || profile?.avatar_url || '')
+
+      if (profile?.role === 'artist') {
+        const socialLinks = data.social_media_links || {}
+        setFullName(data.full_name || profile?.full_name || '')
         setBio(data.bio || profile?.bio || '')
+        setSpecialty(data.specialty || [])
+        setPortfolio(data.portfolio_links || [])
+        setCommissionsOpen(Boolean(data.commissions_open))
+        setPriceRange(data.price_range || '')
+        setContactEmail(data.contact_email || '')
+        setWebsiteUrl(socialLinks.website || '')
+        setTwitterUrl(socialLinks.x || socialLinks.twitter || '')
+        setInstagramUrl(socialLinks.instagram || '')
+      } else {
+        const socialLinks = data.social_links || {}
+        setFullName(data.stage_name || profile?.full_name || '')
+        setBio(data.bio || data.character_description || profile?.bio || '')
         setLore(data.lore || '')
         setDateOfBirth(data.date_of_birth || '')
+        setDebutDate(data.debut_date || '')
         setHeight(data.height || '')
         setSpecies(data.species || '')
         setTags(data.tags || [])
-        setYoutubeUrl(data.social_links?.youtube || '')
-        setTwitchUrl(data.social_links?.twitch || '')
-        setTiktokUrl(data.social_links?.tiktok || '')
+        setYoutubeUrl(socialLinks.youtube || socialLinks.youtubeUrl || '')
+        setTwitchUrl(socialLinks.twitch || socialLinks.twitchUrl || '')
+        setTiktokUrl(socialLinks.tiktok || socialLinks.tiktokUrl || '')
         setLikes(data.likes || [])
         setDislikes(data.dislikes || [])
         setPortfolio(data.portfolio_links || [])
@@ -145,7 +201,7 @@ export default function ProfileEditorPage() {
   }
 
   async function handleSave() {
-    if (!user) {
+    if (!user || !profile) {
       setError('User not authenticated')
       return
     }
@@ -155,30 +211,51 @@ export default function ProfileEditorPage() {
     setError(null)
 
     try {
+      const payload = profile.role === 'artist'
+        ? {
+            full_name: fullName,
+            bio,
+            avatar_url: avatarUrl,
+            specialty,
+            portfolio_links: portfolio,
+            commissions_open: commissionsOpen,
+            price_range: priceRange || null,
+            contact_email: contactEmail || null,
+            social_media_links: {
+              website: websiteUrl || null,
+              twitter: twitterUrl || null,
+              x: twitterUrl || null,
+              instagram: instagramUrl || null,
+            },
+          }
+        : {
+            stage_name: fullName,
+            character_description: bio,
+            avatar_url: avatarUrl,
+            bio,
+            lore,
+            date_of_birth: dateOfBirth || null,
+            debut_date: debutDate || null,
+            height: height || null,
+            species: species || null,
+            tags,
+            likes,
+            dislikes,
+            portfolio_links: portfolio,
+            social_links: {
+              youtube: youtubeUrl || null,
+              twitch: twitchUrl || null,
+              tiktok: tiktokUrl || null,
+            },
+          }
+
       const response = await fetch('/api/dashboard/profile', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'x-user-id': user.id
         },
-        body: JSON.stringify({
-          stage_name: fullName,
-          avatar_url: avatarUrl,
-          bio: bio,
-          lore: lore,
-          date_of_birth: dateOfBirth || null,
-          height: height || null,
-          species: species || null,
-          tags: tags,
-          likes: likes,
-          dislikes: dislikes,
-          portfolio_links: portfolio,
-          social_links: {
-            youtube: youtubeUrl || null,
-            twitch: twitchUrl || null,
-            tiktok: tiktokUrl || null
-          }
-        })
+        body: JSON.stringify(payload)
       })
 
       if (response.ok) {
@@ -301,9 +378,9 @@ export default function ProfileEditorPage() {
                       <span className="label-text font-semibold text-sm">Or paste URL</span>
                     </label>
                     <input
-                      type="url"
+                      type="text"
                       className="input input-bordered"
-                      placeholder="https://example.com/avatar.jpg"
+                      placeholder="https://example.com/avatar.jpg or /api/media/..."
                       value={avatarUrl}
                       onChange={(e) => setAvatarUrl(e.target.value)}
                       disabled={saving || imageUploading}
@@ -589,12 +666,12 @@ export default function ProfileEditorPage() {
 
                     <div className="form-control">
                       <label className="label">
-                        <span className="label-text font-semibold">🐦 Twitter URL</span>
+                        <span className="label-text font-semibold">❌ X URL</span>
                       </label>
                       <input
                         type="url"
                         className="input input-bordered"
-                        placeholder="https://twitter.com/yourname"
+                        placeholder="https://x.com/yourname"
                         value={twitterUrl}
                         onChange={(e) => setTwitterUrl(e.target.value)}
                         disabled={saving}
@@ -682,9 +759,8 @@ export default function ProfileEditorPage() {
                           <span className="label-text font-semibold">Date of Birth</span>
                         </label>
                         <input
-                          type="text"
+                          type="date"
                           className="input input-bordered"
-                          placeholder="e.g., December 25"
                           value={dateOfBirth}
                           onChange={(e) => setDateOfBirth(e.target.value)}
                           disabled={saving}
@@ -696,9 +772,8 @@ export default function ProfileEditorPage() {
                           <span className="label-text font-semibold">Debut Date</span>
                         </label>
                         <input
-                          type="text"
+                          type="date"
                           className="input input-bordered"
-                          placeholder="e.g., January 15, 2023"
                           value={debutDate}
                           onChange={(e) => setDebutDate(e.target.value)}
                           disabled={saving}
@@ -866,13 +941,13 @@ export default function ProfileEditorPage() {
                   <>
                     <div className="form-control mb-4">
                       <label className="label">
-                        <span className="label-text font-semibold">Add Portfolio Image URL</span>
+                        <span className="label-text font-semibold">Add Portfolio Website URL</span>
                       </label>
                       <div className="join w-full">
                         <input
                           type="url"
                           className="input input-bordered join-item flex-1"
-                          placeholder="https://example.com/artwork.jpg"
+                          placeholder="https://example.com/project"
                           value={portfolioInput}
                           onChange={(e) => setPortfolioInput(e.target.value)}
                           onKeyDown={(e) => {
@@ -897,23 +972,31 @@ export default function ProfileEditorPage() {
                           }}
                           disabled={saving}
                         >
-                          Add Image
+                          Add URL
                         </button>
                       </div>
                     </div>
 
                     {portfolio.length > 0 && (
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                        {portfolio.map((image, idx) => (
-                          <div key={idx} className="relative aspect-[3/4] overflow-hidden rounded-lg group">
-                            <img
-                              src={image}
-                              alt={`Portfolio ${idx + 1}`}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                e.currentTarget.src = 'https://placehold.co/600x800/8b5cf6/ffffff?text=Image+' + (idx + 1)
-                              }}
-                            />
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {portfolio.map((url, idx) => (
+                          <div key={idx} className="relative overflow-hidden rounded-lg group bg-base-300">
+                            <div className="aspect-video">
+                              <iframe
+                                src={url}
+                                title={`Portfolio ${idx + 1}`}
+                                className="w-full h-full"
+                                loading="lazy"
+                              />
+                            </div>
+                            <a
+                              href={url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="btn btn-xs btn-ghost m-2"
+                            >
+                              Open URL
+                            </a>
                             <button
                               type="button"
                               className="btn btn-error btn-sm btn-circle absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"

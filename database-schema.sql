@@ -45,6 +45,7 @@ CREATE TABLE talent_profiles (
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   stage_name TEXT NOT NULL,
   character_description TEXT,
+  bio TEXT,
   debut_date DATE,
   social_links JSONB DEFAULT '{}',
   tags TEXT[] DEFAULT '{}',
@@ -125,6 +126,23 @@ CREATE TABLE gallery_items (
 );
 
 -- ============================================
+-- USER AUDIT LOGS TABLE
+-- ============================================
+CREATE TABLE user_audit_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  actor_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  actor_role TEXT,
+  action TEXT NOT NULL,
+  resource_type TEXT NOT NULL,
+  resource_id TEXT,
+  target_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  metadata JSONB DEFAULT '{}'::jsonb,
+  ip_address TEXT,
+  user_agent TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ============================================
 -- FUNCTIONS & TRIGGERS
 -- ============================================
 
@@ -167,6 +185,10 @@ CREATE INDEX idx_events_published ON events(is_published);
 CREATE INDEX idx_events_date ON events(event_date);
 CREATE INDEX idx_gallery_items_published ON gallery_items(is_published);
 CREATE INDEX idx_gallery_items_category ON gallery_items(category);
+CREATE INDEX idx_user_audit_logs_actor_user_id ON user_audit_logs(actor_user_id);
+CREATE INDEX idx_user_audit_logs_target_user_id ON user_audit_logs(target_user_id);
+CREATE INDEX idx_user_audit_logs_action ON user_audit_logs(action);
+CREATE INDEX idx_user_audit_logs_created_at ON user_audit_logs(created_at DESC);
 
 CREATE INDEX idx_profiles_user_id ON profiles(user_id);
 CREATE UNIQUE INDEX idx_profiles_email ON profiles(email);

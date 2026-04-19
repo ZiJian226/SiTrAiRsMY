@@ -1,0 +1,15 @@
+{
+	email {$CADDY_EMAIL}
+}
+
+{$CADDY_HOST} {
+	encode zstd gzip
+
+	header {
+		X-Content-Type-Options nosniff
+		X-Frame-Options SAMEORIGIN
+		Referrer-Policy strict-origin-when-cross-origin
+	}
+
+	reverse_proxy starmy-web:3000
+}

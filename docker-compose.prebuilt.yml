@@ -1,0 +1,51 @@
+services:
+  starmy-web:
+    image: starmy-web:latest
+    container_name: starmy-web
+    restart: unless-stopped
+    env_file:
+      - .env.local
+    expose:
+      - "3000"
+    ports:
+      - "127.0.0.1:3000:3000"
+
+  starmy-proxy:
+    image: caddy:2-alpine
+    container_name: starmy-proxy
+    restart: unless-stopped
+    depends_on:
+      - starmy-web
+    env_file:
+      - .env.local
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - starmy_caddy_data:/data
+      - starmy_caddy_config:/config
+
+  starmy-db:
+    image: postgres:16-alpine
+    container_name: starmy-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: starmy
+      POSTGRES_USER: starmy_admin
+      POSTGRES_PASSWORD: starmy2025
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./database-schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./docker/postgres-init/02-seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+      - ./docker/postgres-init/03-media-object-keys.sql:/docker-entrypoint-initdb.d/03-media-object-keys.sql:ro
+      - ./docker/postgres-init/04-user-dashboard.sql:/docker-entrypoint-initdb.d/04-user-dashboard.sql:ro
+      - ./docker/postgres-init/05-password-reset.sql:/docker-entrypoint-initdb.d/05-password-reset.sql:ro
+      - ./docker/postgres-init/06-user-audit-logs.sql:/docker-entrypoint-initdb.d/06-user-audit-logs.sql:ro
+      - starmy_pg_data:/var/lib/postgresql/data
+
+volumes:
+  starmy_pg_data:
+  starmy_caddy_data:
+  starmy_caddy_config:

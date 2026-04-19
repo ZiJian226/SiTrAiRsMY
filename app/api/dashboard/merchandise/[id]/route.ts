@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/lib/auth/apiAuth'
+import { logUserAuditEvent } from '@/lib/auditLog'
+import { dbQuery } from '@/lib/database'
 import {
   getUserMerchandiseById,
   updateUserMerchandise,
@@ -44,6 +46,8 @@ export async function PUT(
 
     const { id } = await params
     const body = await request.json()
+    const profileResult = await dbQuery('SELECT role FROM profiles WHERE user_id = $1 LIMIT 1', [user.id])
+    const actorRole = profileResult.rows[0]?.role as 'talent' | 'artist' | 'admin' | undefined
 
     // Convert numeric strings to numbers for price/stock
     const updateData: Record<string, unknown> = {}
@@ -58,6 +62,23 @@ export async function PUT(
     }
 
     const item = await updateUserMerchandise(user.id, id, updateData)
+
+    await logUserAuditEvent({
+      actorUserId: user.id,
+      actorRole,
+      action: 'merchandise.update',
+      resourceType: 'merchandise',
+      resourceId: item.id,
+      targetUserId: user.id,
+      metadata: {
+        updatedFields: Object.keys(body || {}),
+        name: item.name,
+        category: item.category,
+        is_published: item.is_published,
+      },
+      ipAddress: request.headers.get('x-forwarded-for') || null,
+      userAgent: request.headers.get('user-agent') || null,
+    })
 
     return NextResponse.json(item)
   } catch (error) {
@@ -77,11 +98,30 @@ export async function DELETE(
     }
 
     const { id } = await params
-    const deleted = await deleteUserMerchandise(user.id, id)
+    const profileResult = await dbQuery('SELECT role FROM profiles WHERE user_id = $1 LIMIT 1', [user.id])
+    const actorRole = profileResult.rows[0]?.role as 'talent' | 'artist' | 'admin' | undefined
+    const existing = await getUserMerchandiseById(user.id, id)
 
-    if (!deleted) {
+    if (!existing) {
       return NextResponse.json({ error: 'Item not found' }, { status: 404 })
     }
+
+    await deleteUserMerchandise(user.id, id)
+
+    await logUserAuditEvent({
+      actorUserId: user.id,
+      actorRole,
+      action: 'merchandise.delete',
+      resourceType: 'merchandise',
+      resourceId: id,
+      targetUserId: user.id,
+      metadata: {
+        name: existing.name,
+        category: existing.category,
+      },
+      ipAddress: request.headers.get('x-forwarded-for') || null,
+      userAgent: request.headers.get('user-agent') || null,
+    })
 
     return NextResponse.json({ success: true })
   } catch (error) {

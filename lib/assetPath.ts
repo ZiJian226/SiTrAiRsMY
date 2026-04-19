@@ -1,17 +1,12 @@
 /**
  * Asset Path Utility
  * 
- * For GitHub Pages project sites, we need to add the base path to public assets.
- * 
- * IMPORTANT: 
- * - next.config.ts basePath handles ROUTES (pages navigation)
- * - This utility handles PUBLIC ASSETS (images, icons, etc. in /public folder)
- * 
- * Development: http://localhost:3000/
- * Production (GitHub Pages): https://zijian226.github.io/SiTrAiRsMY/
+ * Public asset path helper.
+ *
+ * Use NEXT_PUBLIC_ASSET_BASE_PATH only when hosting under a subpath
+ * (for example, GitHub Pages project sites). Leave it empty for OCI.
  */
-
-const BASE_PATH = process.env.NODE_ENV === 'production' ? '/SiTrAiRsMY' : '';
+const BASE_PATH = (process.env.NEXT_PUBLIC_ASSET_BASE_PATH || '').replace(/\/+$/, '');
 
 /**
  * Generate an asset path with the base path (only in production)
@@ -20,13 +15,13 @@ const BASE_PATH = process.env.NODE_ENV === 'production' ? '/SiTrAiRsMY' : '';
  * 
  * @example
  * assetPath('/assets/images/icons/starmy-logo.svg')
- * // Development: '/assets/images/icons/starmy-logo.svg'
- * // Production: '/SiTrAiRsMY/assets/images/icons/starmy-logo.svg'
+ * // Development/OCI: '/assets/images/icons/starmy-logo.svg'
+ * // Subpath deploy: '/your-base-path/assets/images/icons/starmy-logo.svg'
  */
 export function assetPath(path: string): string {
   // Ensure path starts with /
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-  return `${BASE_PATH}${normalizedPath}`;
+  return `${BASE_PATH}${normalizedPath}` || normalizedPath;
 }
 
 /**

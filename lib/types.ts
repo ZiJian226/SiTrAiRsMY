@@ -41,6 +41,7 @@ export interface Artist {
   priceRange: string;
   contactEmail: string;
   socialLinks?: {
+    x?: string;
     twitter?: string;
     instagram?: string;
     website?: string;

@@ -1,6 +1,7 @@
 import 'server-only';
 
 import { dbPool, dbQuery } from '@/lib/database';
+import { resolveRenderableImageUrl } from '@/lib/objectStorage';
 import type {
   AdminEvent,
   AdminGalleryItem,
@@ -235,7 +236,20 @@ export async function createAdminEvent(input: Omit<AdminEvent, 'id'>): Promise<A
           : [input.title, input.description, input.event_date, input.location, input.image_url, input.category, input.is_published],
   );
 
-  return result.rows[0] as AdminEvent;
+  const row = result.rows[0] as AdminEventRow;
+
+  return {
+    id: row.id,
+    title: row.title,
+    description: safeString(row.description),
+    event_date: row.event_date,
+    location: safeString(row.location),
+    image_url: resolveRenderableImageUrl(row.image_url, row.image_object_key),
+    image_object_key: row.image_object_key || undefined,
+    category: safeString(row.category, 'other'),
+    is_published: Boolean(row.is_published),
+    featured: Boolean(row.featured),
+  };
 }
 
 export async function updateAdminEvent(id: string, input: Partial<Omit<AdminEvent, 'id'>>): Promise<AdminEvent | null> {
@@ -395,7 +409,7 @@ export async function getAdminGalleryItems(): Promise<AdminGalleryItem[]> {
   return rows.map((row) => ({
     id: row.id,
     title: row.title,
-    image_url: safeString(row.image_url),
+    image_url: resolveRenderableImageUrl(row.image_url, row.image_object_key),
     image_object_key: row.image_object_key || undefined,
     description: safeString(row.description),
     category: safeString(row.category, 'other'),
@@ -875,7 +889,7 @@ export async function getAdminEvents(): Promise<AdminEvent[]> {
     description: safeString(row.description),
     event_date: row.event_date,
     location: safeString(row.location),
-    image_url: safeString(row.image_url),
+    image_url: resolveRenderableImageUrl(row.image_url, row.image_object_key),
     image_object_key: row.image_object_key || undefined,
     category: safeString(row.category, 'other'),
     is_published: Boolean(row.is_published),
@@ -920,7 +934,19 @@ export async function createAdminGalleryItem(input: Omit<AdminGalleryItem, 'id'>
           : [input.title, input.image_url, input.description, input.category, input.artist_name, input.is_published],
   );
 
-  return result.rows[0] as AdminGalleryItem;
+  const row = result.rows[0] as AdminGalleryItemRow;
+
+  return {
+    id: row.id,
+    title: row.title,
+    image_url: resolveRenderableImageUrl(row.image_url, row.image_object_key),
+    image_object_key: row.image_object_key || undefined,
+    description: safeString(row.description),
+    category: safeString(row.category, 'other'),
+    artist_name: safeString(row.artist_name, 'Unknown Artist'),
+    is_published: Boolean(row.is_published),
+    featured: Boolean(row.featured),
+  };
 }
 
 export async function updateAdminGalleryItem(id: string, input: Partial<Omit<AdminGalleryItem, 'id'>>): Promise<AdminGalleryItem | null> {
@@ -1039,7 +1065,22 @@ export async function updateAdminGalleryItem(id: string, input: Partial<Omit<Adm
       : [id, merged.title, merged.image_url, merged.description, merged.category, merged.artist_name, merged.is_published],
   );
 
-  return result.rowCount ? (result.rows[0] as AdminGalleryItem) : null;
+  if (!result.rowCount) {
+    return null;
+  }
+
+  const row = result.rows[0] as AdminGalleryItemRow;
+  return {
+    id: row.id,
+    title: row.title,
+    image_url: resolveRenderableImageUrl(row.image_url, row.image_object_key),
+    image_object_key: row.image_object_key || undefined,
+    description: safeString(row.description),
+    category: safeString(row.category, 'other'),
+    artist_name: safeString(row.artist_name, 'Unknown Artist'),
+    is_published: Boolean(row.is_published),
+    featured: Boolean(row.featured),
+  };
 }
 
 export async function deleteAdminGalleryItem(id: string): Promise<boolean> {
@@ -1105,7 +1146,7 @@ export async function getAdminMerchandise(): Promise<AdminMerchandiseItem[]> {
     price: Number(row.price),
     category: safeString(row.category, 'other'),
     stock: Number(row.stock),
-    image_url: safeString(row.image_url),
+    image_url: resolveRenderableImageUrl(row.image_url, row.image_object_key),
     image_object_key: row.image_object_key || undefined,
     talent_name: safeString(row.talent_name, 'StarMy'),
     is_published: Boolean(row.is_published),
@@ -1160,7 +1201,7 @@ export async function createAdminMerchandise(input: Omit<AdminMerchandiseItem, '
     price: Number(row.price),
     category: safeString(row.category, 'other'),
     stock: Number(row.stock),
-    image_url: safeString(row.image_url),
+    image_url: resolveRenderableImageUrl(row.image_url, row.image_object_key),
     image_object_key: row.image_object_key || undefined,
     talent_name: input.talent_name,
     is_published: Boolean(row.is_published),
@@ -1265,7 +1306,7 @@ export async function updateAdminMerchandise(id: string, input: Partial<Omit<Adm
     price: Number(row.price),
     category: safeString(row.category, 'other'),
     stock: Number(row.stock),
-    image_url: safeString(row.image_url),
+    image_url: resolveRenderableImageUrl(row.image_url, row.image_object_key),
     image_object_key: row.image_object_key || undefined,
     talent_name: merged.talent_name,
     is_published: Boolean(row.is_published),

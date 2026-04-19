@@ -64,15 +64,50 @@ export interface UserMerchandiseItem {
   updated_at: string
 }
 
+const schemaColumnCache = new Map<string, boolean>()
+
+async function hasColumn(tableName: string, columnName: string): Promise<boolean> {
+  const cacheKey = `${tableName}.${columnName}`
+  const cached = schemaColumnCache.get(cacheKey)
+  if (cached !== undefined) {
+    return cached
+  }
+
+  try {
+    const result = await dbQuery(
+      `
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = $1
+        AND column_name = $2
+      LIMIT 1
+      `,
+      [tableName, columnName],
+    )
+
+    const supported = result.rowCount > 0
+    schemaColumnCache.set(cacheKey, supported)
+    return supported
+  } catch {
+    schemaColumnCache.set(cacheKey, false)
+    return false
+  }
+}
+
 // ============================================
 // TALENT PROFILE QUERIES
 // ============================================
 
 export async function getTalentProfileByUserId(userId: string): Promise<TalentProfile | null> {
+  const supportsBioColumn = await hasColumn('talent_profiles', 'bio')
+  const supportsDebutDateColumn = await hasColumn('talent_profiles', 'debut_date')
   const result = await dbQuery(
     `SELECT 
-      id, user_id, stage_name, character_description, debut_date,
-      bio, avatar_url, avatar_object_key, lore, date_of_birth, 
+      id, user_id, stage_name, character_description,
+      ${supportsDebutDateColumn ? 'debut_date' : 'NULL::date AS debut_date'},
+      ${supportsBioColumn ? 'bio' : 'character_description AS bio'},
+      avatar_url, avatar_object_key, lore, date_of_birth, 
       height, species, likes, dislikes, tags, portfolio_links, 
       social_links, is_published, created_at, updated_at
      FROM talent_profiles 
@@ -86,6 +121,8 @@ export async function updateTalentProfile(
   userId: string,
   data: Partial<TalentProfile>
 ): Promise<TalentProfile> {
+  const supportsBioColumn = await hasColumn('talent_profiles', 'bio')
+  const supportsDebutDateColumn = await hasColumn('talent_profiles', 'debut_date')
   const updates: string[] = []
   const values: (string | string[] | Record<string, unknown> | boolean | null)[] = []
   let paramCount = 1
@@ -99,7 +136,7 @@ export async function updateTalentProfile(
     values.push(data.character_description)
   }
   if (data.bio !== undefined) {
-    updates.push(`bio = $${paramCount++}`)
+    updates.push(`${supportsBioColumn ? 'bio' : 'character_description'} = $${paramCount++}`)
     values.push(data.bio)
   }
   if (data.avatar_url !== undefined) {
@@ -117,6 +154,10 @@ export async function updateTalentProfile(
   if (data.date_of_birth !== undefined) {
     updates.push(`date_of_birth = $${paramCount++}`)
     values.push(data.date_of_birth)
+  }
+  if (data.debut_date !== undefined && supportsDebutDateColumn) {
+    updates.push(`debut_date = $${paramCount++}`)
+    values.push(data.debut_date)
   }
   if (data.height !== undefined) {
     updates.push(`height = $${paramCount++}`)
@@ -157,8 +198,10 @@ export async function updateTalentProfile(
     `UPDATE talent_profiles 
      SET ${updates.join(', ')}
      WHERE user_id = $${paramCount}
-     RETURNING id, user_id, stage_name, character_description, debut_date,
-       bio, avatar_url, avatar_object_key, lore, date_of_birth, 
+     RETURNING id, user_id, stage_name, character_description,
+       ${supportsDebutDateColumn ? 'debut_date' : 'NULL::date AS debut_date'},
+       ${supportsBioColumn ? 'bio' : 'character_description AS bio'},
+       avatar_url, avatar_object_key, lore, date_of_birth, 
        height, species, likes, dislikes, tags, portfolio_links, 
        social_links, is_published, created_at, updated_at`,
     values

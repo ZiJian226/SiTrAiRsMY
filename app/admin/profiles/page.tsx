@@ -886,12 +886,12 @@ export default function AdminProfilesPage() {
 
                             <div className="form-control">
                               <label className="label">
-                                <span className="label-text font-semibold">🐦 Twitter URL</span>
+                                <span className="label-text font-semibold">❌ X URL</span>
                               </label>
                               <input
                                 type="url"
                                 className="input input-bordered"
-                                placeholder="https://twitter.com/yourname"
+                                placeholder="https://x.com/yourname"
                                 value={editForm.twitterUrl || ''}
                                 onChange={(e) => setEditForm({ ...editForm, twitterUrl: e.target.value })}
                                 disabled={saving}

@@ -2,9 +2,9 @@ import { NextResponse } from 'next/server';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import {
   buildObjectStorageObjectKey,
-  buildObjectStoragePublicUrl,
-  objectStorageBucket,
-  objectStorageClient,
+  buildObjectStorageMediaUrl,
+  getObjectStorageBucket,
+  getObjectStorageClient,
 } from '@/lib/objectStorage';
 
 export const runtime = 'nodejs';
@@ -45,6 +45,8 @@ export async function POST(request: Request) {
     );
 
     const fileBytes = Buffer.from(await file.arrayBuffer());
+    const objectStorageClient = getObjectStorageClient();
+    const objectStorageBucket = getObjectStorageBucket();
 
     await objectStorageClient.send(
       new PutObjectCommand({
@@ -58,7 +60,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       key: objectKey,
-      url: buildObjectStoragePublicUrl(objectKey),
+      url: buildObjectStorageMediaUrl(objectKey),
       contentType: file.type,
       size: file.size,
     });

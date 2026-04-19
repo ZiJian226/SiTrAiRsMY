@@ -182,10 +182,15 @@ npm run lint         # Run ESLint
 This project is ready to run on an Oracle Cloud VM using Docker + Docker Compose.
 
 #### Quick Deploy Steps:
-1. Configure `.env.local` from `.env.local.example`
-2. Start services with `docker compose up -d --build`
-3. Open port 3000 in Oracle Security List / NSG
-4. Visit `http://<your-oracle-vm-public-ip>:3000`
+1. Configure `.env.local` (set `CADDY_HOST`, `CADDY_EMAIL`, `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_BASE_URL`)
+2. Point domain/subdomain DNS `A` record to Oracle VM public IP
+3. Open ports `80` and `443` in Oracle Security List / NSG
+4. Start services with `docker compose up -d --build`
+5. Visit `https://<your-domain>` (Caddy auto-manages Let's Encrypt certificates)
+
+If you want OCI to skip the build step entirely, use `docker-compose.prebuilt.yml` and a locally built Docker image (`docker save` / `docker load`).
+
+Public assets like the logo and mascot images should load from `/assets/...` on OCI. If you host under a subpath, set `NEXT_PUBLIC_ASSET_BASE_PATH` accordingly.
 
 📖 **Detailed Guide**: See [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) for full instructions
 

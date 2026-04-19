@@ -491,9 +491,9 @@ export default function AdminEventsPage() {
                   <span className="label-text font-semibold">Image URL</span>
                 </label>
                 <input
-                  type="url"
+                  type="text"
                   className="input input-bordered"
-                  placeholder="https://example.com/event-image.jpg"
+                  placeholder="https://example.com/event-image.jpg or /api/media/events/..."
                   value={formData.image_url}
                   onChange={(e) => setFormData({ ...formData, image_url: e.target.value, image_object_key: '' })}
                   disabled={imageUploading}

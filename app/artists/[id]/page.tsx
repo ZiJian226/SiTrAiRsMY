@@ -14,6 +14,28 @@ export default async function ArtistProfilePage({ params }: { params: Promise<{ 
     notFound();
   }
 
+  const xUrl = (artist.socialLinks as { x?: string; twitter?: string } | undefined)?.x || artist.socialLinks?.twitter;
+  const isLikelyEmbeddable = (url: string) =>
+    /(youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|vimeo\.com\/)/i.test(url);
+
+  const toEmbeddableUrl = (url: string) => {
+    if (url.includes('youtube.com/watch?v=')) {
+      return url.replace('youtube.com/watch?v=', 'youtube.com/embed/');
+    }
+    if (url.includes('youtu.be/')) {
+      return url.replace('youtu.be/', 'youtube.com/embed/');
+    }
+    return url;
+  };
+
+  const getHostname = (url: string) => {
+    try {
+      return new URL(url).hostname.replace(/^www\./, '');
+    } catch {
+      return 'external link';
+    }
+  };
+
   return (
     <div className="min-h-screen bg-base-100">
       <Navbar />
@@ -65,14 +87,14 @@ export default async function ArtistProfilePage({ params }: { params: Promise<{ 
                       Website
                     </a>
                   )}
-                  {artist.socialLinks?.twitter && (
+                  {xUrl && (
                     <a
-                      href={artist.socialLinks.twitter}
+                      href={xUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="btn btn-accent btn-sm"
                     >
-                      Twitter
+                      X
                     </a>
                   )}
                   {artist.socialLinks?.instagram && (
@@ -96,14 +118,41 @@ export default async function ArtistProfilePage({ params }: { params: Promise<{ 
           <div className="card bg-base-200 shadow-xl">
             <div className="card-body">
               <h2 className="card-title text-2xl mb-4">Portfolio</h2>
-              <div className="grid grid-cols-2 gap-4">
-                {artist.portfolio.map((image, index) => (
-                  <div key={index} className="aspect-[3/4] overflow-hidden rounded-lg">
-                    <img
-                      src={image}
-                      alt={`Portfolio ${index + 1}`}
-                      className="w-full h-full object-cover hover:scale-110 transition-transform"
-                    />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {artist.portfolio.map((url, index) => (
+                  <div key={index} className="space-y-2">
+                    {isLikelyEmbeddable(url) ? (
+                      <div className="aspect-video overflow-hidden rounded-lg bg-base-300">
+                        <iframe
+                          src={toEmbeddableUrl(url)}
+                          title={`Portfolio ${index + 1}`}
+                          className="w-full h-full"
+                          loading="lazy"
+                        />
+                      </div>
+                    ) : (
+                      <div className="aspect-video overflow-hidden rounded-lg bg-base-300 p-4 flex items-center justify-center text-center">
+                        <div className="space-y-3">
+                          <div className="badge badge-outline">{getHostname(url)}</div>
+                          <a
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="btn btn-sm btn-outline"
+                          >
+                            Open link
+                          </a>
+                        </div>
+                      </div>
+                    )}
+                    <a
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn btn-xs btn-ghost"
+                    >
+                      Open portfolio link
+                    </a>
                   </div>
                 ))}
               </div>

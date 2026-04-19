@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/lib/auth/apiAuth'
+import { logUserAuditEvent } from '@/lib/auditLog'
+import { dbQuery } from '@/lib/database'
 import {
   getUserMerchandise,
   createUserMerchandise,
@@ -33,6 +35,8 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
+    const profileResult = await dbQuery('SELECT role FROM profiles WHERE user_id = $1 LIMIT 1', [user.id])
+    const actorRole = profileResult.rows[0]?.role as 'talent' | 'artist' | 'admin' | undefined
 
     if (!body.name || !body.category || body.price === undefined) {
       return NextResponse.json(
@@ -50,6 +54,24 @@ export async function POST(request: NextRequest) {
       category: body.category,
       stock: parseInt(body.stock) || 0,
       is_published: body.is_published ?? false
+    })
+
+    await logUserAuditEvent({
+      actorUserId: user.id,
+      actorRole,
+      action: 'merchandise.create',
+      resourceType: 'merchandise',
+      resourceId: item.id,
+      targetUserId: user.id,
+      metadata: {
+        name: item.name,
+        category: item.category,
+        price: item.price,
+        stock: item.stock,
+        is_published: item.is_published,
+      },
+      ipAddress: request.headers.get('x-forwarded-for') || null,
+      userAgent: request.headers.get('user-agent') || null,
     })
 
     return NextResponse.json(item, { status: 201 })

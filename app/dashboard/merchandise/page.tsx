@@ -482,9 +482,9 @@ export default function MerchandiseManagerPage() {
                   <span className="label-text font-semibold">Image URL</span>
                 </label>
                 <input
-                  type="url"
+                  type="text"
                   className="input input-bordered"
-                  placeholder="https://example.com/image.jpg"
+                  placeholder="https://example.com/image.jpg or /api/media/merchandise/..."
                   value={formData.image_url}
                   onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
                 />

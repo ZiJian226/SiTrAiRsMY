@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { headers } from "next/headers";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Container from "@/components/Container";
@@ -37,6 +38,173 @@ export default async function TalentProfilePage({ params }: { params: Promise<{ 
       default:
         return "badge-primary";
     }
+  };
+
+  const extractYouTubeVideoId = (url: string): string | null => {
+    const watchMatch = url.match(/[?&]v=([a-zA-Z0-9_-]{6,})/);
+    if (watchMatch?.[1]) return watchMatch[1];
+
+    const shortMatch = url.match(/youtu\.be\/([a-zA-Z0-9_-]{6,})/);
+    if (shortMatch?.[1]) return shortMatch[1];
+
+    const embedMatch = url.match(/youtube\.com\/embed\/([a-zA-Z0-9_-]{6,})/);
+    if (embedMatch?.[1]) return embedMatch[1];
+
+    return null;
+  };
+
+  const extractTwitchChannel = (url: string): string | null => {
+    try {
+      const parsed = new URL(url);
+      if (!/twitch\.tv$/i.test(parsed.hostname)) {
+        return null;
+      }
+
+      const firstSegment = parsed.pathname.split('/').filter(Boolean)[0];
+      if (!firstSegment) {
+        return null;
+      }
+
+      const reserved = new Set([
+        'directory',
+        'downloads',
+        'jobs',
+        'p',
+        'products',
+        'settings',
+        'subscriptions',
+        'turbo',
+        'videos',
+      ]);
+
+      if (reserved.has(firstSegment.toLowerCase())) {
+        return null;
+      }
+
+      return firstSegment;
+    } catch {
+      const match = url.match(/twitch\.tv\/([a-zA-Z0-9_]+)/i);
+      return match?.[1] || null;
+    }
+  };
+
+  const extractTikTokVideoId = (url: string): string | null => {
+    const match = url.match(/\/video\/(\d+)/);
+    return match?.[1] || null;
+  };
+
+  const toYouTubeEmbedUrl = (url: string) => {
+    if (url.includes('youtube.com/watch?v=')) {
+      return url.replace('youtube.com/watch?v=', 'youtube.com/embed/');
+    }
+
+    if (url.includes('youtu.be/')) {
+      return url.replace('youtu.be/', 'youtube.com/embed/');
+    }
+
+    return url;
+  };
+
+  const extractTikTokVideoIdFromHtml = (html: string): string | null => {
+    const match = html.match(/data-video-id="(\d+)"/);
+    return match?.[1] || null;
+  };
+
+  const resolveTikTokVideoId = async (url: string): Promise<string | null> => {
+    const direct = extractTikTokVideoId(url);
+    if (direct) {
+      return direct;
+    }
+
+    try {
+      const response = await fetch(`https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`, {
+        next: { revalidate: 3600 },
+      });
+
+      if (!response.ok) {
+        return null;
+      }
+
+      const data = (await response.json()) as { html?: string };
+      if (!data.html) {
+        return null;
+      }
+
+      return extractTikTokVideoIdFromHtml(data.html);
+    } catch {
+      return null;
+    }
+  };
+
+  const tiktokVideoId = vtuber.tiktokUrl ? await resolveTikTokVideoId(vtuber.tiktokUrl) : null;
+  const twitchChannel = vtuber.twitchUrl ? extractTwitchChannel(vtuber.twitchUrl) : null;
+
+  const headerStore = await headers();
+  const forwardedHost = headerStore.get('x-forwarded-host');
+  const hostHeader = headerStore.get('host');
+  const runtimeHost = (forwardedHost || hostHeader || 'localhost').split(',')[0].trim().split(':')[0];
+  const twitchParents = Array.from(new Set([runtimeHost, 'localhost'])).filter(Boolean);
+  const twitchParentQuery = twitchParents.map(parent => `parent=${encodeURIComponent(parent)}`).join('&');
+
+  const getHostname = (url: string) => {
+    try {
+      return new URL(url).hostname.replace(/^www\./, '');
+    } catch {
+      return 'external link';
+    }
+  };
+
+  const extractUsernameFromUrl = (url: string, platform: string): string | null => {
+    try {
+      const parsed = new URL(url);
+      const pathSegments = parsed.pathname.split('/').filter(Boolean);
+
+      if (platform === 'twitch' && pathSegments[0]) {
+        return pathSegments[0];
+      }
+
+      if ((platform === 'youtube' || platform === 'tiktok' || platform === 'instagram') && pathSegments[0]) {
+        return pathSegments[0].startsWith('@') ? pathSegments[0] : `@${pathSegments[0]}`;
+      }
+
+      return null;
+    } catch {
+      return null;
+    }
+  };
+
+  const getPlatformBrandColor = (platform: string) => {
+    const colors: Record<string, { bg: string; border: string; text: string; icon: string; btn: string }> = {
+      youtube: { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700', icon: '🎥', btn: 'btn-error' },
+      twitch: { bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-700', icon: '🎮', btn: 'btn-secondary' },
+      tiktok: { bg: 'bg-gray-900', border: 'border-gray-700', text: 'text-white', icon: '🎵', btn: 'btn-ghost' },
+    };
+    return colors[platform.toLowerCase()] || { bg: 'bg-base-300', border: 'border-base-400', text: 'text-base-content', icon: '🔗', btn: 'btn-outline' };
+  };
+
+  const SocialProfileCard = ({ url, platform, title }: { url: string; platform: string; title: string }) => {
+    const username = extractUsernameFromUrl(url, platform);
+    const branding = getPlatformBrandColor(platform);
+
+    return (
+      <div className={`card ${branding.bg} shadow-md border-2 ${branding.border}`}>
+        <div className="card-body items-center text-center py-6">
+          <div className="text-5xl mb-3">{branding.icon}</div>
+          <h3 className={`card-title text-xl ${branding.text}`}>{title}</h3>
+          {username && <p className="text-sm opacity-80">{username}</p>}
+          <div className="card-actions mt-4">
+            <a
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`btn btn-sm gap-2 ${branding.btn}`}
+            >
+              Visit Profile →
+            </a>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -273,20 +441,20 @@ export default async function TalentProfilePage({ params }: { params: Promise<{ 
           {vtuber.tiktokUrl && (
             <div className="card bg-base-200 shadow-xl">
               <div className="card-body">
-                <h2 className="card-title text-2xl mb-4">🎵 TikTok</h2>
-                <div className="aspect-video bg-base-300 rounded-lg flex items-center justify-center">
-                  <div className="text-center">
-                    <p className="text-lg mb-4">TikTok Profile</p>
-                    <a
-                      href={vtuber.tiktokUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn btn-accent"
-                    >
-                      Visit TikTok
-                    </a>
+                <h2 className="card-title text-2xl mb-6">🎵 TikTok</h2>
+                {tiktokVideoId ? (
+                  <div className="aspect-video bg-base-300 rounded-lg overflow-hidden mb-4">
+                    <iframe
+                      className="w-full h-full"
+                      src={`https://www.tiktok.com/embed/v2/${tiktokVideoId}`}
+                      title={`${vtuber.name} TikTok`}
+                      loading="lazy"
+                    />
                   </div>
-                </div>
+                ) : null}
+                {!tiktokVideoId && (
+                  <SocialProfileCard url={vtuber.tiktokUrl} platform="tiktok" title="TikTok Profile" />
+                )}
               </div>
             </div>
           )}
@@ -295,20 +463,21 @@ export default async function TalentProfilePage({ params }: { params: Promise<{ 
           {vtuber.twitchUrl && (
             <div className="card bg-base-200 shadow-xl">
               <div className="card-body">
-                <h2 className="card-title text-2xl mb-4">🎮 Twitch</h2>
-                <div className="aspect-video bg-base-300 rounded-lg flex items-center justify-center">
-                  <div className="text-center">
-                    <p className="text-lg mb-4">Live Stream</p>
-                    <a
-                      href={vtuber.twitchUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn btn-secondary"
-                    >
-                      Watch on Twitch
-                    </a>
+                <h2 className="card-title text-2xl mb-6">🎮 Twitch</h2>
+                {twitchChannel ? (
+                  <div className="aspect-video bg-base-300 rounded-lg overflow-hidden mb-4">
+                    <iframe
+                      className="w-full h-full"
+                      src={`https://player.twitch.tv/?channel=${encodeURIComponent(twitchChannel)}&${twitchParentQuery}`}
+                      title={`${vtuber.name} Twitch`}
+                      loading="lazy"
+                      allowFullScreen
+                    />
                   </div>
-                </div>
+                ) : null}
+                {!twitchChannel && (
+                  <SocialProfileCard url={vtuber.twitchUrl} platform="twitch" title="Twitch Channel" />
+                )}
               </div>
             </div>
           )}
@@ -317,20 +486,21 @@ export default async function TalentProfilePage({ params }: { params: Promise<{ 
           {vtuber.youtubeUrl && (
             <div className="card bg-base-200 shadow-xl">
               <div className="card-body">
-                <h2 className="card-title text-2xl mb-4">🎥 YouTube Channel</h2>
-                <div className="aspect-video bg-base-300 rounded-lg flex items-center justify-center">
-                  <div className="text-center">
-                    <p className="text-lg mb-4">YouTube Channel</p>
-                    <a
-                      href={vtuber.youtubeUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn btn-primary"
-                    >
-                      Visit YouTube
-                    </a>
+                <h2 className="card-title text-2xl mb-6">🎥 YouTube Channel</h2>
+                {extractYouTubeVideoId(vtuber.youtubeUrl) ? (
+                  <div className="aspect-video bg-base-300 rounded-lg overflow-hidden mb-4">
+                    <iframe
+                      className="w-full h-full"
+                      src={`https://www.youtube.com/embed/${extractYouTubeVideoId(vtuber.youtubeUrl)}`}
+                      title={`${vtuber.name} YouTube`}
+                      allowFullScreen
+                      loading="lazy"
+                    />
                   </div>
-                </div>
+                ) : null}
+                {!extractYouTubeVideoId(vtuber.youtubeUrl) && (
+                  <SocialProfileCard url={vtuber.youtubeUrl} platform="youtube" title="YouTube Channel" />
+                )}
               </div>
             </div>
           )}

@@ -105,6 +105,13 @@ export default function AdminPage() {
                 <p className="text-white opacity-90">View analytics and reports</p>
               </div>
             </Link>
+
+            <Link href="/admin/audit-logs" className="card bg-base-200 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all">
+              <div className="card-body">
+                <h2 className="card-title text-accent">🧾 Audit Logs</h2>
+                <p className="opacity-70">Track profile and merchandise account changes</p>
+              </div>
+            </Link>
           </div>
         </Container>
         <Footer />

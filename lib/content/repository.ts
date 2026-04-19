@@ -1,6 +1,7 @@
 import 'server-only';
 
 import { dbQuery } from '@/lib/database';
+import { resolveRenderableImageUrl } from '@/lib/objectStorage';
 import {
   fallbackArtists,
   fallbackEvents,
@@ -147,20 +148,52 @@ export async function getTalentById(id: string): Promise<Talent | null> {
 }
 
 export async function getArtists(): Promise<ArtistProfile[]> {
+  const supportsArtistProfiles = await hasColumn('artist_profiles', 'user_id');
   const rows = await tryQuery<{
     id: string;
     full_name: string | null;
     email: string | null;
     bio: string | null;
     avatar_url: string | null;
+    specialty: string[] | null;
+    portfolio_links: string[] | null;
+    commissions_open: boolean | null;
+    price_range: string | null;
+    contact_email: string | null;
+    social_media_links: unknown;
   }>(
-    `
+    supportsArtistProfiles
+      ? `
     SELECT
       p.id,
       p.full_name,
       p.email,
       p.bio,
-      p.avatar_url
+      p.avatar_url,
+      ap.specialty,
+      ap.portfolio_links,
+      ap.commissions_open,
+      ap.price_range,
+      ap.contact_email,
+      ap.social_media_links
+    FROM profiles p
+    LEFT JOIN artist_profiles ap ON ap.user_id = p.user_id
+    WHERE p.role = 'artist'
+    ORDER BY p.created_at DESC
+    `
+      : `
+    SELECT
+      p.id,
+      p.full_name,
+      p.email,
+      p.bio,
+      p.avatar_url,
+      ARRAY['Digital Art']::text[] AS specialty,
+      ARRAY[]::text[] AS portfolio_links,
+      true AS commissions_open,
+      'Contact for quote'::text AS price_range,
+      NULL::text AS contact_email,
+      NULL::jsonb AS social_media_links
     FROM profiles p
     WHERE p.role = 'artist'
     ORDER BY p.created_at DESC
@@ -171,18 +204,30 @@ export async function getArtists(): Promise<ArtistProfile[]> {
     return fallbackArtists;
   }
 
-  return rows.map((row) => ({
-    id: row.id,
-    name: row.full_name || 'Unnamed Artist',
-    description: row.bio || 'Artist profile is being updated.',
-    avatar: row.avatar_url || DEFAULT_AVATAR,
-    specialty: ['Digital Art'],
-    portfolio: [],
-    commissionsOpen: true,
-    priceRange: 'Contact for quote',
-    contactEmail: row.email || 'contact@starmy.app',
-    socialLinks: {},
-  }));
+  return rows.map((row) => {
+    const social = asRecord(row.social_media_links);
+    const x = typeof social.x === 'string' ? social.x : typeof social.twitter === 'string' ? social.twitter : undefined;
+    const instagram = typeof social.instagram === 'string' ? social.instagram : undefined;
+    const website = typeof social.website === 'string' ? social.website : undefined;
+
+    return {
+      id: row.id,
+      name: row.full_name || 'Unnamed Artist',
+      description: row.bio || 'Artist profile is being updated.',
+      avatar: row.avatar_url || DEFAULT_AVATAR,
+      specialty: row.specialty && row.specialty.length > 0 ? row.specialty : ['Digital Art'],
+      portfolio: row.portfolio_links || [],
+      commissionsOpen: Boolean(row.commissions_open),
+      priceRange: row.price_range || 'Contact for quote',
+      contactEmail: row.contact_email || row.email || 'contact@starmy.app',
+      socialLinks: {
+        x,
+        twitter: x,
+        instagram,
+        website,
+      },
+    };
+  });
 }
 
 export async function getArtistById(id: string): Promise<ArtistProfile | null> {
@@ -228,7 +273,7 @@ export async function getEvents(): Promise<EventArticle[]> {
     content: row.description || '',
     date: row.event_date,
     category: (row.category as EventArticle['category']) || 'Events',
-    image: row.image_url || DEFAULT_IMAGE,
+    image: resolveRenderableImageUrl(row.image_url) || DEFAULT_IMAGE,
     author: 'StarMy Team',
     featured: Boolean(row.featured),
   }));
@@ -272,7 +317,7 @@ export async function getStoreItems(): Promise<StoreItem[]> {
     talent: row.stage_name || 'StarMy',
     price: Number(row.price),
     currency: 'MYR',
-    image: row.image_url || 'https://placehold.co/400x400/a855f7/ffffff?text=Merchandise',
+    image: resolveRenderableImageUrl(row.image_url) || 'https://placehold.co/400x400/a855f7/ffffff?text=Merchandise',
     category: row.category,
     inStock: row.stock > 0,
     description: row.description || 'No description available yet.',
@@ -314,7 +359,7 @@ export async function getGalleryItems(): Promise<GalleryEntry[]> {
     id: row.id,
     title: row.title,
     description: row.description || 'No description available yet.',
-    image: row.image_url,
+    image: resolveRenderableImageUrl(row.image_url),
     category: row.category,
     date: row.created_at,
     featured: Boolean(row.featured),

@@ -1,16 +1,26 @@
+export interface PortraitPicture {
+  url: string;
+  object_key?: string;
+}
+
 export interface VTuber {
   id: string;
   name: string;
   description: string;
   avatar: string;
+  role?: 'talent' | 'staff';
   tags: string[];
   tiktokUrl?: string;
   twitchUrl?: string;
   youtubeUrl?: string;
+  featuredVideoUrl?: string;
   featured: boolean;
   schedule?: StreamSchedule[];
-  lore?: string;
   portfolio?: string[];
+  vtuberModelUrl?: string;
+  profilePictureUrl?: string;
+  portraitPictureUrl?: string;
+  portraitPictures?: PortraitPicture[];
   characterInfo?: {
     dateOfBirth?: string;
     debutDate?: string;
@@ -37,6 +47,9 @@ export interface Artist {
   avatar: string;
   specialty: string[];
   portfolio: string[];
+  portfolioArt?: string[];
+  portfolioArtImages?: PortraitPicture[];
+  featured?: boolean;
   commissionsOpen: boolean;
   priceRange: string;
   contactEmail: string;

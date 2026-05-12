@@ -160,7 +160,7 @@ export default function FAQPage() {
                 Our support team is here to help! Reach out and we'll get back to you as soon as possible.
               </p>
               <div className="flex flex-wrap gap-4 justify-center">
-                <a href="mailto:support@starmy.my" className="btn btn-primary">
+                <a href="mailto:starmyriadmyofficial@gmail.com" className="btn btn-primary">
                   Email Support
                 </a>
                 <a href="/about" className="btn btn-secondary">

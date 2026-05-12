@@ -9,6 +9,7 @@ import {
   fallbackStoreItems,
   fallbackTalents,
 } from './fallback';
+import type { PortraitPicture } from '@/lib/types';
 import type { ArtistProfile, EventArticle, GalleryEntry, StoreItem, Talent } from './types';
 
 const DEFAULT_AVATAR = 'https://api.dicebear.com/7.x/avataaars/svg?seed=starmy';
@@ -17,6 +18,94 @@ const schemaColumnCache = new Map<string, boolean>();
 
 function asRecord(value: unknown): Record<string, unknown> {
   return typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : {};
+}
+
+function normalizeStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .filter((item): item is string => typeof item === 'string')
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0);
+}
+
+function normalizeProfileImages(value: unknown): PortraitPicture[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null)
+    .map((item) => ({
+      url: normalizeOptionalString(item.url) || '',
+      object_key: normalizeOptionalString(item.object_key) || normalizeOptionalString(item.key),
+    }))
+    .filter((item) => item.url.length > 0);
+}
+
+function normalizeOptionalString(value: unknown): string | undefined {
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}
+
+function normalizeDateValue(value: unknown): string | undefined {
+  if (value instanceof Date) {
+    if (Number.isNaN(value.getTime())) {
+      return undefined;
+    }
+    return value.toISOString().slice(0, 10);
+  }
+
+  return normalizeOptionalString(value);
+}
+
+function normalizeSchedule(value: unknown): Talent['schedule'] {
+  if (!Array.isArray(value)) {
+    return undefined;
+  }
+
+  type NormalizedScheduleSlot = {
+    id: string;
+    day: string;
+    time: string;
+    title: string;
+    platform: 'youtube' | 'twitch' | 'tiktok';
+  };
+
+  const normalized = value
+    .filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null)
+    .map((item, index) => {
+      const day = normalizeOptionalString(item.day);
+      const time = normalizeOptionalString(item.time);
+      const title = normalizeOptionalString(item.title);
+      const rawPlatform = normalizeOptionalString(item.platform)?.toLowerCase();
+      const platform = rawPlatform === 'youtube' || rawPlatform === 'twitch' || rawPlatform === 'tiktok'
+        ? rawPlatform
+        : undefined;
+
+      if (!day || !time || !title || !platform) {
+        return null;
+      }
+
+      const id = normalizeOptionalString(item.id) || `slot-${index}`;
+
+      return {
+        id,
+        day,
+        time,
+        title,
+        platform,
+      } as NormalizedScheduleSlot;
+    })
+    .filter((slot): slot is NormalizedScheduleSlot => Boolean(slot));
+
+  return normalized.length > 0 ? normalized : undefined;
 }
 
 async function tryQuery<T>(text: string, params: unknown[] = []): Promise<T[] | null> {
@@ -66,12 +155,28 @@ async function ensureColumn(tableName: string, columnDefinition: string, columnN
   schemaColumnCache.set(`${tableName}.${columnName}`, true);
 }
 
-export async function getTalents(): Promise<Talent[]> {
+async function getProfilesByRole(role: 'talent' | 'staff'): Promise<Talent[]> {
   const supportsTalentProfiles = await hasColumn('talent_profiles', 'user_id');
+  if (supportsTalentProfiles) {
+    await ensureColumn('talent_profiles', "portrait_pictures JSONB DEFAULT '[]'::jsonb", 'portrait_pictures');
+  }
   const supportsTalentPublished = supportsTalentProfiles && (await hasColumn('talent_profiles', 'is_published'));
+  const supportsVtuberModel = supportsTalentProfiles && (await hasColumn('talent_profiles', 'vtuber_model_url'));
+  const supportsProfilePicture = supportsTalentProfiles && (await hasColumn('talent_profiles', 'profile_picture_url'));
+  const supportsPortraitPicture = supportsTalentProfiles && (await hasColumn('talent_profiles', 'portrait_picture_url'));
+  const supportsPortraitPictures = supportsTalentProfiles && (await hasColumn('talent_profiles', 'portrait_pictures'));
+  const supportsTalentFeatured = supportsTalentProfiles && (await hasColumn('talent_profiles', 'featured'));
+  const supportsTalentDob = supportsTalentProfiles && (await hasColumn('talent_profiles', 'date_of_birth'));
+  const supportsTalentDebut = supportsTalentProfiles && (await hasColumn('talent_profiles', 'debut_date'));
+  const supportsTalentHeight = supportsTalentProfiles && (await hasColumn('talent_profiles', 'height'));
+  const supportsTalentSpecies = supportsTalentProfiles && (await hasColumn('talent_profiles', 'species'));
+  const supportsTalentLikes = supportsTalentProfiles && (await hasColumn('talent_profiles', 'likes'));
+  const supportsTalentDislikes = supportsTalentProfiles && (await hasColumn('talent_profiles', 'dislikes'));
+  const supportsTalentPortfolio = supportsTalentProfiles && (await hasColumn('talent_profiles', 'portfolio_links'));
 
   const rows = await tryQuery<{
     id: string;
+    role: string | null;
     stage_name: string | null;
     full_name: string | null;
     character_description: string | null;
@@ -79,78 +184,153 @@ export async function getTalents(): Promise<Talent[]> {
     avatar_url: string | null;
     tags: string[] | null;
     social_links: unknown;
+    vtuber_model_url: string | null;
+    profile_picture_url: string | null;
+    portrait_picture_url: string | null;
+    portrait_pictures: unknown;
+    featured: boolean | null;
+    date_of_birth: string | null;
+    debut_date: string | null;
+    height: string | null;
+    species: string | null;
+    likes: string[] | null;
+    dislikes: string[] | null;
+    portfolio_links: string[] | null;
   }>(
     supportsTalentProfiles
       ? `
     SELECT
       COALESCE(tp.id::text, p.id::text) AS id,
+      p.role,
       tp.stage_name,
       p.full_name,
       tp.character_description,
       p.bio,
       p.avatar_url,
       tp.tags,
-      tp.social_links
+      tp.social_links,
+      ${supportsVtuberModel ? 'tp.vtuber_model_url' : 'NULL::text AS vtuber_model_url'},
+      ${supportsProfilePicture ? 'tp.profile_picture_url' : 'NULL::text AS profile_picture_url'},
+      ${supportsPortraitPicture ? 'tp.portrait_picture_url' : 'NULL::text AS portrait_picture_url'},
+      ${supportsPortraitPictures ? 'tp.portrait_pictures' : 'NULL::jsonb AS portrait_pictures'},
+      ${supportsTalentFeatured ? 'tp.featured' : 'false AS featured'},
+      ${supportsTalentDob ? 'tp.date_of_birth' : 'NULL::date AS date_of_birth'},
+      ${supportsTalentDebut ? 'tp.debut_date' : 'NULL::date AS debut_date'},
+      ${supportsTalentHeight ? 'tp.height' : 'NULL::text AS height'},
+      ${supportsTalentSpecies ? 'tp.species' : 'NULL::text AS species'},
+      ${supportsTalentLikes ? 'tp.likes' : 'ARRAY[]::text[] AS likes'},
+      ${supportsTalentDislikes ? 'tp.dislikes' : 'ARRAY[]::text[] AS dislikes'},
+      ${supportsTalentPortfolio ? 'tp.portfolio_links' : 'ARRAY[]::text[] AS portfolio_links'}
     FROM profiles p
     LEFT JOIN talent_profiles tp ON tp.user_id = p.user_id
-    WHERE p.role = 'talent'
+    WHERE p.role = '${role}'
       AND ${supportsTalentPublished ? 'COALESCE(tp.is_published, true) = true' : '1=1'}
     ORDER BY p.created_at DESC
     `
       : `
     SELECT
       p.id::text AS id,
+      p.role,
       NULL::text AS stage_name,
       p.full_name,
       NULL::text AS character_description,
       p.bio,
       p.avatar_url,
       NULL::text[] AS tags,
-      NULL::jsonb AS social_links
+      NULL::jsonb AS social_links,
+      NULL::text AS vtuber_model_url,
+      NULL::text AS profile_picture_url,
+      NULL::text AS portrait_picture_url,
+      NULL::jsonb AS portrait_pictures,
+      false AS featured,
+      NULL::date AS date_of_birth,
+      NULL::date AS debut_date,
+      NULL::text AS height,
+      NULL::text AS species,
+      ARRAY[]::text[] AS likes,
+      ARRAY[]::text[] AS dislikes,
+      ARRAY[]::text[] AS portfolio_links
     FROM profiles p
-    WHERE p.role = 'talent'
+    WHERE p.role = '${role}'
     ORDER BY p.created_at DESC
     `,
   );
 
   if (!rows || rows.length === 0) {
-    return fallbackTalents;
+    return role === 'talent' ? fallbackTalents : [];
   }
 
   return rows.map((row) => {
     const social = asRecord(row.social_links);
+    const tags = normalizeStringArray(row.tags);
+    const likes = normalizeStringArray(row.likes);
+    const dislikes = normalizeStringArray(row.dislikes);
+    const portfolio = normalizeStringArray(row.portfolio_links);
 
-    const tiktok = typeof social.tiktok === 'string' ? social.tiktok : typeof social.tiktokUrl === 'string' ? social.tiktokUrl : undefined;
-    const twitch = typeof social.twitch === 'string' ? social.twitch : typeof social.twitchUrl === 'string' ? social.twitchUrl : undefined;
-    const youtube = typeof social.youtube === 'string' ? social.youtube : typeof social.youtubeUrl === 'string' ? social.youtubeUrl : undefined;
+    const tiktok = normalizeOptionalString(social.tiktok) || normalizeOptionalString(social.tiktokUrl);
+    const twitch = normalizeOptionalString(social.twitch) || normalizeOptionalString(social.twitchUrl);
+    const youtube = normalizeOptionalString(social.youtube) || normalizeOptionalString(social.youtubeUrl);
+
+    const portraitPictures = normalizeProfileImages(row.portrait_pictures);
 
     return {
       id: row.id,
+      role: row.role === 'staff' ? 'staff' : 'talent',
       name: row.stage_name || row.full_name || 'Unnamed Talent',
       description: row.character_description || row.bio || 'No description available yet.',
       avatar: row.avatar_url || DEFAULT_AVATAR,
-      tags: row.tags || [],
+      tags,
       tiktokUrl: tiktok,
       twitchUrl: twitch,
       youtubeUrl: youtube,
-      featured: false,
-      lore: undefined,
-      characterInfo: undefined,
-      schedule: Array.isArray(social.schedule) ? (social.schedule as Talent['schedule']) : undefined,
-      portfolio: [],
+      featured: Boolean(row.featured),
+      characterInfo: {
+        dateOfBirth: normalizeDateValue(row.date_of_birth),
+        debutDate: normalizeDateValue(row.debut_date),
+        height: row.height || undefined,
+        species: row.species || undefined,
+        likes,
+        dislikes,
+      },
+      schedule: normalizeSchedule(social.schedule),
+      portfolio,
+      vtuberModelUrl: row.vtuber_model_url || undefined,
+      profilePictureUrl: row.profile_picture_url || undefined,
+      portraitPictureUrl: row.portrait_picture_url || undefined,
+      portraitPictures: portraitPictures.length > 0 ? portraitPictures : undefined,
     };
   });
 }
 
+export async function getTalents(): Promise<Talent[]> {
+  return getProfilesByRole('talent');
+}
+
+export async function getStaffs(): Promise<Talent[]> {
+  return getProfilesByRole('staff');
+}
+
 export async function getTalentById(id: string): Promise<Talent | null> {
-  const talents = await getTalents();
+  const talents = await getProfilesByRole('talent');
   return talents.find(talent => talent.id === id) || null;
+}
+
+export async function getStaffById(id: string): Promise<Talent | null> {
+  const staffs = await getProfilesByRole('staff');
+  return staffs.find(staff => staff.id === id) || null;
 }
 
 export async function getArtists(): Promise<ArtistProfile[]> {
   const supportsArtistProfiles = await hasColumn('artist_profiles', 'user_id');
+  if (supportsArtistProfiles) {
+    await ensureColumn('artist_profiles', "portfolio_art_images JSONB DEFAULT '[]'::jsonb", 'portfolio_art_images');
+  }
+  const supportsArtistFeatured = supportsArtistProfiles && (await hasColumn('artist_profiles', 'featured'));
+  const supportsPortfolioArt = supportsArtistProfiles && (await hasColumn('artist_profiles', 'portfolio_art'));
+  const supportsPortfolioArtImages = supportsArtistProfiles && (await hasColumn('artist_profiles', 'portfolio_art_images'));
   const rows = await tryQuery<{
     id: string;
+    artist_profile_id: string | null;
     full_name: string | null;
     email: string | null;
     bio: string | null;
@@ -161,11 +341,15 @@ export async function getArtists(): Promise<ArtistProfile[]> {
     price_range: string | null;
     contact_email: string | null;
     social_media_links: unknown;
+    portfolio_art: string[] | null;
+    portfolio_art_images: unknown;
+    featured: boolean | null;
   }>(
     supportsArtistProfiles
       ? `
     SELECT
       p.id,
+      ap.id AS artist_profile_id,
       p.full_name,
       p.email,
       p.bio,
@@ -175,7 +359,10 @@ export async function getArtists(): Promise<ArtistProfile[]> {
       ap.commissions_open,
       ap.price_range,
       ap.contact_email,
-      ap.social_media_links
+      ap.social_media_links,
+      ${supportsPortfolioArt ? 'ap.portfolio_art' : 'ARRAY[]::text[] AS portfolio_art'},
+      ${supportsPortfolioArtImages ? 'ap.portfolio_art_images' : 'NULL::jsonb AS portfolio_art_images'},
+      ${supportsArtistFeatured ? 'ap.featured' : 'false AS featured'}
     FROM profiles p
     LEFT JOIN artist_profiles ap ON ap.user_id = p.user_id
     WHERE p.role = 'artist'
@@ -184,6 +371,7 @@ export async function getArtists(): Promise<ArtistProfile[]> {
       : `
     SELECT
       p.id,
+      NULL::text AS artist_profile_id,
       p.full_name,
       p.email,
       p.bio,
@@ -193,7 +381,10 @@ export async function getArtists(): Promise<ArtistProfile[]> {
       true AS commissions_open,
       'Contact for quote'::text AS price_range,
       NULL::text AS contact_email,
-      NULL::jsonb AS social_media_links
+      NULL::jsonb AS social_media_links,
+      ARRAY[]::text[] AS portfolio_art,
+      NULL::jsonb AS portfolio_art_images,
+      false AS featured
     FROM profiles p
     WHERE p.role = 'artist'
     ORDER BY p.created_at DESC
@@ -204,11 +395,50 @@ export async function getArtists(): Promise<ArtistProfile[]> {
     return fallbackArtists;
   }
 
+  const tablePortfolioArtImages = new Map<string, PortraitPicture[]>();
+  const artistProfileIds = rows
+    .map((row) => row.artist_profile_id)
+    .filter((id): id is string => Boolean(id));
+
+  if (artistProfileIds.length > 0) {
+    const artRows = await tryQuery<{
+      artist_id: string;
+      image_url: string | null;
+      image_object_key: string | null;
+    }>(
+      `SELECT artist_id, image_url, image_object_key
+       FROM portfolio_art_images
+       WHERE artist_id IN (${artistProfileIds.map((_, index) => `$${index + 1}`).join(',')})
+       ORDER BY artist_id, sort_order`,
+      artistProfileIds,
+    );
+
+    for (const artRow of artRows || []) {
+      const url = normalizeOptionalString(artRow.image_url);
+      if (!url) {
+        continue;
+      }
+
+      const images = tablePortfolioArtImages.get(artRow.artist_id) || [];
+      images.push({
+        url,
+        object_key: normalizeOptionalString(artRow.image_object_key),
+      });
+      tablePortfolioArtImages.set(artRow.artist_id, images);
+    }
+  }
+
   return rows.map((row) => {
     const social = asRecord(row.social_media_links);
     const x = typeof social.x === 'string' ? social.x : typeof social.twitter === 'string' ? social.twitter : undefined;
     const instagram = typeof social.instagram === 'string' ? social.instagram : undefined;
     const website = typeof social.website === 'string' ? social.website : undefined;
+
+    const jsonPortfolioArtImages = normalizeProfileImages(row.portfolio_art_images);
+    const fallbackPortfolioArtImages = row.artist_profile_id
+      ? tablePortfolioArtImages.get(row.artist_profile_id) || []
+      : [];
+    const portfolioArtImages = jsonPortfolioArtImages.length > 0 ? jsonPortfolioArtImages : fallbackPortfolioArtImages;
 
     return {
       id: row.id,
@@ -217,6 +447,8 @@ export async function getArtists(): Promise<ArtistProfile[]> {
       avatar: row.avatar_url || DEFAULT_AVATAR,
       specialty: row.specialty && row.specialty.length > 0 ? row.specialty : ['Digital Art'],
       portfolio: row.portfolio_links || [],
+      portfolioArt: row.portfolio_art || [],
+      portfolioArtImages: portfolioArtImages.length > 0 ? portfolioArtImages : undefined,
       commissionsOpen: Boolean(row.commissions_open),
       priceRange: row.price_range || 'Contact for quote',
       contactEmail: row.contact_email || row.email || 'contact@starmy.app',
@@ -226,6 +458,7 @@ export async function getArtists(): Promise<ArtistProfile[]> {
         instagram,
         website,
       },
+      featured: Boolean(row.featured),
     };
   });
 }

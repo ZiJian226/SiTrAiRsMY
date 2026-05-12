@@ -9,6 +9,8 @@ import Footer from '@/components/Footer'
 import PageBackground from '@/components/PageBackground'
 import Link from 'next/link'
 
+type ProfileImage = { url: string; object_key?: string }
+
 export default function ProfileEditorPage() {
   const { user, profile, loading } = useAuth()
   const router = useRouter()
@@ -24,7 +26,11 @@ export default function ProfileEditorPage() {
   const [youtubeUrl, setYoutubeUrl] = useState('')
   const [twitchUrl, setTwitchUrl] = useState('')
   const [tiktokUrl, setTiktokUrl] = useState('')
-  const [lore, setLore] = useState('')
+  const [featuredVideoUrl, setFeaturedVideoUrl] = useState('')
+  const [vtuberModelUrl, setVtuberModelUrl] = useState('')
+  const [fullBodyModelUrl, setFullBodyModelUrl] = useState('')
+  const [portraitPictureInput, setPortraitPictureInput] = useState('')
+  const [portraitPictures, setPortraitPictures] = useState<ProfileImage[]>([])
   const [dateOfBirth, setDateOfBirth] = useState('')
   const [debutDate, setDebutDate] = useState('')
   const [height, setHeight] = useState('')
@@ -39,6 +45,9 @@ export default function ProfileEditorPage() {
   const [specialtyInput, setSpecialtyInput] = useState('')
   const [portfolio, setPortfolio] = useState<string[]>([])
   const [portfolioInput, setPortfolioInput] = useState('')
+  const [portfolioArt, setPortfolioArt] = useState<string[]>([])
+  const [portfolioArtInput, setPortfolioArtInput] = useState('')
+  const [portfolioArtImages, setPortfolioArtImages] = useState<ProfileImage[]>([])
   const [commissionsOpen, setCommissionsOpen] = useState(false)
   const [priceRange, setPriceRange] = useState('')
   const [contactEmail, setContactEmail] = useState('')
@@ -47,7 +56,6 @@ export default function ProfileEditorPage() {
   const [instagramUrl, setInstagramUrl] = useState('')
   
   // Visibility toggles
-  const [showLore, setShowLore] = useState(true)
   const [showCharacterInfo, setShowCharacterInfo] = useState(true)
   const [showSocialLinks, setShowSocialLinks] = useState(true)
   const [showPortfolio, setShowPortfolio] = useState(true)
@@ -70,6 +78,14 @@ export default function ProfileEditorPage() {
     }
   }, [user, profile, saving])
 
+  // Convert incoming date-like strings to HTML date input value (YYYY-MM-DD)
+  function toDateInputValue(value?: string) {
+    if (!value) return ''
+    const d = new Date(value)
+    if (isNaN(d.getTime())) return ''
+    return d.toISOString().slice(0, 10)
+  }
+
   async function loadProfileData() {
     try {
       const response = await fetch('/api/dashboard/profile', {
@@ -91,7 +107,6 @@ export default function ProfileEditorPage() {
         avatar_url?: string
         bio?: string
         character_description?: string
-        lore?: string
         date_of_birth?: string
         debut_date?: string
         height?: string
@@ -100,6 +115,12 @@ export default function ProfileEditorPage() {
         likes?: string[]
         dislikes?: string[]
         portfolio_links?: string[]
+        portfolio_art?: string[]
+        vtuber_model_url?: string | null
+        profile_picture_url?: string | null
+        portrait_picture_url?: string | null
+        portrait_pictures?: ProfileImage[]
+        featured_video_url?: string | null
         social_links?: {
           youtube?: string | null
           youtubeUrl?: string | null
@@ -109,6 +130,7 @@ export default function ProfileEditorPage() {
           tiktokUrl?: string | null
         }
         specialty?: string[]
+        portfolio_art_images?: ProfileImage[]
         commissions_open?: boolean
         price_range?: string | null
         contact_email?: string | null
@@ -126,8 +148,11 @@ export default function ProfileEditorPage() {
         const socialLinks = data.social_media_links || {}
         setFullName(data.full_name || profile?.full_name || '')
         setBio(data.bio || profile?.bio || '')
+        setFeaturedVideoUrl('')
         setSpecialty(data.specialty || [])
         setPortfolio(data.portfolio_links || [])
+        setPortfolioArt(data.portfolio_art || [])
+        setPortfolioArtImages(data.portfolio_art_images || [])
         setCommissionsOpen(Boolean(data.commissions_open))
         setPriceRange(data.price_range || '')
         setContactEmail(data.contact_email || '')
@@ -138,18 +163,26 @@ export default function ProfileEditorPage() {
         const socialLinks = data.social_links || {}
         setFullName(data.stage_name || profile?.full_name || '')
         setBio(data.bio || data.character_description || profile?.bio || '')
-        setLore(data.lore || '')
-        setDateOfBirth(data.date_of_birth || '')
-        setDebutDate(data.debut_date || '')
+        setDateOfBirth(toDateInputValue(data.date_of_birth || ''))
+        setDebutDate(toDateInputValue(data.debut_date || ''))
         setHeight(data.height || '')
         setSpecies(data.species || '')
         setTags(data.tags || [])
         setYoutubeUrl(socialLinks.youtube || socialLinks.youtubeUrl || '')
         setTwitchUrl(socialLinks.twitch || socialLinks.twitchUrl || '')
         setTiktokUrl(socialLinks.tiktok || socialLinks.tiktokUrl || '')
+        setFeaturedVideoUrl(data.featured_video_url || '')
         setLikes(data.likes || [])
         setDislikes(data.dislikes || [])
         setPortfolio(data.portfolio_links || [])
+        setVtuberModelUrl(data.vtuber_model_url || '')
+        const nextPortraitPictures = data.portrait_pictures && data.portrait_pictures.length > 0
+          ? data.portrait_pictures
+          : data.portrait_picture_url
+            ? [{ url: data.portrait_picture_url }]
+            : []
+        setPortraitPictures(nextPortraitPictures)
+        setFullBodyModelUrl(nextPortraitPictures[0]?.url || data.portrait_picture_url || '')
       }
     } catch (err) {
       console.error('Failed to load profile:', err)
@@ -166,7 +199,7 @@ export default function ProfileEditorPage() {
     try {
       const formData = new FormData()
       formData.append('file', file)
-      formData.append('folder', 'user-avatars')
+      formData.append('folder', 'users/avatars')
 
       const response = await fetch('/api/admin/uploads/image', {
         method: 'POST',
@@ -188,6 +221,103 @@ export default function ProfileEditorPage() {
     }
   }
 
+  function syncPortraitPictures(nextPictures: ProfileImage[]) {
+    setPortraitPictures(nextPictures)
+    setFullBodyModelUrl(nextPictures[0]?.url || '')
+  }
+
+  function handleAddPortraitPictureUrl() {
+    const url = portraitPictureInput.trim()
+    if (!url) {
+      return
+    }
+
+    syncPortraitPictures([...portraitPictures, { url }])
+    setPortraitPictureInput('')
+  }
+
+  function handleRemovePortraitPicture(idx: number) {
+    syncPortraitPictures(portraitPictures.filter((_, i) => i !== idx))
+  }
+
+  async function handlePictureUpload(event: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(event.target.files || [])
+    if (files.length === 0) return
+
+    setImageUploading(true)
+    setUploadError(null)
+
+    try {
+      const uploadedPictures: ProfileImage[] = []
+
+      for (const file of files) {
+        const formData = new FormData()
+        formData.append('file', file)
+        formData.append('folder', 'users/portrait')
+
+        const response = await fetch('/api/admin/uploads/image', {
+          method: 'POST',
+          body: formData
+        })
+
+        if (!response.ok) {
+          setUploadError('Failed to upload portrait picture')
+          return
+        }
+
+        const { url, key } = await response.json()
+        uploadedPictures.push({ url, object_key: key })
+      }
+
+      syncPortraitPictures([...portraitPictures, ...uploadedPictures])
+    } catch (err) {
+      console.error('Upload error:', err)
+      setUploadError('Error uploading portrait picture')
+    } finally {
+      setImageUploading(false)
+      event.currentTarget.value = ''
+    }
+  }
+
+  async function handlePortfolioArtImageUpload(event: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(event.target.files || [])
+    if (files.length === 0) return
+
+    setImageUploading(true)
+    setUploadError(null)
+
+    try {
+      const uploadedImages: ProfileImage[] = []
+
+      for (const file of files) {
+        const formData = new FormData()
+        formData.append('file', file)
+        formData.append('folder', 'artists/portfolio-art')
+
+        const response = await fetch('/api/admin/uploads/image', {
+          method: 'POST',
+          body: formData
+        })
+
+        if (!response.ok) {
+          setUploadError('Failed to upload portfolio art image')
+          return
+        }
+
+        const { url, key } = await response.json()
+        uploadedImages.push({ url, object_key: key })
+      }
+
+      setPortfolioArtImages([...portfolioArtImages, ...uploadedImages])
+    } catch (err) {
+      console.error('Upload error:', err)
+      setUploadError('Error uploading portfolio art image')
+    } finally {
+      setImageUploading(false)
+      event.currentTarget.value = ''
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-base-100 flex items-center justify-center">
@@ -200,6 +330,8 @@ export default function ProfileEditorPage() {
     return null
   }
 
+  const activeProfile = profile
+
   async function handleSave() {
     if (!user || !profile) {
       setError('User not authenticated')
@@ -211,13 +343,15 @@ export default function ProfileEditorPage() {
     setError(null)
 
     try {
-      const payload = profile.role === 'artist'
+      const payload = activeProfile.role === 'artist'
         ? {
             full_name: fullName,
             bio,
             avatar_url: avatarUrl,
             specialty,
             portfolio_links: portfolio,
+            portfolio_art: portfolioArt,
+            portfolio_art_images: portfolioArtImages,
             commissions_open: commissionsOpen,
             price_range: priceRange || null,
             contact_email: contactEmail || null,
@@ -233,7 +367,6 @@ export default function ProfileEditorPage() {
             character_description: bio,
             avatar_url: avatarUrl,
             bio,
-            lore,
             date_of_birth: dateOfBirth || null,
             debut_date: debutDate || null,
             height: height || null,
@@ -242,6 +375,11 @@ export default function ProfileEditorPage() {
             likes,
             dislikes,
             portfolio_links: portfolio,
+            vtuber_model_url: vtuberModelUrl || null,
+            portrait_picture_url: portraitPictures[0]?.url || fullBodyModelUrl || null,
+            portrait_picture_object_key: portraitPictures[0]?.object_key || null,
+            portrait_pictures: portraitPictures,
+            featured_video_url: featuredVideoUrl || null,
             social_links: {
               youtube: youtubeUrl || null,
               twitch: twitchUrl || null,
@@ -330,7 +468,7 @@ export default function ProfileEditorPage() {
               <div className="flex flex-col md:flex-row gap-8 items-center md:items-start">
                 {/* Avatar Preview */}
                 <div className="avatar">
-                  <div className={`w-48 rounded-full ring ${profile.role === 'artist' ? 'ring-secondary' : 'ring-primary'} ring-offset-base-100 ring-offset-4`}>
+                  <div className={`w-48 rounded-full ring ${activeProfile.role === 'artist' ? 'ring-secondary' : 'ring-primary'} ring-offset-base-100 ring-offset-4`}>
                     <img 
                       src={avatarUrl || 'https://api.dicebear.com/7.x/avataaars/svg?seed=default'} 
                       alt="Avatar preview"
@@ -402,8 +540,7 @@ export default function ProfileEditorPage() {
                     />
                   </div>
 
-                  {/* Talent: Tags */}
-                  {profile.role === 'talent' && (
+                  {(activeProfile.role === 'talent' || activeProfile.role === 'staff') && (
                     <div className="form-control">
                       <label className="label">
                         <span className="label-text font-semibold">Tags</span>
@@ -459,7 +596,7 @@ export default function ProfileEditorPage() {
                   )}
 
                   {/* Artist: Specialty */}
-                  {profile.role === 'artist' && (
+                  {activeProfile.role === 'artist' && (
                     <>
                       <div className="form-control">
                         <label className="label">
@@ -566,7 +703,7 @@ export default function ProfileEditorPage() {
           </div>
 
           {/* Talent: Social Links */}
-          {profile.role === 'talent' && (
+          {(activeProfile.role === 'talent' || activeProfile.role === 'staff') && (
             <div className="card bg-base-200 shadow-xl mb-8">
               <div className="card-body">
                 <div className="flex justify-between items-center mb-4">
@@ -583,56 +720,73 @@ export default function ProfileEditorPage() {
                 </div>
 
                 {showSocialLinks && (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="form-control">
-                      <label className="label">
-                        <span className="label-text font-semibold">🎥 YouTube URL</span>
-                      </label>
-                      <input
-                        type="url"
-                        className="input input-bordered"
-                        placeholder="https://youtube.com/@yourname"
-                        value={youtubeUrl}
-                        onChange={(e) => setYoutubeUrl(e.target.value)}
-                        disabled={saving}
-                      />
-                    </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="form-control md:col-span-2">
+                            <label className="label">
+                              <span className="label-text font-semibold">🎬 Featured Video URL</span>
+                            </label>
+                            <input
+                              type="url"
+                              className="input input-bordered"
+                              placeholder="https://youtube.com/watch?v=... or https://twitch.tv/..."
+                              value={featuredVideoUrl}
+                              onChange={(e) => setFeaturedVideoUrl(e.target.value)}
+                              disabled={saving}
+                            />
+                            <label className="label">
+                              <span className="label-text-alt text-xs opacity-70">Optional YouTube or Twitch link for the featured video section</span>
+                            </label>
+                          </div>
 
-                    <div className="form-control">
-                      <label className="label">
-                        <span className="label-text font-semibold">🎮 Twitch URL</span>
-                      </label>
-                      <input
-                        type="url"
-                        className="input input-bordered"
-                        placeholder="https://twitch.tv/yourname"
-                        value={twitchUrl}
-                        onChange={(e) => setTwitchUrl(e.target.value)}
-                        disabled={saving}
-                      />
-                    </div>
+                          <div className="form-control">
+                            <label className="label">
+                              <span className="label-text font-semibold">🎮 Twitch URL</span>
+                            </label>
+                            <input
+                              type="url"
+                              className="input input-bordered"
+                              placeholder="https://twitch.tv/yourname"
+                              value={twitchUrl}
+                              onChange={(e) => setTwitchUrl(e.target.value)}
+                              disabled={saving}
+                            />
+                          </div>
 
-                    <div className="form-control">
-                      <label className="label">
-                        <span className="label-text font-semibold">🎵 TikTok URL</span>
-                      </label>
-                      <input
-                        type="url"
-                        className="input input-bordered"
-                        placeholder="https://tiktok.com/@yourname"
-                        value={tiktokUrl}
-                        onChange={(e) => setTiktokUrl(e.target.value)}
-                        disabled={saving}
-                      />
-                    </div>
-                  </div>
+                          <div className="form-control">
+                            <label className="label">
+                              <span className="label-text font-semibold">🎵 TikTok URL</span>
+                            </label>
+                            <input
+                              type="url"
+                              className="input input-bordered"
+                              placeholder="https://tiktok.com/@yourname"
+                              value={tiktokUrl}
+                              onChange={(e) => setTiktokUrl(e.target.value)}
+                              disabled={saving}
+                            />
+                          </div>
+
+                          <div className="form-control md:col-span-2">
+                            <label className="label">
+                              <span className="label-text font-semibold">📺 YouTube URL</span>
+                            </label>
+                            <input
+                              type="url"
+                              className="input input-bordered"
+                              placeholder="https://youtube.com/@yourname"
+                              value={youtubeUrl}
+                              onChange={(e) => setYoutubeUrl(e.target.value)}
+                              disabled={saving}
+                            />
+                          </div>
+                        </div>
                 )}
               </div>
             </div>
           )}
 
           {/* Artist: Social Links */}
-          {profile.role === 'artist' && (
+          {activeProfile.role === 'artist' && (
             <div className="card bg-base-200 shadow-xl mb-8">
               <div className="card-body">
                 <div className="flex justify-between items-center mb-4">
@@ -697,45 +851,8 @@ export default function ProfileEditorPage() {
             </div>
           )}
 
-          {/* Talent: Lore Section */}
-          {profile.role === 'talent' && (
-            <div className="card bg-base-200 shadow-xl mb-8">
-              <div className="card-body">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="card-title text-2xl">📖 Introduction / Lore</h2>
-                  <label className="label cursor-pointer gap-3">
-                    <span className="label-text">Show on profile</span>
-                    <input
-                      type="checkbox"
-                      className="toggle toggle-primary"
-                      checked={showLore}
-                      onChange={(e) => setShowLore(e.target.checked)}
-                    />
-                  </label>
-                </div>
-
-                {showLore && (
-                  <div className="form-control">
-                    <label className="label">
-                      <span className="label-text font-semibold">Character Backstory</span>
-                      <span className="label-text-alt">{lore.length}/1000</span>
-                    </label>
-                    <textarea
-                      className="textarea textarea-bordered h-40"
-                      placeholder="Your character's backstory, lore, or detailed introduction..."
-                      value={lore}
-                      onChange={(e) => setLore(e.target.value.slice(0, 1000))}
-                      disabled={saving}
-                      maxLength={1000}
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
           {/* Talent: Character Info */}
-          {profile.role === 'talent' && (
+          {(activeProfile.role === 'talent' || activeProfile.role === 'staff') && (
             <div className="card bg-base-200 shadow-xl mb-8">
               <div className="card-body">
                 <div className="flex justify-between items-center mb-4">
@@ -806,6 +923,77 @@ export default function ProfileEditorPage() {
                           onChange={(e) => setSpecies(e.target.value)}
                           disabled={saving}
                         />
+                      </div>
+
+                      {/* Portrait Picture */}
+                      <div className="form-control">
+                        <label className="label">
+                          <span className="label-text font-semibold">Portrait Pictures</span>
+                          <span className="label-text-alt text-xs">One image shows at a time on the public card</span>
+                        </label>
+                        <div className="flex flex-col gap-2">
+                          {portraitPictures.length > 0 && (
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                              {portraitPictures.map((image, idx) => (
+                                <div key={`${image.url}-${idx}`} className="card bg-base-300 shadow-md">
+                                  <figure>
+                                    <img src={image.url} alt={`Portrait ${idx + 1}`} className="w-full h-44 object-contain bg-base-100" />
+                                  </figure>
+                                  <div className="card-body p-3">
+                                    <div className="flex items-center justify-between gap-2">
+                                      <span className="badge badge-primary badge-sm">{idx === 0 ? 'Primary' : `#${idx + 1}`}</span>
+                                      <button
+                                        type="button"
+                                        className="btn btn-ghost btn-xs btn-circle"
+                                        onClick={() => handleRemovePortraitPicture(idx)}
+                                        disabled={saving || imageUploading}
+                                      >
+                                        âœ•
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          <div className="join w-full">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="file-input file-input-bordered join-item flex-1"
+                              multiple
+                              onChange={handlePictureUpload}
+                              disabled={saving || imageUploading}
+                            />
+                            <span className="join-item flex items-center px-3">
+                              {imageUploading && <span className="loading loading-spinner loading-sm"></span>}
+                            </span>
+                          </div>
+                          <div className="join w-full">
+                            <input
+                              type="url"
+                              className="input input-bordered input-sm join-item flex-1"
+                              placeholder="Or paste a portrait image URL"
+                              value={portraitPictureInput}
+                              onChange={(e) => setPortraitPictureInput(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault()
+                                  handleAddPortraitPictureUrl()
+                                }
+                              }}
+                              disabled={saving || imageUploading}
+                            />
+                            <button
+                              type="button"
+                              className="btn btn-primary btn-sm join-item"
+                              onClick={handleAddPortraitPictureUrl}
+                              disabled={saving || imageUploading}
+                            >
+                              Add URL
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     </div>
 
@@ -921,7 +1109,7 @@ export default function ProfileEditorPage() {
           )}
 
           {/* Artist: Portfolio */}
-          {profile.role === 'artist' && (
+          {activeProfile.role === 'artist' && (
             <div className="card bg-base-200 shadow-xl mb-8">
               <div className="card-body">
                 <div className="flex justify-between items-center mb-4">
@@ -1010,7 +1198,101 @@ export default function ProfileEditorPage() {
                       </div>
                     )}
 
-                    {portfolio.length === 0 && (
+                    <div className="divider">Portfolio Art Images</div>
+
+                    <div className="form-control mb-4">
+                      <label className="label">
+                        <span className="label-text font-semibold">Upload Portfolio Art Images</span>
+                      </label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        className="file-input file-input-bordered w-full"
+                        onChange={handlePortfolioArtImageUpload}
+                        disabled={saving || imageUploading}
+                      />
+                    </div>
+
+                    <div className="form-control mb-4">
+                      <label className="label">
+                        <span className="label-text font-semibold">Add Portfolio Art Image URL</span>
+                      </label>
+                      <div className="join w-full">
+                        <input
+                          type="url"
+                          className="input input-bordered join-item flex-1"
+                          placeholder="https://example.com/artwork.jpg"
+                          value={portfolioArtInput}
+                          onChange={(e) => setPortfolioArtInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault()
+                              if (portfolioArtInput.trim()) {
+                                setPortfolioArt([...portfolioArt, portfolioArtInput.trim()])
+                                setPortfolioArtInput('')
+                              }
+                            }
+                          }}
+                          disabled={saving}
+                        />
+                        <button
+                          type="button"
+                          className="btn btn-accent join-item"
+                          onClick={() => {
+                            if (portfolioArtInput.trim()) {
+                              setPortfolioArt([...portfolioArt, portfolioArtInput.trim()])
+                              setPortfolioArtInput('')
+                            }
+                          }}
+                          disabled={saving}
+                        >
+                          Add Art
+                        </button>
+                      </div>
+                    </div>
+
+                    {portfolioArtImages.length > 0 && (
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        {portfolioArtImages.map((image, idx) => (
+                          <div key={`${image.url}-${idx}`} className="relative overflow-hidden rounded-lg group bg-base-300">
+                            <div className="aspect-video">
+                              <img src={image.url} alt={`Uploaded portfolio art ${idx + 1}`} className="w-full h-full object-cover" />
+                            </div>
+                            <button
+                              type="button"
+                              className="btn btn-error btn-sm btn-circle absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={() => setPortfolioArtImages(portfolioArtImages.filter((_, i) => i !== idx))}
+                              disabled={saving}
+                            >
+                              âœ•
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {portfolioArt.length > 0 && (
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {portfolioArt.map((url, idx) => (
+                          <div key={idx} className="relative overflow-hidden rounded-lg group bg-base-300">
+                            <div className="aspect-video">
+                              <img src={url} alt={`Portfolio art ${idx + 1}`} className="w-full h-full object-cover" />
+                            </div>
+                            <button
+                              type="button"
+                              className="btn btn-error btn-sm btn-circle absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={() => setPortfolioArt(portfolioArt.filter((_, i) => i !== idx))}
+                              disabled={saving}
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {portfolio.length === 0 && portfolioArt.length === 0 && portfolioArtImages.length === 0 && (
                       <div className="alert alert-info">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -1030,7 +1312,7 @@ export default function ProfileEditorPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
             <div>
-              <div className="font-semibold">Account: {profile.role} • {profile.email}</div>
+              <div className="font-semibold">Account: {activeProfile.role} • {activeProfile.email}</div>
               <div className="text-sm opacity-70 mt-1">
                 ✓ Changes save to PostgreSQL database
               </div>

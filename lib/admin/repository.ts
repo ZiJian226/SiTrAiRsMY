@@ -2,6 +2,7 @@ import 'server-only';
 
 import { dbPool, dbQuery } from '@/lib/database';
 import { resolveRenderableImageUrl } from '@/lib/objectStorage';
+import { updateArtistProfile, updateTalentProfile, type ProfileImage } from '@/lib/user/repository';
 import type {
   AdminEvent,
   AdminGalleryItem,
@@ -64,8 +65,33 @@ type AdminProfileRow = {
   created_at: string;
   updated_at: string;
   character_description: string | null;
+  date_of_birth: string | null;
+  debut_date: string | null;
+  height: string | null;
+  species: string | null;
+  likes: string[] | null;
+  dislikes: string[] | null;
   tags: string[] | null;
+  portfolio_links: string[] | null;
+  vtuber_model_url: string | null;
+  profile_picture_url: string | null;
+  profile_picture_object_key: string | null;
+  portrait_picture_url: string | null;
+  portrait_picture_object_key: string | null;
+  featured_video_url: string | null;
+  talent_featured: boolean | null;
+  artist_featured: boolean | null;
   social_links: unknown;
+  portrait_pictures: unknown;
+  artist_profile_id: string | null;
+  specialty: string[] | null;
+  artist_portfolio_links: string[] | null;
+  portfolio_art: string[] | null;
+  portfolio_art_images: unknown;
+  commissions_open: boolean | null;
+  price_range: string | null;
+  contact_email: string | null;
+  social_media_links: unknown;
 };
 
 type RecentUserRow = { id: string; full_name: string | null; created_at: string };
@@ -99,6 +125,20 @@ function safeString(value: unknown, fallback = ''): string {
 
 function asRecord(value: unknown): Record<string, unknown> {
   return typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : {};
+}
+
+function normalizeProfileImages(value: unknown): ProfileImage[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null)
+    .map((item) => ({
+      url: safeString(item.url).trim(),
+      object_key: safeString(item.object_key || item.key) || undefined,
+    }))
+    .filter((item) => item.url.length > 0);
 }
 
 async function hasColumn(tableName: string, columnName: string): Promise<boolean> {
@@ -147,7 +187,64 @@ async function hasArtistProfilesTable(): Promise<boolean> {
   return hasColumn('artist_profiles', 'user_id');
 }
 
+async function hasTalentProfilesTable(): Promise<boolean> {
+  return hasColumn('talent_profiles', 'user_id');
+}
+
+async function ensureProfilesForAllUsers(): Promise<void> {
+  const supportsAvatarObjectKey = await hasProfileAvatarObjectKey();
+  const supportsArtistProfiles = await hasArtistProfilesTable();
+  const supportsTalentProfiles = await hasTalentProfilesTable();
+
+  const artistJoin = supportsArtistProfiles ? 'LEFT JOIN artist_profiles ap ON ap.user_id = u.id' : '';
+  const talentJoin = supportsTalentProfiles ? 'LEFT JOIN talent_profiles tp ON tp.user_id = u.id' : '';
+
+  const inferredRole = supportsArtistProfiles && supportsTalentProfiles
+    ? "CASE WHEN ap.user_id IS NOT NULL THEN 'artist' WHEN tp.user_id IS NOT NULL THEN 'talent' ELSE 'talent' END"
+    : supportsArtistProfiles
+      ? "CASE WHEN ap.user_id IS NOT NULL THEN 'artist' ELSE 'talent' END"
+      : "'talent'";
+
+  await dbQuery(
+    supportsAvatarObjectKey
+      ? `
+    INSERT INTO profiles (user_id, email, full_name, role, avatar_url, avatar_object_key, bio)
+    SELECT
+      u.id,
+      u.email,
+      COALESCE(NULLIF(split_part(u.email, '@', 1), ''), 'No name') AS full_name,
+      ${inferredRole}::text AS role,
+      '' AS avatar_url,
+      NULL::text AS avatar_object_key,
+      '' AS bio
+    FROM users u
+    LEFT JOIN profiles p ON p.user_id = u.id
+    ${artistJoin}
+    ${talentJoin}
+    WHERE p.user_id IS NULL
+    ON CONFLICT (user_id) DO NOTHING
+    `
+      : `
+    INSERT INTO profiles (user_id, email, full_name, role, avatar_url, bio)
+    SELECT
+      u.id,
+      u.email,
+      COALESCE(NULLIF(split_part(u.email, '@', 1), ''), 'No name') AS full_name,
+      ${inferredRole}::text AS role,
+      '' AS avatar_url,
+      '' AS bio
+    FROM users u
+    LEFT JOIN profiles p ON p.user_id = u.id
+    ${artistJoin}
+    ${talentJoin}
+    WHERE p.user_id IS NULL
+    ON CONFLICT (user_id) DO NOTHING
+    `,
+  );
+}
+
 export async function getAdminUsers(): Promise<AdminUser[]> {
+  await ensureProfilesForAllUsers();
   const supportsAvatarObjectKey = await hasProfileAvatarObjectKey();
   const result = await dbQuery(
     supportsAvatarObjectKey
@@ -422,7 +519,7 @@ export async function getAdminGalleryItems(): Promise<AdminGalleryItem[]> {
 export async function createAdminUser(input: {
   email: string;
   full_name?: string;
-  role: 'admin' | 'talent' | 'artist';
+  role: 'admin' | 'talent' | 'staff' | 'artist';
   avatar_url?: string;
   avatar_object_key?: string;
   bio?: string;
@@ -479,7 +576,7 @@ export async function createAdminUser(input: {
 
     const row = profileResult.rows[0];
 
-    if (input.role === 'talent') {
+    if (input.role === 'talent' || input.role === 'staff') {
       await client.query(
         `
         INSERT INTO talent_profiles (user_id, stage_name, character_description, social_links, tags, is_published)
@@ -540,7 +637,7 @@ function generateTemporaryPassword(): string {
 
 export async function updateAdminUser(
   profileId: string,
-  input: { full_name: string; role: 'admin' | 'talent' | 'artist'; avatar_url: string; avatar_object_key?: string; bio: string },
+  input: { full_name: string; role: 'admin' | 'talent' | 'staff' | 'artist'; avatar_url: string; avatar_object_key?: string; bio: string },
 ): Promise<AdminUser | null> {
   const supportsAvatarObjectKey = await hasProfileAvatarObjectKey();
   const supportsArtistProfiles = await hasArtistProfilesTable();
@@ -581,7 +678,7 @@ export async function updateAdminUser(
     user_id: string;
     email: string;
     full_name: string;
-    role: 'admin' | 'talent' | 'artist';
+    role: 'admin' | 'talent' | 'staff' | 'artist';
     avatar_url: string;
     avatar_object_key: string | null;
     bio: string;
@@ -589,7 +686,7 @@ export async function updateAdminUser(
     updated_at: string;
   };
 
-  if (input.role === 'talent') {
+  if (input.role === 'talent' || input.role === 'staff') {
     const talentUpdateResult = await dbQuery(
       `
       UPDATE talent_profiles
@@ -677,7 +774,33 @@ export async function deleteAdminUser(profileId: string): Promise<boolean> {
 }
 
 export async function getAdminProfiles(): Promise<AdminProfile[]> {
+  await ensureProfilesForAllUsers();
   const supportsAvatarObjectKey = await hasProfileAvatarObjectKey();
+  const supportsTalentProfilesTable = await hasTalentProfilesTable();
+  const supportsArtistProfilesTable = await hasArtistProfilesTable();
+  if (supportsTalentProfilesTable) {
+    await ensureColumn('talent_profiles', "portrait_pictures JSONB DEFAULT '[]'::jsonb", 'portrait_pictures');
+  }
+  if (supportsArtistProfilesTable) {
+    await ensureColumn('artist_profiles', "portfolio_art_images JSONB DEFAULT '[]'::jsonb", 'portfolio_art_images');
+  }
+  const supportsTalentDob = await hasColumn('talent_profiles', 'date_of_birth');
+  const supportsTalentDebut = await hasColumn('talent_profiles', 'debut_date');
+  const supportsTalentHeight = await hasColumn('talent_profiles', 'height');
+  const supportsTalentSpecies = await hasColumn('talent_profiles', 'species');
+  const supportsTalentLikes = await hasColumn('talent_profiles', 'likes');
+  const supportsTalentDislikes = await hasColumn('talent_profiles', 'dislikes');
+  const supportsTalentPortfolio = await hasColumn('talent_profiles', 'portfolio_links');
+  const supportsVtuberModel = await hasColumn('talent_profiles', 'vtuber_model_url');
+  const supportsProfilePicture = await hasColumn('talent_profiles', 'profile_picture_url');
+  const supportsPortraitPicture = await hasColumn('talent_profiles', 'portrait_picture_url');
+  const supportsPortraitPictures = await hasColumn('talent_profiles', 'portrait_pictures');
+  const supportsFeaturedVideo = await hasColumn('talent_profiles', 'featured_video_url');
+  const supportsTalentFeatured = await hasColumn('talent_profiles', 'featured');
+  const supportsArtistFeatured = await hasColumn('artist_profiles', 'featured');
+  const supportsArtistPortfolioArt = await hasColumn('artist_profiles', 'portfolio_art');
+  const supportsArtistPortfolioArtImages = await hasColumn('artist_profiles', 'portfolio_art_images');
+
   const result = await dbQuery(
     supportsAvatarObjectKey
       ? `
@@ -693,10 +816,36 @@ export async function getAdminProfiles(): Promise<AdminProfile[]> {
       p.created_at,
       p.updated_at,
       tp.character_description,
+      ${supportsTalentDob ? 'tp.date_of_birth' : 'NULL::date AS date_of_birth'},
+      ${supportsTalentDebut ? 'tp.debut_date' : 'NULL::date AS debut_date'},
+      ${supportsTalentHeight ? 'tp.height' : 'NULL::text AS height'},
+      ${supportsTalentSpecies ? 'tp.species' : 'NULL::text AS species'},
+      ${supportsTalentLikes ? 'tp.likes' : 'ARRAY[]::text[] AS likes'},
+      ${supportsTalentDislikes ? 'tp.dislikes' : 'ARRAY[]::text[] AS dislikes'},
       tp.tags,
-      tp.social_links
+      ${supportsTalentPortfolio ? 'tp.portfolio_links' : 'ARRAY[]::text[] AS portfolio_links'},
+      ${supportsVtuberModel ? 'tp.vtuber_model_url' : 'NULL::text AS vtuber_model_url'},
+      ${supportsProfilePicture ? 'tp.profile_picture_url' : 'NULL::text AS profile_picture_url'},
+      ${supportsProfilePicture ? 'tp.profile_picture_object_key' : 'NULL::text AS profile_picture_object_key'},
+      ${supportsPortraitPicture ? 'tp.portrait_picture_url' : 'NULL::text AS portrait_picture_url'},
+      ${supportsPortraitPicture ? 'tp.portrait_picture_object_key' : 'NULL::text AS portrait_picture_object_key'},
+      ${supportsPortraitPictures ? 'tp.portrait_pictures' : "'[]'::jsonb AS portrait_pictures"},
+      ${supportsFeaturedVideo ? 'tp.featured_video_url' : 'NULL::text AS featured_video_url'},
+      ${supportsTalentFeatured ? 'tp.featured' : 'false AS talent_featured'},
+      tp.social_links,
+      ap.id AS artist_profile_id,
+      ap.specialty,
+      ap.portfolio_links AS artist_portfolio_links,
+      ${supportsArtistPortfolioArt ? 'ap.portfolio_art' : 'ARRAY[]::text[] AS portfolio_art'},
+      ${supportsArtistPortfolioArtImages ? 'ap.portfolio_art_images' : "'[]'::jsonb AS portfolio_art_images"},
+      ap.commissions_open,
+      ap.price_range,
+      ap.contact_email,
+      ap.social_media_links,
+      ${supportsArtistFeatured ? 'ap.featured' : 'false AS artist_featured'}
     FROM profiles p
     LEFT JOIN talent_profiles tp ON tp.user_id = p.user_id
+    LEFT JOIN artist_profiles ap ON ap.user_id = p.user_id
     ORDER BY p.created_at DESC
     `
       : `
@@ -712,20 +861,95 @@ export async function getAdminProfiles(): Promise<AdminProfile[]> {
       p.created_at,
       p.updated_at,
       tp.character_description,
+      ${supportsTalentDob ? 'tp.date_of_birth' : 'NULL::date AS date_of_birth'},
+      ${supportsTalentDebut ? 'tp.debut_date' : 'NULL::date AS debut_date'},
+      ${supportsTalentHeight ? 'tp.height' : 'NULL::text AS height'},
+      ${supportsTalentSpecies ? 'tp.species' : 'NULL::text AS species'},
+      ${supportsTalentLikes ? 'tp.likes' : 'ARRAY[]::text[] AS likes'},
+      ${supportsTalentDislikes ? 'tp.dislikes' : 'ARRAY[]::text[] AS dislikes'},
       tp.tags,
-      tp.social_links
+      ${supportsTalentPortfolio ? 'tp.portfolio_links' : 'ARRAY[]::text[] AS portfolio_links'},
+      ${supportsVtuberModel ? 'tp.vtuber_model_url' : 'NULL::text AS vtuber_model_url'},
+      ${supportsProfilePicture ? 'tp.profile_picture_url' : 'NULL::text AS profile_picture_url'},
+      ${supportsProfilePicture ? 'tp.profile_picture_object_key' : 'NULL::text AS profile_picture_object_key'},
+      ${supportsPortraitPicture ? 'tp.portrait_picture_url' : 'NULL::text AS portrait_picture_url'},
+      ${supportsPortraitPicture ? 'tp.portrait_picture_object_key' : 'NULL::text AS portrait_picture_object_key'},
+      ${supportsPortraitPictures ? 'tp.portrait_pictures' : "'[]'::jsonb AS portrait_pictures"},
+      ${supportsFeaturedVideo ? 'tp.featured_video_url' : 'NULL::text AS featured_video_url'},
+      ${supportsTalentFeatured ? 'tp.featured' : 'false AS talent_featured'},
+      tp.social_links,
+      ap.id AS artist_profile_id,
+      ap.specialty,
+      ap.portfolio_links AS artist_portfolio_links,
+      ${supportsArtistPortfolioArt ? 'ap.portfolio_art' : 'ARRAY[]::text[] AS portfolio_art'},
+      ${supportsArtistPortfolioArtImages ? 'ap.portfolio_art_images' : "'[]'::jsonb AS portfolio_art_images"},
+      ap.commissions_open,
+      ap.price_range,
+      ap.contact_email,
+      ap.social_media_links,
+      ${supportsArtistFeatured ? 'ap.featured' : 'false AS artist_featured'}
     FROM profiles p
     LEFT JOIN talent_profiles tp ON tp.user_id = p.user_id
+    LEFT JOIN artist_profiles ap ON ap.user_id = p.user_id
     ORDER BY p.created_at DESC
     `,
   );
 
   const rows = result.rows as AdminProfileRow[];
 
+  // Fetch portfolio art images for artists
+  const artResultMap = new Map<string, Array<{ url: string; object_key?: string }>>();
+  
+  const artistIds = rows
+    .filter(r => r.role === 'artist')
+    .map(r => r.artist_profile_id)
+    .filter(id => id);
+
+  if (artistIds.length > 0) {
+    const artResult = await dbQuery(
+      `SELECT artist_id, image_url, image_object_key, sort_order 
+       FROM portfolio_art_images 
+       WHERE artist_id IN (${artistIds.map((_, i) => `$${i + 1}`).join(',')})
+       ORDER BY artist_id, sort_order`,
+      artistIds
+    ).catch(() => ({ rows: [] }));
+
+    for (const artRow of artResult.rows) {
+      const artistId = artRow.artist_id as string;
+      if (!artResultMap.has(artistId)) {
+        artResultMap.set(artistId, []);
+      }
+      const images = artResultMap.get(artistId)!;
+      images.push({
+        url: artRow.image_url as string,
+        object_key: artRow.image_object_key as string | undefined,
+      });
+    }
+  }
+
   return rows.map((row) => {
     const social = typeof row.social_links === 'object' && row.social_links !== null
       ? (row.social_links as Record<string, unknown>)
       : {};
+    const artistSocial = typeof row.social_media_links === 'object' && row.social_media_links !== null
+      ? (row.social_media_links as Record<string, unknown>)
+      : {};
+    const xUrl = typeof artistSocial.x === 'string'
+      ? artistSocial.x
+      : typeof artistSocial.twitter === 'string'
+      ? artistSocial.twitter
+      : undefined;
+    const portraitPictures = normalizeProfileImages(row.portrait_pictures);
+    const resolvedPortraitPictures = portraitPictures.length > 0
+      ? portraitPictures
+      : row.portrait_picture_url
+        ? [{
+            url: row.portrait_picture_url,
+            object_key: row.portrait_picture_object_key || undefined,
+          }]
+        : [];
+    const artistPortfolioArtImages = normalizeProfileImages(row.portfolio_art_images);
+    const tablePortfolioArtImages = row.artist_profile_id ? artResultMap.get(row.artist_profile_id) || [] : [];
 
     return {
       id: row.id,
@@ -738,11 +962,36 @@ export async function getAdminProfiles(): Promise<AdminProfile[]> {
       bio: safeString(row.bio),
       created_at: row.created_at,
       updated_at: row.updated_at,
-      lore: safeString(row.character_description) || undefined,
+      characterInfo: {
+        dateOfBirth: row.date_of_birth || undefined,
+        debutDate: row.debut_date || undefined,
+        height: safeString(row.height) || undefined,
+        species: safeString(row.species) || undefined,
+        likes: Array.isArray(row.likes) ? row.likes : [],
+        dislikes: Array.isArray(row.dislikes) ? row.dislikes : [],
+      },
       tags: Array.isArray(row.tags) ? (row.tags as string[]) : [],
-      youtubeUrl: typeof social.youtubeUrl === 'string' ? social.youtubeUrl : undefined,
-      twitchUrl: typeof social.twitchUrl === 'string' ? social.twitchUrl : undefined,
-      tiktokUrl: typeof social.tiktokUrl === 'string' ? social.tiktokUrl : undefined,
+      vtuberModelUrl: safeString(row.vtuber_model_url) || undefined,
+      profilePictureUrl: safeString(row.profile_picture_url) || undefined,
+      profilePictureObjectKey: row.profile_picture_object_key || undefined,
+      portraitPictureUrl: safeString(row.portrait_picture_url) || undefined,
+      portraitPictureObjectKey: row.portrait_picture_object_key || undefined,
+      portraitPictures: resolvedPortraitPictures,
+      featuredVideoUrl: safeString(row.featured_video_url) || undefined,
+      featured: row.role === 'artist' ? Boolean(row.artist_featured) : Boolean(row.talent_featured),
+      portfolio: Array.isArray(row.artist_portfolio_links) ? row.artist_portfolio_links : Array.isArray(row.portfolio_links) ? row.portfolio_links : [],
+      portfolioArt: Array.isArray(row.portfolio_art) ? row.portfolio_art : [],
+      youtubeUrl: typeof social.youtubeUrl === 'string' ? social.youtubeUrl : typeof social.youtube === 'string' ? social.youtube : undefined,
+      twitchUrl: typeof social.twitchUrl === 'string' ? social.twitchUrl : typeof social.twitch === 'string' ? social.twitch : undefined,
+      tiktokUrl: typeof social.tiktokUrl === 'string' ? social.tiktokUrl : typeof social.tiktok === 'string' ? social.tiktok : undefined,
+      specialty: Array.isArray(row.specialty) ? row.specialty : [],
+      commissionsOpen: Boolean(row.commissions_open),
+      priceRange: safeString(row.price_range) || undefined,
+      contactEmail: safeString(row.contact_email) || undefined,
+      websiteUrl: typeof artistSocial.website === 'string' ? artistSocial.website : undefined,
+      twitterUrl: xUrl,
+      instagramUrl: typeof artistSocial.instagram === 'string' ? artistSocial.instagram : undefined,
+      portfolioArtImages: artistPortfolioArtImages.length > 0 ? artistPortfolioArtImages : tablePortfolioArtImages,
     };
   });
 }
@@ -751,15 +1000,40 @@ export async function updateAdminProfile(
   profileId: string,
   input: {
     full_name: string;
-    role: 'admin' | 'talent' | 'artist';
+    role: 'admin' | 'talent' | 'staff' | 'artist';
     avatar_url: string;
     avatar_object_key?: string;
     bio: string;
-    lore?: string;
     tags?: string[];
     youtubeUrl?: string;
     twitchUrl?: string;
     tiktokUrl?: string;
+    vtuberModelUrl?: string;
+    profilePictureUrl?: string;
+    profilePictureObjectKey?: string;
+    portraitPictureUrl?: string;
+    portraitPictureObjectKey?: string;
+    portraitPictures?: Array<{ url: string; object_key?: string }>;
+    featuredVideoUrl?: string;
+    featured?: boolean;
+    characterInfo?: {
+      dateOfBirth?: string;
+      debutDate?: string;
+      height?: string;
+      species?: string;
+      likes?: string[];
+      dislikes?: string[];
+    };
+    specialty?: string[];
+    portfolio?: string[];
+    portfolioArt?: string[];
+    portfolioArtImages?: Array<{ url: string; object_key?: string }>;
+    commissionsOpen?: boolean;
+    priceRange?: string;
+    contactEmail?: string;
+    websiteUrl?: string;
+    twitterUrl?: string;
+    instagramUrl?: string;
   },
 ): Promise<AdminProfile | null> {
   const profileResult = await dbQuery(
@@ -783,49 +1057,60 @@ export async function updateAdminProfile(
 
   const profileRow = profileResult.rows[0];
 
-  if (input.role === 'talent') {
-    const talentUpdateResult = await dbQuery(
-      `
-      UPDATE talent_profiles
-      SET stage_name = $2,
-        character_description = $3,
-        social_links = $4::jsonb,
-        tags = $5,
-        updated_at = NOW()
-      WHERE user_id = $1
-      `,
-      [
-        profileRow.user_id,
-        input.full_name || profileRow.email,
-        input.lore || null,
-        JSON.stringify({
-          youtubeUrl: input.youtubeUrl || null,
-          twitchUrl: input.twitchUrl || null,
-          tiktokUrl: input.tiktokUrl || null,
-        }),
-        input.tags || [],
-      ],
-    );
+  if (input.role === 'talent' || input.role === 'staff') {
+    const portraitPictures = normalizeProfileImages(input.portraitPictures);
+    const primaryPortrait = portraitPictures[0];
+    await updateTalentProfile(profileRow.user_id, {
+      stage_name: input.full_name || profileRow.email,
+      character_description: input.bio || '',
+      bio: input.bio || '',
+      avatar_url: input.avatar_url || '',
+      avatar_object_key: input.avatar_object_key || null,
+      tags: input.tags || [],
+      date_of_birth: input.characterInfo?.dateOfBirth || null,
+      debut_date: input.characterInfo?.debutDate || null,
+      height: input.characterInfo?.height || null,
+      species: input.characterInfo?.species || null,
+      likes: input.characterInfo?.likes || [],
+      dislikes: input.characterInfo?.dislikes || [],
+      portfolio_links: input.portfolio || [],
+      vtuber_model_url: input.vtuberModelUrl || null,
+      profile_picture_url: input.profilePictureUrl || null,
+      profile_picture_object_key: input.profilePictureObjectKey || null,
+      portrait_picture_url: primaryPortrait?.url || input.portraitPictureUrl || null,
+      portrait_picture_object_key: primaryPortrait?.object_key || input.portraitPictureObjectKey || null,
+      portrait_pictures: portraitPictures,
+      featured_video_url: input.featuredVideoUrl || null,
+      featured: input.featured,
+      social_links: {
+        youtube: input.youtubeUrl || null,
+        youtubeUrl: input.youtubeUrl || null,
+        twitch: input.twitchUrl || null,
+        twitchUrl: input.twitchUrl || null,
+        tiktok: input.tiktokUrl || null,
+        tiktokUrl: input.tiktokUrl || null,
+      },
+    });
+  }
 
-    if ((talentUpdateResult.rowCount || 0) === 0) {
-      await dbQuery(
-        `
-        INSERT INTO talent_profiles (user_id, stage_name, character_description, social_links, tags, is_published)
-        VALUES ($1, $2, $3, $4::jsonb, $5, true)
-        `,
-        [
-          profileRow.user_id,
-          input.full_name || profileRow.email,
-          input.lore || null,
-          JSON.stringify({
-            youtubeUrl: input.youtubeUrl || null,
-            twitchUrl: input.twitchUrl || null,
-            tiktokUrl: input.tiktokUrl || null,
-          }),
-          input.tags || [],
-        ],
-      );
-    }
+  if (input.role === 'artist') {
+    await updateArtistProfile(profileRow.user_id, {
+      specialty: input.specialty || [],
+      portfolio_links: input.portfolio || [],
+      portfolio_art: input.portfolioArt || [],
+      portfolio_art_images: normalizeProfileImages(input.portfolioArtImages),
+      commissions_open: Boolean(input.commissionsOpen),
+      price_range: input.priceRange || null,
+      contact_email: input.contactEmail || null,
+      featured: input.featured,
+      social_media_links: {
+        website: input.websiteUrl || null,
+        twitter: input.twitterUrl || null,
+        x: input.twitterUrl || null,
+        instagram: input.instagramUrl || null,
+      },
+    });
+
   }
 
   return {
@@ -839,8 +1124,25 @@ export async function updateAdminProfile(
     bio: safeString(profileRow.bio),
     created_at: profileRow.created_at,
     updated_at: profileRow.updated_at,
-    lore: input.lore,
+    characterInfo: input.characterInfo,
     tags: input.tags || [],
+    vtuberModelUrl: input.vtuberModelUrl,
+    profilePictureUrl: input.profilePictureUrl,
+    profilePictureObjectKey: input.profilePictureObjectKey,
+    portraitPictureUrl: input.portraitPictureUrl,
+    portraitPictureObjectKey: input.portraitPictureObjectKey,
+    portraitPictures: input.portraitPictures || [],
+    specialty: input.specialty || [],
+    portfolio: input.portfolio || [],
+    portfolioArt: input.portfolioArt || [],
+    portfolioArtImages: input.portfolioArtImages || [],
+    commissionsOpen: input.commissionsOpen,
+    priceRange: input.priceRange,
+    contactEmail: input.contactEmail,
+    featuredVideoUrl: input.featuredVideoUrl,
+    websiteUrl: input.websiteUrl,
+    twitterUrl: input.twitterUrl,
+    instagramUrl: input.instagramUrl,
     youtubeUrl: input.youtubeUrl,
     twitchUrl: input.twitchUrl,
     tiktokUrl: input.tiktokUrl,
@@ -1325,6 +1627,7 @@ export async function getAdminStatistics(): Promise<AdminStatistics> {
       COUNT(*)::int AS total,
       COUNT(*) FILTER (WHERE role = 'admin')::int AS admins,
       COUNT(*) FILTER (WHERE role = 'talent')::int AS talents,
+      COUNT(*) FILTER (WHERE role = 'staff')::int AS staffs,
       COUNT(*) FILTER (WHERE role = 'artist')::int AS artists,
       COUNT(*) FILTER (WHERE created_at >= date_trunc('month', NOW()))::int AS new_this_month
     FROM profiles
@@ -1431,6 +1734,7 @@ export async function getAdminStatistics(): Promise<AdminStatistics> {
       total: Number(usersRow.total || 0),
       admins: Number(usersRow.admins || 0),
       talents: Number(usersRow.talents || 0),
+      staffs: Number(usersRow.staffs || 0),
       artists: Number(usersRow.artists || 0),
       newThisMonth: Number(usersRow.new_this_month || 0),
     },
@@ -1455,4 +1759,72 @@ export async function getAdminStatistics(): Promise<AdminStatistics> {
     },
     recentActivity,
   };
+}
+
+/**
+ * Get all applications (career and community) with type filtering
+ */
+export async function getAdminApplications(type?: 'career' | 'community') {
+  try {
+    if (type === 'career') {
+      const result = await dbQuery(
+        'SELECT * FROM career_applications ORDER BY created_at DESC'
+      );
+      return {
+        type: 'career',
+        data: result.rows || [],
+      };
+    }
+
+    if (type === 'community') {
+      const result = await dbQuery(
+        'SELECT * FROM community_applications ORDER BY created_at DESC'
+      );
+      return {
+        type: 'community',
+        data: result.rows || [],
+      };
+    }
+
+    const careerResult = await dbQuery(
+      'SELECT * FROM career_applications ORDER BY created_at DESC'
+    );
+    const communityResult = await dbQuery(
+      'SELECT * FROM community_applications ORDER BY created_at DESC'
+    );
+
+    return {
+      career: careerResult.rows || [],
+      community: communityResult.rows || [],
+    };
+  } catch (error) {
+    console.error('Error fetching applications:', error);
+    throw error;
+  }
+}
+
+/**
+ * Update application status and admin notes
+ */
+export async function updateApplication(
+  id: string,
+  type: 'career' | 'community',
+  status: string,
+  adminNotes?: string | null
+) {
+  try {
+    const table = type === 'career' ? 'career_applications' : 'community_applications';
+    const result = await dbQuery(
+      `UPDATE ${table} 
+       SET status = $1, admin_notes = $2, updated_at = NOW()
+       WHERE id = $3
+       RETURNING *`,
+      [status, adminNotes || null, id]
+    );
+
+    return result.rows?.[0] || null;
+  } catch (error) {
+    console.error(`Error updating ${type} application:`, error);
+    throw error;
+  }
 }

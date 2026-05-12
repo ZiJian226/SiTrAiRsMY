@@ -33,6 +33,9 @@ export default function Navbar() {
               <Link href="/artists">Artists</Link>
             </li>
             <li>
+              <Link href="/staffs">Staffs</Link>
+            </li>
+            <li>
               <Link href="/events">Events</Link>
             </li>
             <li>
@@ -45,7 +48,6 @@ export default function Navbar() {
               <details>
                 <summary>More</summary>
                 <ul>
-                  <li><Link href="/store">Store</Link></li>
                   <li><Link href="/about">About Us</Link></li>
                   <li><Link href="/career">Career</Link></li>
                   <li><Link href="/faq">FAQ</Link></li>
@@ -72,14 +74,14 @@ export default function Navbar() {
           </Link>
           <Link className="hover:drop-shadow-[0_0_8px_rgba(141,118,209,0.8)] hover:scale-110 duration-300" href="/talents">Talents</Link>
           <Link className="hover:drop-shadow-[0_0_8px_rgba(141,118,209,0.8)] hover:scale-110 duration-300" href="/artists">Artists</Link>
+          <Link className="hover:drop-shadow-[0_0_8px_rgba(141,118,209,0.8)] hover:scale-110 duration-300" href="/staffs">Staffs</Link>
           <Link className="hover:drop-shadow-[0_0_8px_rgba(141,118,209,0.8)] hover:scale-110 duration-300" href="/events">Events</Link>
           <Link className="hover:drop-shadow-[0_0_8px_rgba(141,118,209,0.8)] hover:scale-110 duration-300" href="/gallery">Gallery</Link>
           <Link className="hover:drop-shadow-[0_0_8px_rgba(141,118,209,0.8)] hover:scale-110 duration-300" href="/community">Community</Link>
           <li className="hover:drop-shadow-[0_0_8px_rgba(141,118,209,0.8)] hover:scale-110 duration-300">
-            <details >
+            <details>
               <summary>More</summary>
               <ul className="bg-base-100 shadow-lg">
-                <li><Link href="/store">Store</Link></li>
                 <li><Link href="/about">About Us</Link></li>
                 <li><Link href="/career">Career</Link></li>
                 <li><Link href="/faq">FAQ</Link></li>

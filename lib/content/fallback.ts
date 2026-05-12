@@ -12,7 +12,6 @@ export const fallbackTalents: Talent[] = [
 		youtubeUrl: 'https://youtube.com/@sakurahoshino',
 		featured: true,
 		schedule: [],
-		lore: 'Virtual talent and content creator.',
 		characterInfo: {
 			likes: ['RPGs', 'Karaoke', 'Cute plushies'],
 			dislikes: ['Bugs', 'Loud noises'],

@@ -3,10 +3,7 @@
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
-import Navbar from '@/components/Navbar'
 import Container from '@/components/Container'
-import Footer from '@/components/Footer'
-import PageBackground from '@/components/PageBackground'
 import Link from 'next/link'
 
 type AuditLogItem = {
@@ -83,11 +80,7 @@ export default function AdminAuditLogsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-base-100 relative flex flex-col">
-      <PageBackground rotate={true} blur={true} opacity={50} />
-      <div className="relative z-10 flex flex-col min-h-screen">
-        <Navbar />
-        <Container className="py-12 flex-grow">
+    <Container className="py-12 flex-grow">
           <div className="flex items-center gap-3 mb-8">
             <Link href="/admin" className="btn btn-ghost btn-sm">
               ← Back to Admin Panel
@@ -156,8 +149,7 @@ export default function AdminAuditLogsPage() {
             </div>
           )}
         </Container>
-        <Footer />
-      </div>
-    </div>
   )
 }
+
+

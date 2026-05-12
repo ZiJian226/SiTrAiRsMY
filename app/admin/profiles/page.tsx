@@ -3,12 +3,11 @@
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import Navbar from '@/components/Navbar'
 import Container from '@/components/Container'
-import Footer from '@/components/Footer'
-import PageBackground from '@/components/PageBackground'
 import Link from 'next/link'
 import type { UserRole } from '@/lib/auth/types'
+
+type ProfileImage = { url: string; object_key?: string }
 
 interface Profile {
   id: string
@@ -18,7 +17,6 @@ interface Profile {
   avatar_object_key?: string
   bio: string
   role: UserRole
-  lore?: string
   characterInfo?: {
     dateOfBirth?: string
     debutDate?: string
@@ -32,9 +30,17 @@ interface Profile {
   youtubeUrl?: string
   twitchUrl?: string
   tiktokUrl?: string
+  featuredVideoUrl?: string
+  featured?: boolean
+  profilePictureUrl?: string
+  profilePictureObjectKey?: string
+  portraitPictureUrl?: string
+  portraitPictureObjectKey?: string
+  portraitPictures?: ProfileImage[]
   // Artist-specific
   specialty?: string[]
   portfolio?: string[]
+  portfolioArtImages?: ProfileImage[]
   commissionsOpen?: boolean
   priceRange?: string
   contactEmail?: string
@@ -42,7 +48,6 @@ interface Profile {
   twitterUrl?: string
   instagramUrl?: string
   // Visibility toggles
-  showLore?: boolean
   showCharacterInfo?: boolean
   showSocialLinks?: boolean
   showPortfolio?: boolean
@@ -83,6 +88,10 @@ export default function AdminProfilesPage() {
   const [dislikesInput, setDislikesInput] = useState('')
   const [specialtyInput, setSpecialtyInput] = useState('')
   const [portfolioInput, setPortfolioInput] = useState('')
+  const [portraitPictureInput, setPortraitPictureInput] = useState('')
+  const [portraitPictures, setPortraitPictures] = useState<ProfileImage[]>([])
+  const [portfolioArtImages, setPortfolioArtImages] = useState<ProfileImage[]>([])
+  const [portfolioArtUploading, setPortfolioArtUploading] = useState(false)
 
   useEffect(() => {
     if (!loading && !user) {
@@ -99,6 +108,37 @@ export default function AdminProfilesPage() {
 
     void refreshProfiles()
   }, [user, profile])
+
+  // Helpers for converting free-form dates to HTML date input values (YYYY-MM-DD)
+  function toDateInputValue(value?: string) {
+    if (!value) return ''
+    const d = new Date(value)
+    if (isNaN(d.getTime())) return ''
+    return d.toISOString().slice(0, 10)
+  }
+
+  function getProfilePortraitPictures(profile: Profile): ProfileImage[] {
+    if (profile.portraitPictures && profile.portraitPictures.length > 0) {
+      return profile.portraitPictures
+    }
+
+    return profile.portraitPictureUrl
+      ? [{ url: profile.portraitPictureUrl, object_key: profile.portraitPictureObjectKey }]
+      : []
+  }
+
+  function syncPortraitPictures(nextPictures: ProfileImage[]) {
+    setPortraitPictures(nextPictures)
+    setEditForm((current) => current
+      ? {
+          ...current,
+          portraitPictureUrl: nextPictures[0]?.url || '',
+          portraitPictureObjectKey: nextPictures[0]?.object_key || '',
+          portraitPictures: nextPictures,
+        }
+      : current
+    )
+  }
 
   async function refreshProfiles() {
     setDataLoading(true)
@@ -144,26 +184,45 @@ export default function AdminProfilesPage() {
     setIsViewModalOpen(true)
   }
 
-  function handleEditProfile(profile: Profile) {
-    setEditForm({ 
-      ...profile,
-      // Initialize defaults for visibility toggles if not set
-      showLore: profile.showLore ?? true,
-      showCharacterInfo: profile.showCharacterInfo ?? true,
-      showSocialLinks: profile.showSocialLinks ?? true,
-      showPortfolio: profile.showPortfolio ?? true,
-      // Initialize empty arrays if not set
-      tags: profile.tags || [],
-      specialty: profile.specialty || [],
-      portfolio: profile.portfolio || [],
-      characterInfo: profile.characterInfo || {}
+  async function handleEditProfile(profile: Profile) {
+    let profileForEdit = profile
+
+    try {
+      const resp = await fetch('/api/admin/profiles', { cache: 'no-store' })
+      if (resp.ok) {
+        const list = (await resp.json()) as Profile[]
+        profileForEdit = list.find((p) => p.id === profile.id) || profile
+      }
+    } catch (e) {
+      console.error(e)
+    }
+
+    const nextPortraitPictures = getProfilePortraitPictures(profileForEdit)
+
+    setEditForm({
+      ...profileForEdit,
+      showCharacterInfo: profileForEdit.showCharacterInfo ?? true,
+      showSocialLinks: profileForEdit.showSocialLinks ?? true,
+      showPortfolio: profileForEdit.showPortfolio ?? true,
+      featured: profileForEdit.featured ?? false,
+      tags: profileForEdit.tags || [],
+      specialty: profileForEdit.specialty || [],
+      portfolio: profileForEdit.portfolio || [],
+      characterInfo: profileForEdit.characterInfo || {},
+      portraitPictures: nextPortraitPictures,
+      portraitPictureUrl: nextPortraitPictures[0]?.url || profileForEdit.portraitPictureUrl || '',
+      portraitPictureObjectKey: nextPortraitPictures[0]?.object_key || profileForEdit.portraitPictureObjectKey || '',
     })
+
     // Reset input helpers
     setTagInput('')
     setLikesInput('')
     setDislikesInput('')
     setSpecialtyInput('')
     setPortfolioInput('')
+    setPortraitPictureInput('')
+    setPortraitPictures(nextPortraitPictures)
+    setPortfolioArtImages(profileForEdit.portfolioArtImages || [])
     setIsEditModalOpen(true)
   }
 
@@ -175,7 +234,11 @@ export default function AdminProfilesPage() {
       const response = await fetch(`/api/admin/profiles/${editForm.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editForm),
+        body: JSON.stringify({
+          ...editForm,
+          portraitPictures: (editForm.role === 'talent' || editForm.role === 'staff') ? portraitPictures : undefined,
+          portfolioArtImages: editForm.role === 'artist' ? portfolioArtImages : undefined,
+        }),
       })
 
       if (!response.ok) {
@@ -205,7 +268,7 @@ export default function AdminProfilesPage() {
     try {
       const payload = new FormData()
       payload.append('file', file)
-      payload.append('folder', 'profiles/avatars')
+      payload.append('folder', 'users/avatars')
 
       const response = await fetch('/api/admin/uploads/image', {
         method: 'POST',
@@ -226,6 +289,164 @@ export default function AdminProfilesPage() {
     }
   }
 
+    async function handleProfilePictureFileChange(file: File, picType: 'profile' | 'portrait') {
+      if (!editForm) {
+        return
+      }
+
+      setImageUploading(true)
+      setImageUploadError(null)
+
+      try {
+        const payload = new FormData()
+        payload.append('file', file)
+        payload.append('folder', picType === 'profile' ? 'users/profile' : 'users/portrait')
+
+        const response = await fetch('/api/admin/uploads/image', {
+          method: 'POST',
+          body: payload,
+        })
+
+        if (!response.ok) {
+          const errorData = (await response.json().catch(() => null)) as { error?: string } | null
+          throw new Error(errorData?.error || `Failed to upload ${picType} picture`)
+        }
+
+        const data = (await response.json()) as { url: string; key: string }
+        if (picType === 'profile') {
+          setEditForm({ ...editForm, profilePictureUrl: data.url, profilePictureObjectKey: data.key })
+        } else {
+          setEditForm({ ...editForm, portraitPictureUrl: data.url, portraitPictureObjectKey: data.key })
+        }
+      } catch (error) {
+        setImageUploadError(error instanceof Error ? error.message : `Failed to upload ${picType} picture`)
+      } finally {
+        setImageUploading(false)
+      }
+    }
+
+  async function handlePortraitPictureFilesChange(files: File[]) {
+    if (!editForm || files.length === 0) {
+      return
+    }
+
+    setImageUploading(true)
+    setImageUploadError(null)
+
+    try {
+      const uploadedPictures: ProfileImage[] = []
+
+      for (const file of files) {
+        const payload = new FormData()
+        payload.append('file', file)
+        payload.append('folder', 'users/portrait')
+
+        const response = await fetch('/api/admin/uploads/image', {
+          method: 'POST',
+          body: payload,
+        })
+
+        if (!response.ok) {
+          const errorData = (await response.json().catch(() => null)) as { error?: string } | null
+          throw new Error(errorData?.error || 'Failed to upload portrait picture')
+        }
+
+        const data = (await response.json()) as { url: string; key: string }
+        uploadedPictures.push({ url: data.url, object_key: data.key })
+      }
+
+      syncPortraitPictures([...portraitPictures, ...uploadedPictures])
+    } catch (error) {
+      setImageUploadError(error instanceof Error ? error.message : 'Failed to upload portrait picture')
+    } finally {
+      setImageUploading(false)
+    }
+  }
+
+  async function handlePortfolioArtFileChange(file: File) {
+    setPortfolioArtUploading(true)
+    setImageUploadError(null)
+
+    try {
+      const payload = new FormData()
+      payload.append('file', file)
+      payload.append('folder', 'artists/portfolio-art')
+
+      const response = await fetch('/api/admin/uploads/image', {
+        method: 'POST',
+        body: payload,
+      })
+
+      if (!response.ok) {
+        const errorData = (await response.json().catch(() => null)) as { error?: string } | null
+        throw new Error(errorData?.error || 'Failed to upload portfolio art')
+      }
+
+      const data = (await response.json()) as { url: string; key: string }
+      setPortfolioArtImages([...portfolioArtImages, { url: data.url, object_key: data.key }])
+    } catch (error) {
+      setImageUploadError(error instanceof Error ? error.message : 'Failed to upload portfolio art')
+    } finally {
+      setPortfolioArtUploading(false)
+    }
+  }
+
+  async function handlePortfolioArtFilesChange(files: File[]) {
+    if (files.length === 0) {
+      return
+    }
+
+    setPortfolioArtUploading(true)
+    setImageUploadError(null)
+
+    try {
+      const uploadedImages: ProfileImage[] = []
+
+      for (const file of files) {
+        const payload = new FormData()
+        payload.append('file', file)
+        payload.append('folder', 'artists/portfolio-art')
+
+        const response = await fetch('/api/admin/uploads/image', {
+          method: 'POST',
+          body: payload,
+        })
+
+        if (!response.ok) {
+          const errorData = (await response.json().catch(() => null)) as { error?: string } | null
+          throw new Error(errorData?.error || 'Failed to upload portfolio art')
+        }
+
+        const data = (await response.json()) as { url: string; key: string }
+        uploadedImages.push({ url: data.url, object_key: data.key })
+      }
+
+      setPortfolioArtImages([...portfolioArtImages, ...uploadedImages])
+    } catch (error) {
+      setImageUploadError(error instanceof Error ? error.message : 'Failed to upload portfolio art')
+    } finally {
+      setPortfolioArtUploading(false)
+    }
+  }
+
+  function handleRemovePortfolioArt(idx: number) {
+    setPortfolioArtImages(portfolioArtImages.filter((_, i) => i !== idx))
+  }
+
+  function handleAddPortraitPictureUrl() {
+    const url = portraitPictureInput.trim()
+    if (!url) {
+      return
+    }
+
+    syncPortraitPictures([...portraitPictures, { url }])
+    setPortraitPictureInput('')
+  }
+
+  function handleRemovePortraitPicture(idx: number) {
+    syncPortraitPictures(portraitPictures.filter((_, i) => i !== idx))
+  }
+
   async function handleDeleteProfile(id: string) {
     if (confirm('Are you sure you want to delete this profile?')) {
       try {
@@ -244,11 +465,7 @@ export default function AdminProfilesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-base-100 relative flex flex-col">
-      <PageBackground rotate={true} blur={true} opacity={50} />
-      <div className="relative z-10 flex flex-col min-h-screen">
-        <Navbar />
-        <Container className="py-12 flex-grow">
+    <Container className="py-12 flex-grow">
           <div className="flex items-center gap-3 mb-8">
             <Link href="/admin" className="btn btn-ghost btn-sm">
               ← Back to Admin
@@ -260,40 +477,25 @@ export default function AdminProfilesPage() {
               <h1 className="text-4xl font-bold text-primary mb-2">Profile Management</h1>
               <p className="text-lg opacity-70">View and manage all user profiles</p>
             </div>
-            <div className="stats shadow">
-              <div className="stat">
-                <div className="stat-title">Total Profiles</div>
-                <div className="stat-value text-primary">{profiles.length}</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Filters */}
-          <div className="card bg-base-200 shadow-xl mb-6">
-            <div className="card-body">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="form-control">
-                  <input
-                    type="text"
-                    placeholder="Search profiles..."
-                    className="input input-bordered"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </div>
-                <div className="form-control">
-                  <select
-                    className="select select-bordered"
-                    value={roleFilter}
-                    onChange={(e) => setRoleFilter(e.target.value)}
-                  >
-                    <option value="all">All Roles</option>
-                    <option value="admin">Admins</option>
-                    <option value="talent">Talents</option>
-                    <option value="artist">Artists</option>
-                  </select>
-                </div>
-              </div>
+            <div className="flex items-center gap-3">
+              <input
+                type="text"
+                placeholder="Search profiles..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="input input-bordered w-full max-w-xs"
+              />
+              <select
+                className="select select-bordered"
+                value={roleFilter}
+                onChange={(e) => setRoleFilter(e.target.value)}
+              >
+                <option value="all">All roles</option>
+                <option value="admin">Admin</option>
+                <option value="talent">Talent</option>
+                <option value="staff">Staff</option>
+                <option value="artist">Artist</option>
+              </select>
             </div>
           </div>
 
@@ -345,6 +547,7 @@ export default function AdminProfilesPage() {
                           <span className={`badge ${
                             p.role === 'admin' ? 'badge-error' :
                             p.role === 'talent' ? 'badge-primary' :
+                            p.role === 'staff' ? 'badge-info' :
                             'badge-secondary'
                           }`}>
                             {p.role}
@@ -361,7 +564,7 @@ export default function AdminProfilesPage() {
                             </button>
                             <button
                               className="btn btn-sm btn-primary btn-outline"
-                              onClick={() => handleEditProfile(p)}
+                              onClick={() => void handleEditProfile(p)}
                             >
                               ✏️ Edit
                             </button>
@@ -418,6 +621,7 @@ export default function AdminProfilesPage() {
                       <span className={`badge badge-lg mt-2 ${
                         selectedProfile.role === 'admin' ? 'badge-error' :
                         selectedProfile.role === 'talent' ? 'badge-primary' :
+                        selectedProfile.role === 'staff' ? 'badge-info' :
                         'badge-secondary'
                       }`}>
                         {selectedProfile.role}
@@ -432,15 +636,8 @@ export default function AdminProfilesPage() {
                   </div>
 
                   {/* Character Info for Talent/Artist */}
-                  {(selectedProfile.role === 'talent' || selectedProfile.role === 'artist') && (
+                  {((selectedProfile.role === 'talent' || selectedProfile.role === 'staff') || selectedProfile.role === 'artist') && (
                     <>
-                      {selectedProfile.lore && (
-                        <div>
-                          <p className="font-semibold text-primary mb-2">Lore / Backstory:</p>
-                          <p className="text-base whitespace-pre-line">{selectedProfile.lore}</p>
-                        </div>
-                      )}
-
                       {selectedProfile.characterInfo && (
                         <div>
                           <p className="font-semibold text-primary mb-2">Character Information:</p>
@@ -557,14 +754,16 @@ export default function AdminProfilesPage() {
                         />
                       </div>
 
+                      {/* Avatar */}
                       <div className="form-control">
                         <label className="label">
-                          <span className="label-text font-semibold">Avatar URL</span>
+                          <span className="label-text font-semibold">Avatar</span>
                         </label>
                         <input
                           type="url"
                           className="input input-bordered"
-                          value={editForm.avatar_url}
+                          placeholder="https://example.com/avatar.jpg or /api/media/users/avatars/..."
+                          value={editForm.avatar_url || ''}
                           onChange={(e) => setEditForm({ ...editForm, avatar_url: e.target.value, avatar_object_key: '' })}
                           disabled={saving || imageUploading}
                         />
@@ -584,17 +783,83 @@ export default function AdminProfilesPage() {
                             e.currentTarget.value = ''
                           }}
                         />
-                        {imageUploading && (
-                          <label className="label">
-                            <span className="label-text-alt text-primary">Uploading avatar...</span>
-                          </label>
-                        )}
-                        {imageUploadError && (
-                          <label className="label">
-                            <span className="label-text-alt text-error">{imageUploadError}</span>
-                          </label>
-                        )}
                       </div>
+
+                        {(editForm.role === 'talent' || editForm.role === 'staff') && (
+                          <>
+                            <div className="form-control">
+                              <label className="label">
+                                <span className="label-text font-semibold">Portrait Pictures</span>
+                                <span className="label-text-alt text-xs">One image shows at a time on the public card</span>
+                              </label>
+                              <div className="join w-full">
+                                <input
+                                  type="url"
+                                  className="input input-bordered join-item flex-1"
+                                  placeholder="Add portrait image URL"
+                                  value={portraitPictureInput}
+                                  onChange={(e) => setPortraitPictureInput(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      e.preventDefault()
+                                      handleAddPortraitPictureUrl()
+                                    }
+                                  }}
+                                  disabled={saving || imageUploading}
+                                />
+                                <button
+                                  type="button"
+                                  className="btn btn-primary join-item"
+                                  onClick={handleAddPortraitPictureUrl}
+                                  disabled={saving || imageUploading}
+                                >
+                                  Add
+                                </button>
+                              </div>
+                              <label className="label mt-2">
+                                <span className="label-text-alt opacity-70">Or upload one or more portrait pictures to Oracle Object Storage</span>
+                              </label>
+                              <input
+                                type="file"
+                                className="file-input file-input-bordered"
+                                accept="image/*"
+                                multiple
+                                disabled={saving || imageUploading}
+                                onChange={(e) => {
+                                  const files = Array.from(e.currentTarget.files || [])
+                                  if (files.length > 0) {
+                                    void handlePortraitPictureFilesChange(files)
+                                  }
+                                  e.currentTarget.value = ''
+                                }}
+                              />
+                              {portraitPictures.length > 0 && (
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
+                                  {portraitPictures.map((image, idx) => (
+                                    <div key={`${image.url}-${idx}`} className="card bg-base-300 shadow-md">
+                                      <figure>
+                                        <img src={image.url} alt={`Portrait ${idx + 1}`} className="w-full h-40 object-contain bg-base-100" />
+                                      </figure>
+                                      <div className="card-body p-3">
+                                        <div className="flex items-center justify-between gap-2">
+                                          <span className="badge badge-primary badge-sm">{idx === 0 ? 'Primary' : `#${idx + 1}`}</span>
+                                          <button
+                                            type="button"
+                                            className="btn btn-ghost btn-xs btn-circle"
+                                            onClick={() => handleRemovePortraitPicture(idx)}
+                                            disabled={saving || imageUploading}
+                                          >
+                                            âœ•
+                                          </button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </>
+                        )}
 
                       <div className="form-control">
                         <label className="label">
@@ -610,6 +875,24 @@ export default function AdminProfilesPage() {
                         />
                       </div>
 
+                      {(editForm.role === 'talent' || editForm.role === 'staff' || editForm.role === 'artist') && (
+                        <div className="form-control">
+                          <label className="label cursor-pointer justify-start gap-3">
+                            <input
+                              type="checkbox"
+                              className={`checkbox ${editForm.role === 'artist' ? 'checkbox-secondary' : 'checkbox-primary'}`}
+                              checked={editForm.featured ?? false}
+                              onChange={(e) => setEditForm({ ...editForm, featured: e.target.checked })}
+                              disabled={saving}
+                            />
+                            <div>
+                              <span className="label-text font-semibold">Feature on homepage</span>
+                              <span className="label-text-alt block opacity-70">Shows this profile in the homepage showcase</span>
+                            </div>
+                          </label>
+                        </div>
+                      )}
+
                       <div className="form-control">
                         <label className="label">
                           <span className="label-text font-semibold">Role</span>
@@ -622,12 +905,13 @@ export default function AdminProfilesPage() {
                         >
                           <option value="admin">Admin</option>
                           <option value="talent">Talent</option>
+                          <option value="staff">Staff</option>
                           <option value="artist">Artist</option>
                         </select>
                       </div>
 
                       {/* Talent: Tags */}
-                      {editForm.role === 'talent' && (
+                      {(editForm.role === 'talent' || editForm.role === 'staff') && (
                         <div className="form-control">
                           <label className="label">
                             <span className="label-text font-semibold">Tags</span>
@@ -784,7 +1068,7 @@ export default function AdminProfilesPage() {
                   </div>
 
                   {/* Talent: Social Links */}
-                  {editForm.role === 'talent' && (
+                  {(editForm.role === 'talent' || editForm.role === 'staff') && (
                     <div className="card bg-base-200">
                       <div className="card-body">
                         <div className="flex justify-between items-center mb-4">
@@ -803,6 +1087,23 @@ export default function AdminProfilesPage() {
 
                         {editForm.showSocialLinks && (
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="form-control">
+                              <label className="label">
+                                <span className="label-text font-semibold">🎬 Featured Video URL</span>
+                              </label>
+                              <input
+                                type="url"
+                                className="input input-bordered"
+                                placeholder="https://youtube.com/watch?v=... or https://twitch.tv/..."
+                                value={editForm.featuredVideoUrl || ''}
+                                onChange={(e) => setEditForm({ ...editForm, featuredVideoUrl: e.target.value })}
+                                disabled={saving}
+                              />
+                              <label className="label">
+                                <span className="label-text text-xs opacity-70">Optional: YouTube or Twitch video link</span>
+                              </label>
+                            </div>
+
                             <div className="form-control">
                               <label className="label">
                                 <span className="label-text font-semibold">📺 YouTube URL</span>
@@ -917,46 +1218,8 @@ export default function AdminProfilesPage() {
                     </div>
                   )}
 
-                  {/* Talent: Lore Section */}
-                  {editForm.role === 'talent' && (
-                    <div className="card bg-base-200">
-                      <div className="card-body">
-                        <div className="flex justify-between items-center mb-4">
-                          <h4 className="card-title text-primary">📖 Introduction / Lore</h4>
-                          <label className="label cursor-pointer gap-3">
-                            <span className="label-text">Show on profile</span>
-                            <input
-                              type="checkbox"
-                              className="toggle toggle-primary"
-                              checked={editForm.showLore ?? true}
-                              onChange={(e) => setEditForm({ ...editForm, showLore: e.target.checked })}
-                              disabled={saving}
-                            />
-                          </label>
-                        </div>
-
-                        {editForm.showLore && (
-                          <div className="form-control">
-                            <label className="label">
-                              <span className="label-text font-semibold">Character Backstory</span>
-                              <span className="label-text-alt">{(editForm.lore || '').length}/1000</span>
-                            </label>
-                            <textarea
-                              className="textarea textarea-bordered h-40"
-                              placeholder="Your character's backstory, lore, or detailed introduction..."
-                              value={editForm.lore || ''}
-                              onChange={(e) => setEditForm({ ...editForm, lore: e.target.value.slice(0, 1000) })}
-                              disabled={saving}
-                              maxLength={1000}
-                            />
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
                   {/* Talent: Character Info */}
-                  {editForm.role === 'talent' && (
+                  {(editForm.role === 'talent' || editForm.role === 'staff') && (
                     <div className="card bg-base-200">
                       <div className="card-body">
                         <div className="flex justify-between items-center mb-4">
@@ -981,10 +1244,9 @@ export default function AdminProfilesPage() {
                                   <span className="label-text font-semibold">Date of Birth</span>
                                 </label>
                                 <input
-                                  type="text"
+                                  type="date"
                                   className="input input-bordered"
-                                  placeholder="e.g., December 25"
-                                  value={editForm.characterInfo?.dateOfBirth || ''}
+                                  value={toDateInputValue(editForm.characterInfo?.dateOfBirth)}
                                   onChange={(e) => setEditForm({
                                     ...editForm,
                                     characterInfo: { ...editForm.characterInfo, dateOfBirth: e.target.value }
@@ -998,10 +1260,9 @@ export default function AdminProfilesPage() {
                                   <span className="label-text font-semibold">Debut Date</span>
                                 </label>
                                 <input
-                                  type="text"
+                                  type="date"
                                   className="input input-bordered"
-                                  placeholder="e.g., January 15, 2023"
-                                  value={editForm.characterInfo?.debutDate || ''}
+                                  value={toDateInputValue(editForm.characterInfo?.debutDate)}
                                   onChange={(e) => setEditForm({
                                     ...editForm,
                                     characterInfo: { ...editForm.characterInfo, debutDate: e.target.value }
@@ -1192,6 +1453,7 @@ export default function AdminProfilesPage() {
                     </div>
                   )}
 
+
                   {/* Artist: Portfolio */}
                   {editForm.role === 'artist' && (
                     <div className="card bg-base-200">
@@ -1268,6 +1530,57 @@ export default function AdminProfilesPage() {
                             </div>
                           </div>
                         )}
+
+                        {editForm.showPortfolio && (
+                          <div className="form-control mt-4">
+                            <label className="label">
+                              <span className="label-text font-semibold">Portfolio Art Images</span>
+                            </label>
+                            <div className="flex flex-col gap-2">
+                              <label className="input input-bordered join-item flex items-center gap-2 cursor-pointer">
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  multiple
+                                  onChange={(e) => {
+                                    const files = Array.from(e.currentTarget.files || [])
+                                    if (files.length > 0) {
+                                      void handlePortfolioArtFilesChange(files)
+                                    }
+                                    e.currentTarget.value = ''
+                                  }}
+                                  disabled={saving || portfolioArtUploading}
+                                />
+                                <span className="text-accent">📸 Upload Portfolio Art</span>
+                              </label>
+                              {imageUploadError && (
+                                <div className="alert alert-error">
+                                  <span>{imageUploadError}</span>
+                                </div>
+                              )}
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
+                              {portfolioArtImages.map((image, idx) => (
+                                <div key={idx} className="card bg-base-300 shadow-md image-full">
+                                  <figure>
+                                    <img src={image.url} alt={`Portfolio art ${idx + 1}`} className="w-full h-40 object-cover" />
+                                  </figure>
+                                  <div className="card-body p-2 items-end justify-end">
+                                    <button
+                                      type="button"
+                                      className="btn btn-ghost btn-sm btn-circle bg-base-100"
+                                      onClick={() => handleRemovePortfolioArt(idx)}
+                                      disabled={saving}
+                                    >
+                                      ✕
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
@@ -1294,8 +1607,7 @@ export default function AdminProfilesPage() {
             </div>
           )}
         </Container>
-        <Footer />
-      </div>
-    </div>
   )
 }
+
+

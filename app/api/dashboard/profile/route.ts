@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     }
 
     const profileResult = await dbQuery('SELECT role FROM profiles WHERE user_id = $1 LIMIT 1', [user.id])
-    const role = profileResult.rows[0]?.role as 'talent' | 'artist' | 'admin' | undefined
+    const role = profileResult.rows[0]?.role as 'talent' | 'staff' | 'artist' | 'admin' | undefined
 
     if (role === 'artist') {
       let artistProfile = await getArtistProfileByUserId(user.id)
@@ -67,7 +67,7 @@ export async function PUT(request: NextRequest) {
     const body = await request.json()
 
     const profileResult = await dbQuery('SELECT role FROM profiles WHERE user_id = $1 LIMIT 1', [user.id])
-    const role = profileResult.rows[0]?.role as 'talent' | 'artist' | 'admin' | undefined
+    const role = profileResult.rows[0]?.role as 'talent' | 'staff' | 'artist' | 'admin' | undefined
 
     if (role === 'artist') {
       await dbQuery(
@@ -90,6 +90,8 @@ export async function PUT(request: NextRequest) {
       const artistPayload = {
         specialty: Array.isArray(body.specialty) ? body.specialty : undefined,
         portfolio_links: Array.isArray(body.portfolio_links) ? body.portfolio_links : undefined,
+        portfolio_art: Array.isArray(body.portfolio_art) ? body.portfolio_art : undefined,
+        portfolio_art_images: Array.isArray(body.portfolio_art_images) ? body.portfolio_art_images : undefined,
         commissions_open: typeof body.commissions_open === 'boolean' ? body.commissions_open : undefined,
         price_range: typeof body.price_range === 'string' || body.price_range === null ? body.price_range : undefined,
         contact_email: typeof body.contact_email === 'string' || body.contact_email === null ? body.contact_email : undefined,

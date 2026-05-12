@@ -3,10 +3,7 @@
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
-import Navbar from '@/components/Navbar'
 import Container from '@/components/Container'
-import Footer from '@/components/Footer'
-import PageBackground from '@/components/PageBackground'
 import Link from 'next/link'
 
 export default function AdminPage() {
@@ -14,24 +11,8 @@ export default function AdminPage() {
   const router = useRouter()
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.push('/login')
-    } else if (!loading && profile && profile.role !== 'admin') {
-      router.push('/dashboard')
-    }
-  }, [user, profile, loading, router])
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-base-100 flex items-center justify-center">
-        <span className="loading loading-spinner loading-lg text-primary"></span>
-      </div>
-    )
-  }
-
-  if (!user || !profile || profile.role !== 'admin') {
-    return null
-  }
+    // layout handles redirect; keep sign-out functionality here
+  }, [])
 
   async function handleSignOut() {
     await signOut()
@@ -39,11 +20,7 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="min-h-screen bg-base-100 relative flex flex-col">
-      <PageBackground rotate={true} blur={true} opacity={50} />
-      <div className="relative z-10 flex flex-col min-h-screen">
-        <Navbar />
-        <Container className="py-12 flex-grow">
+    <Container className="py-12">
           <div className="flex justify-between items-center mb-8">
             <div>
               <h1 className="text-4xl font-bold text-primary flex items-center gap-3">
@@ -112,10 +89,14 @@ export default function AdminPage() {
                 <p className="opacity-70">Track profile and merchandise account changes</p>
               </div>
             </Link>
+            
+            <Link href="/dashboard/applications" className="card bg-base-200 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all">
+              <div className="card-body">
+                <h2 className="card-title text-primary">📨 Applications</h2>
+                <p className="opacity-70">Review career & community applications</p>
+              </div>
+            </Link>
           </div>
         </Container>
-        <Footer />
-      </div>
-    </div>
   )
 }

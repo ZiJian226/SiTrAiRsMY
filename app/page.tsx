@@ -1,20 +1,48 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Container from "@/components/Container";
 import Footer from "@/components/Footer";
+import LazyRow from "@/components/LazyRow";
+import PagedCarousel from "@/components/PagedCarousel";
+import LandscapeModal from "@/components/LandscapeModal";
+import EdgeStarAnimation from "@/components/EdgeStarAnimation";
 import { ASSETS } from "@/lib/assetPath";
 import { fallbackArtists, fallbackEvents, fallbackGalleryItems } from "@/lib/content/fallback";
 import { useCachedApiResource } from "@/lib/hooks";
 import type { ArtistProfile, EventArticle, GalleryEntry } from "@/lib/content/types";
+import type { VTuber } from "@/lib/types";
 
 export default function Home() {
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalData, setModalData] = useState<{
+    imageUrl: string;
+    title?: string;
+    description?: string;
+  } | null>(null);
+
   const { data: artists } = useCachedApiResource<ArtistProfile[]>({
     cacheKey: 'starmy:content:artists:v2',
     url: '/api/content/artists',
     fallbackData: fallbackArtists,
+    maxAgeMs: 60_000,
+    staleWhileRevalidateMs: 3_600_000,
+  });
+
+  const { data: talents } = useCachedApiResource<VTuber[]>({
+    cacheKey: 'starmy:content:talents:v2',
+    url: '/api/content/talents',
+    fallbackData: [],
+    maxAgeMs: 60_000,
+    staleWhileRevalidateMs: 3_600_000,
+  });
+
+  const { data: staffs } = useCachedApiResource<VTuber[]>({
+    cacheKey: 'starmy:content:staffs:v2',
+    url: '/api/content/staffs',
+    fallbackData: [],
     maxAgeMs: 60_000,
     staleWhileRevalidateMs: 3_600_000,
   });
@@ -42,6 +70,27 @@ export default function Home() {
   const featuredGallery = galleryItems
     .filter(item => item.featured)
     .slice(0, 3);
+
+  const featuredTalents = talents
+    .filter(talent => talent.featured)
+    .slice(0, 6);
+
+  const featuredStaffs = staffs
+    .filter(staff => staff.featured)
+    .slice(0, 6);
+
+  const featuredArtists = (artists as any[])
+    .filter((artist: any) => artist.featured)
+    .slice(0, 6) as ArtistProfile[];
+
+  const talentShowcase = featuredTalents.length > 0 ? featuredTalents : talents.slice(0, 6);
+  const staffShowcase = featuredStaffs.length > 0 ? featuredStaffs : staffs.slice(0, 6);
+  const artistShowcase = featuredArtists.length > 0 ? featuredArtists : artists.slice(0, 6);
+
+  const openModal = (imageUrl: string, title?: string, description?: string) => {
+    setModalData({ imageUrl, title, description });
+    setModalOpen(true);
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -99,33 +148,31 @@ export default function Home() {
               Your gateway to the vibrant world of VTubers and talented artists.
               Discover amazing content creators, explore stunning artwork, and commission your dream projects.
             </p>
-            <div className="flex flex-wrap gap-4 justify-center">
-              <Link href="/talents" className="btn btn-primary btn-lg">
-                Explore Talents
-              </Link>
-              <Link href="/artists" className="btn btn-secondary btn-lg">
-                Find Artists
-              </Link>
-              <Link href="/events" className="btn btn-accent btn-lg">
-                View Events
-              </Link>
-            </div>
           </div>
         </Container>
       </div>
 
       {/* Featured News Section */}
       <div className="bg-base-200 py-16 relative" style={{ zIndex: 2 }}>
-        <Container>
+        <div className="absolute inset-0 overflow-hidden opacity-10">
+          <EdgeStarAnimation count={20} />
+        </div>
+        <Container className="relative z-10">
           <h2 className="text-4xl font-bold text-center mb-12">Featured News</h2>
-          {featuredNews.length === 0 && (
-            <p className="text-center opacity-70 mb-8">No featured news has been pinned yet.</p>
-          )}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <LazyRow>
             {featuredNews.map((event) => (
-              <div key={event.id} className="card bg-base-100 shadow-xl">
-                <figure>
-                  <img src={event.image} alt={event.title} className="w-full h-64 object-cover" />
+              <div
+                key={event.id}
+                className="flex-shrink-0 w-[360px] card bg-base-100 shadow-xl cursor-pointer hover:shadow-2xl transition-all"
+                onClick={() => openModal(event.image, event.title, event.excerpt)}
+              >
+                <figure className="relative overflow-hidden aspect-video">
+                  <img src={event.image} alt={event.title} className="w-full h-full object-cover hover:scale-105 transition-transform" />
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/40 transition-colors">
+                    <div className="text-white opacity-0 hover:opacity-100 transition-opacity text-center">
+                      <p className="text-sm font-semibold">Click to view</p>
+                    </div>
+                  </div>
                 </figure>
                 <div className="card-body">
                   <div className="badge badge-secondary w-fit">{event.category}</div>
@@ -134,22 +181,38 @@ export default function Home() {
                 </div>
               </div>
             ))}
-          </div>
+          </LazyRow>
         </Container>
       </div>
 
       {/* Featured Gallery Section */}
       <div className="bg-base-100 py-16 relative" style={{ zIndex: 2 }}>
-        <Container>
+        <div className="absolute inset-0 overflow-hidden opacity-10">
+          <EdgeStarAnimation count={20} />
+        </div>
+        <Container className="relative z-10">
           <h2 className="text-4xl font-bold text-center mb-12">Featured Gallery</h2>
           {featuredGallery.length === 0 && (
             <p className="text-center opacity-70 mb-8">No featured gallery items have been pinned yet.</p>
           )}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <PagedCarousel pageSize={5}>
             {featuredGallery.map((item) => (
-              <div key={item.id} className="card bg-base-200 shadow-xl overflow-hidden">
-                <figure className="aspect-square">
-                  <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
+              <div
+                key={item.id}
+                className="flex-shrink-0 w-[320px] card bg-base-200 shadow-xl overflow-hidden cursor-pointer hover:shadow-2xl transition-all group"
+                onClick={() => openModal(item.image, item.title, item.description)}
+              >
+                <figure className="relative aspect-square overflow-hidden">
+                  <img
+                    src={item.image}
+                    alt={item.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/40 transition-colors">
+                    <div className="text-white opacity-0 group-hover:opacity-100 transition-opacity text-center">
+                      <p className="text-sm font-semibold">Click to view</p>
+                    </div>
+                  </div>
                 </figure>
                 <div className="card-body p-4">
                   <h3 className="card-title text-lg">{item.title}</h3>
@@ -157,9 +220,163 @@ export default function Home() {
                 </div>
               </div>
             ))}
-          </div>
+          </PagedCarousel>
         </Container>
       </div>
+
+      {/* Our Talents Section */}
+      {talentShowcase.length > 0 && (
+        <div className="bg-base-200 py-16 relative" style={{ zIndex: 2 }}>
+          <div className="absolute inset-0 overflow-hidden opacity-30">
+            <EdgeStarAnimation count={22} />
+          </div>
+          <Container className="relative z-10">
+            <h2 className="text-4xl font-bold text-center mb-12">Our Talents</h2>
+            <PagedCarousel pageSize={5}>
+              {talentShowcase.map((talent) => (
+                <Link
+                  key={talent.id}
+                  href={`/talents/${talent.id}`}
+                  className="card bg-base-100 shadow-lg overflow-hidden hover:shadow-xl transition-all group cursor-pointer"
+                >
+                  <figure className="relative w-full h-full">
+                    <img
+                      src={talent.profilePictureUrl || talent.portraitPictureUrl || talent.avatar}
+                      alt={talent.name}
+                      className="w-full h-full object-contain bg-base-300 group-hover:scale-105 transition-transform"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end">
+                      <div className="w-full p-4">
+                        <h3 className="text-xl font-bold text-white mb-2">{talent.name}</h3>
+                        <div className="flex flex-wrap gap-2">
+                          {talent.tags.slice(0, 2).map((tag) => (
+                            <span key={tag} className="badge badge-primary badge-sm">
+                              {tag}
+                            </span>
+                          ))}
+                          {talent.tags.length > 2 && (
+                            <span className="badge badge-outline badge-sm">+{talent.tags.length - 2}</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </figure>
+                </Link>
+              ))}
+            </PagedCarousel>
+          </Container>
+        </div>
+      )}
+
+      {/* Our Artists Section */}
+      {artistShowcase.length > 0 && (
+        <div className="bg-base-100 py-16 relative" style={{ zIndex: 2 }}>
+          <div className="absolute inset-0 overflow-hidden opacity-30">
+            <EdgeStarAnimation count={22} />
+          </div>
+          <Container className="relative z-10">
+            <h2 className="text-4xl font-bold text-center mb-12">Our Artists</h2>
+            <PagedCarousel pageSize={5}>
+              {artistShowcase.map((artist) => (
+                <Link
+                  key={artist.id}
+                  href={`/artists/${artist.id}`}
+                  className="card bg-base-200 shadow-lg overflow-hidden hover:shadow-xl transition-all group cursor-pointer"
+                >
+                  <figure className="relative w-full h-56 overflow-hidden bg-base-300">
+                    <img
+                      src={artist.portfolioArt?.[0] || artist.portfolio?.[0] || artist.avatar}
+                      alt={artist.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                    />
+                  </figure>
+
+                  <div className="card-body p-4">
+                    <h3 className="card-title text-lg">{artist.name}</h3>
+                    <p className="text-sm opacity-80 flex-grow">{artist.description}</p>
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {artist.specialty.slice(0, 2).map((spec) => (
+                        <span key={spec} className="badge badge-secondary badge-sm">
+                          {spec}
+                        </span>
+                      ))}
+                      {artist.specialty.length > 2 && (
+                        <span className="badge badge-outline badge-sm">+{artist.specialty.length - 2}</span>
+                      )}
+                    </div>
+
+                    {/* CTA */}
+                    <div className="flex gap-2 pt-2">
+                      {artist.commissionsOpen && (
+                        <span className="badge badge-success badge-lg">Open for Commissions</span>
+                      )}
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </PagedCarousel>
+          </Container>
+        </div>
+      )}
+
+      {/* Our Staffs Section */}
+      {staffShowcase.length > 0 && (
+        <div className="bg-base-200 py-16 relative" style={{ zIndex: 2 }}>
+          <div className="absolute inset-0 overflow-hidden opacity-25">
+            <EdgeStarAnimation count={18} />
+          </div>
+          <Container className="relative z-10">
+            <h2 className="text-4xl font-bold text-center mb-12">Our Staffs</h2>
+            <PagedCarousel pageSize={5}>
+              {staffShowcase.map((staff) => (
+                <Link
+                  key={staff.id}
+                  href={`/staffs/${staff.id}`}
+                  className="card bg-base-100 shadow-lg overflow-hidden hover:shadow-xl transition-all group cursor-pointer"
+                >
+                  <figure className="relative w-full h-56 overflow-hidden bg-base-300">
+                    <img
+                      src={staff.profilePictureUrl || staff.portraitPictureUrl || staff.avatar}
+                      alt={staff.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                    />
+                  </figure>
+                
+                  <div className="card-body p-4">
+                    <h3 className="card-title text-lg">{staff.name}</h3>
+                    <p className="text-sm opacity-80 flex-grow">{staff.description}</p>
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {staff.tags.slice(0, 2).map((tag) => (
+                        <span key={tag} className="badge badge-primary badge-sm">
+                          {tag}
+                        </span>
+                      ))}
+                      {staff.tags.length > 2 && (
+                        <span className="badge badge-outline badge-sm">+{staff.tags.length - 2}</span>
+                      )}
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </PagedCarousel>
+          </Container>
+        </div>
+      )}
+
+      {/* Landscape Modal */}
+      {modalData && (
+        <LandscapeModal
+          isOpen={modalOpen}
+          onClose={() => {
+            setModalOpen(false);
+            setModalData(null);
+          }}
+          imageUrl={modalData.imageUrl}
+          title={modalData.title}
+          description={modalData.description}
+        />
+      )}
+
       <Footer />
     </div>
   );

@@ -3,10 +3,7 @@
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import Navbar from '@/components/Navbar'
 import Container from '@/components/Container'
-import Footer from '@/components/Footer'
-import PageBackground from '@/components/PageBackground'
 import Link from 'next/link'
 import type { AdminStatistics } from '@/lib/admin/types'
 
@@ -72,11 +69,7 @@ export default function AdminStatisticsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-base-100 relative flex flex-col">
-      <PageBackground rotate={true} blur={true} opacity={50} />
-      <div className="relative z-10 flex flex-col min-h-screen">
-        <Navbar />
-        <Container className="py-12 flex-grow">
+    <Container className="py-12 flex-grow">
           <div className="flex items-center gap-3 mb-8">
             <Link href="/admin" className="btn btn-ghost btn-sm">
               ← Back to Admin
@@ -91,7 +84,7 @@ export default function AdminStatisticsPage() {
           {/* User Statistics */}
           <div className="mb-8">
             <h2 className="text-2xl font-semibold mb-4">👥 Users</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
               <div className="stats shadow">
                 <div className="stat">
                   <div className="stat-title">Total Users</div>
@@ -111,6 +104,13 @@ export default function AdminStatisticsPage() {
                   <div className="stat-title">Talents</div>
                   <div className="stat-value text-secondary">{stats.users.talents}</div>
                   <div className="stat-desc">VTuber creators</div>
+                </div>
+              </div>
+              <div className="stats shadow">
+                <div className="stat">
+                  <div className="stat-title">Staffs</div>
+                  <div className="stat-value text-info">{stats.users.staffs}</div>
+                  <div className="stat-desc">Agency staff</div>
                 </div>
               </div>
               <div className="stats shadow">
@@ -354,8 +354,7 @@ export default function AdminStatisticsPage() {
             </div>
           </div>
         </Container>
-        <Footer />
-      </div>
-    </div>
   )
 }
+
+

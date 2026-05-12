@@ -11,9 +11,6 @@ ALTER TABLE IF EXISTS talent_profiles
   ADD COLUMN IF NOT EXISTS portfolio_links TEXT[] DEFAULT '{}';
 
 ALTER TABLE IF EXISTS talent_profiles
-  ADD COLUMN IF NOT EXISTS lore TEXT;
-
-ALTER TABLE IF EXISTS talent_profiles
   ADD COLUMN IF NOT EXISTS bio TEXT;
 
 ALTER TABLE IF EXISTS talent_profiles
@@ -34,6 +31,12 @@ ALTER TABLE IF EXISTS talent_profiles
 ALTER TABLE IF EXISTS talent_profiles
   ADD COLUMN IF NOT EXISTS dislikes TEXT[] DEFAULT '{}';
 
+ALTER TABLE IF EXISTS talent_profiles
+  ADD COLUMN IF NOT EXISTS vtuber_model_url TEXT;
+
+ALTER TABLE IF EXISTS talent_profiles
+  ADD COLUMN IF NOT EXISTS featured BOOLEAN DEFAULT false;
+
 -- ============================================
 -- ARTIST PROFILES TABLE (for artists role)
 -- ============================================
@@ -43,14 +46,22 @@ CREATE TABLE IF NOT EXISTS artist_profiles (
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   specialty TEXT[] DEFAULT '{}',
   portfolio_links TEXT[] DEFAULT '{}',
+  portfolio_art TEXT[] DEFAULT '{}',
   commissions_open BOOLEAN DEFAULT false,
   price_range TEXT,
   contact_email TEXT,
   social_media_links JSONB DEFAULT '{"twitter": null, "instagram": null, "website": null}',
+  featured BOOLEAN DEFAULT false,
   is_published BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+ALTER TABLE IF EXISTS artist_profiles
+  ADD COLUMN IF NOT EXISTS portfolio_art TEXT[] DEFAULT '{}';
+
+ALTER TABLE IF EXISTS artist_profiles
+  ADD COLUMN IF NOT EXISTS featured BOOLEAN DEFAULT false;
 
 -- ============================================
 -- MERCHANDISE TABLE EXTENSIONS
@@ -95,5 +106,7 @@ CREATE TRIGGER update_artist_profiles_updated_at BEFORE UPDATE ON artist_profile
 
 CREATE INDEX IF NOT EXISTS idx_artist_profiles_user_id ON artist_profiles(user_id);
 CREATE INDEX IF NOT EXISTS idx_artist_profiles_published ON artist_profiles(is_published);
+CREATE INDEX IF NOT EXISTS idx_artist_profiles_featured ON artist_profiles(featured);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_artist_profiles_user_id_unique ON artist_profiles(user_id);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_talent_profiles_user_id_unique ON talent_profiles(user_id);
+CREATE INDEX IF NOT EXISTS idx_talent_profiles_featured ON talent_profiles(featured);

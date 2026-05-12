@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     const body = (await request.json()) as {
       email?: string;
       full_name?: string;
-      role?: 'admin' | 'talent' | 'artist';
+      role?: 'admin' | 'talent' | 'staff' | 'artist';
       avatar_url?: string;
       avatar_object_key?: string;
       bio?: string;

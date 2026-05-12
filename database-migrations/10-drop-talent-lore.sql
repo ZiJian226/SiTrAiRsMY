@@ -1,0 +1,1 @@
+ALTER TABLE IF EXISTS talent_profiles DROP COLUMN IF EXISTS lore;

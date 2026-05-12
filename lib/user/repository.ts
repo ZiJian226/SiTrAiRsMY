@@ -1,5 +1,10 @@
 import { dbQuery } from '@/lib/database'
 
+export interface ProfileImage {
+  url: string
+  object_key?: string
+}
+
 // ============================================
 // TALENT PROFILE TYPES
 // ============================================
@@ -13,7 +18,6 @@ export interface TalentProfile {
   bio: string | null
   avatar_url: string | null
   avatar_object_key: string | null
-  lore: string | null
   date_of_birth: string | null
   height: string | null
   species: string | null
@@ -21,6 +25,14 @@ export interface TalentProfile {
   dislikes: string[]
   tags: string[]
   portfolio_links: string[]
+  vtuber_model_url: string | null
+  profile_picture_url: string | null
+  profile_picture_object_key: string | null
+  portrait_picture_url: string | null
+  portrait_picture_object_key: string | null
+  portrait_pictures: ProfileImage[]
+  featured_video_url: string | null
+  featured: boolean
   social_links: Record<string, string | null>
   is_published: boolean
   created_at: string
@@ -32,11 +44,15 @@ export interface ArtistProfile {
   user_id: string
   specialty: string[]
   portfolio_links: string[]
+  portfolio_art: string[]
+  portfolio_art_images: ProfileImage[]
   commissions_open: boolean
   price_range: string | null
   contact_email: string | null
+  featured: boolean
   social_media_links: {
     twitter?: string | null
+    x?: string | null
     instagram?: string | null
     website?: string | null
   }
@@ -95,6 +111,34 @@ async function hasColumn(tableName: string, columnName: string): Promise<boolean
   }
 }
 
+async function ensureColumn(tableName: string, columnDefinition: string, columnName: string): Promise<void> {
+  if (await hasColumn(tableName, columnName)) {
+    return
+  }
+
+  await dbQuery(`ALTER TABLE IF EXISTS ${tableName} ADD COLUMN IF NOT EXISTS ${columnDefinition}`)
+  schemaColumnCache.set(`${tableName}.${columnName}`, true)
+}
+
+function normalizeProfileImages(value: unknown): ProfileImage[] {
+  if (!Array.isArray(value)) {
+    return []
+  }
+
+  return value
+    .filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null)
+    .map((item) => ({
+      url: typeof item.url === 'string' ? item.url.trim() : '',
+      object_key:
+        typeof item.object_key === 'string'
+          ? item.object_key
+          : typeof item.key === 'string'
+            ? item.key
+            : undefined,
+    }))
+    .filter((item) => item.url.length > 0)
+}
+
 // ============================================
 // TALENT PROFILE QUERIES
 // ============================================
@@ -102,19 +146,46 @@ async function hasColumn(tableName: string, columnName: string): Promise<boolean
 export async function getTalentProfileByUserId(userId: string): Promise<TalentProfile | null> {
   const supportsBioColumn = await hasColumn('talent_profiles', 'bio')
   const supportsDebutDateColumn = await hasColumn('talent_profiles', 'debut_date')
+  const supportsVtuberModelColumn = await hasColumn('talent_profiles', 'vtuber_model_url')
+  const supportsProfilePicture = await hasColumn('talent_profiles', 'profile_picture_url')
+  const supportsPortraitPicture = await hasColumn('talent_profiles', 'portrait_picture_url')
+  const supportsPortraitPictures = await hasColumn('talent_profiles', 'portrait_pictures')
+  const supportsFeaturedVideo = await hasColumn('talent_profiles', 'featured_video_url')
+  const supportsFeatured = await hasColumn('talent_profiles', 'featured')
   const result = await dbQuery(
     `SELECT 
       id, user_id, stage_name, character_description,
       ${supportsDebutDateColumn ? 'debut_date' : 'NULL::date AS debut_date'},
       ${supportsBioColumn ? 'bio' : 'character_description AS bio'},
-      avatar_url, avatar_object_key, lore, date_of_birth, 
-      height, species, likes, dislikes, tags, portfolio_links, 
+      avatar_url, avatar_object_key, date_of_birth, 
+      height, species, likes, dislikes, tags, portfolio_links,
+      ${supportsVtuberModelColumn ? 'vtuber_model_url' : 'NULL::text AS vtuber_model_url'},
+      ${supportsProfilePicture ? 'profile_picture_url' : 'NULL::text AS profile_picture_url'},
+      ${supportsProfilePicture ? 'profile_picture_object_key' : 'NULL::text AS profile_picture_object_key'},
+      ${supportsPortraitPicture ? 'portrait_picture_url' : 'NULL::text AS portrait_picture_url'},
+      ${supportsPortraitPicture ? 'portrait_picture_object_key' : 'NULL::text AS portrait_picture_object_key'},
+      ${supportsPortraitPictures ? 'portrait_pictures' : "'[]'::jsonb AS portrait_pictures"},
+      ${supportsFeaturedVideo ? 'featured_video_url' : 'NULL::text AS featured_video_url'},
+      ${supportsFeatured ? 'featured' : 'false AS featured'},
       social_links, is_published, created_at, updated_at
      FROM talent_profiles 
      WHERE user_id = $1`,
     [userId]
   )
-  return result.rows[0] || null
+  const row = result.rows[0]
+  if (!row) {
+    return null
+  }
+
+  const portraitPictures = normalizeProfileImages(row.portrait_pictures)
+  return {
+    ...row,
+    portrait_pictures: portraitPictures.length > 0
+      ? portraitPictures
+      : row.portrait_picture_url
+        ? [{ url: row.portrait_picture_url, object_key: row.portrait_picture_object_key || undefined }]
+        : [],
+  }
 }
 
 export async function updateTalentProfile(
@@ -123,8 +194,15 @@ export async function updateTalentProfile(
 ): Promise<TalentProfile> {
   const supportsBioColumn = await hasColumn('talent_profiles', 'bio')
   const supportsDebutDateColumn = await hasColumn('talent_profiles', 'debut_date')
+  const supportsVtuberModelColumn = await hasColumn('talent_profiles', 'vtuber_model_url')
+  const supportsProfilePicture = await hasColumn('talent_profiles', 'profile_picture_url')
+  const supportsPortraitPicture = await hasColumn('talent_profiles', 'portrait_picture_url')
+  await ensureColumn('talent_profiles', "portrait_pictures JSONB DEFAULT '[]'::jsonb", 'portrait_pictures')
+  const supportsPortraitPictures = await hasColumn('talent_profiles', 'portrait_pictures')
+  const supportsFeaturedVideo = await hasColumn('talent_profiles', 'featured_video_url')
+  const supportsFeatured = await hasColumn('talent_profiles', 'featured')
   const updates: string[] = []
-  const values: (string | string[] | Record<string, unknown> | boolean | null)[] = []
+  const values: unknown[] = []
   let paramCount = 1
 
   if (data.stage_name !== undefined) {
@@ -146,10 +224,6 @@ export async function updateTalentProfile(
   if (data.avatar_object_key !== undefined) {
     updates.push(`avatar_object_key = $${paramCount++}`)
     values.push(data.avatar_object_key)
-  }
-  if (data.lore !== undefined) {
-    updates.push(`lore = $${paramCount++}`)
-    values.push(data.lore)
   }
   if (data.date_of_birth !== undefined) {
     updates.push(`date_of_birth = $${paramCount++}`)
@@ -183,6 +257,38 @@ export async function updateTalentProfile(
     updates.push(`portfolio_links = $${paramCount++}`)
     values.push(data.portfolio_links)
   }
+  if (data.vtuber_model_url !== undefined && supportsVtuberModelColumn) {
+    updates.push(`vtuber_model_url = $${paramCount++}`)
+    values.push(data.vtuber_model_url)
+  }
+  if (data.profile_picture_url !== undefined && supportsProfilePicture) {
+    updates.push(`profile_picture_url = $${paramCount++}`)
+    values.push(data.profile_picture_url)
+  }
+  if (data.profile_picture_object_key !== undefined && supportsProfilePicture) {
+    updates.push(`profile_picture_object_key = $${paramCount++}`)
+    values.push(data.profile_picture_object_key)
+  }
+  if (data.portrait_picture_url !== undefined && supportsPortraitPicture) {
+    updates.push(`portrait_picture_url = $${paramCount++}`)
+    values.push(data.portrait_picture_url)
+  }
+  if (data.portrait_picture_object_key !== undefined && supportsPortraitPicture) {
+    updates.push(`portrait_picture_object_key = $${paramCount++}`)
+    values.push(data.portrait_picture_object_key)
+  }
+  if (data.portrait_pictures !== undefined && supportsPortraitPictures) {
+    updates.push(`portrait_pictures = $${paramCount++}::jsonb`)
+    values.push(JSON.stringify(normalizeProfileImages(data.portrait_pictures)))
+  }
+  if (data.featured_video_url !== undefined && supportsFeaturedVideo) {
+    updates.push(`featured_video_url = $${paramCount++}`)
+    values.push(data.featured_video_url)
+  }
+  if (data.featured !== undefined && supportsFeatured) {
+    updates.push(`featured = $${paramCount++}`)
+    values.push(data.featured)
+  }
   if (data.social_links !== undefined) {
     updates.push(`social_links = $${paramCount++}`)
     values.push(JSON.stringify(data.social_links))
@@ -201,8 +307,16 @@ export async function updateTalentProfile(
      RETURNING id, user_id, stage_name, character_description,
        ${supportsDebutDateColumn ? 'debut_date' : 'NULL::date AS debut_date'},
        ${supportsBioColumn ? 'bio' : 'character_description AS bio'},
-       avatar_url, avatar_object_key, lore, date_of_birth, 
-       height, species, likes, dislikes, tags, portfolio_links, 
+      avatar_url, avatar_object_key, date_of_birth, 
+       height, species, likes, dislikes, tags, portfolio_links,
+       ${supportsVtuberModelColumn ? 'vtuber_model_url' : 'NULL::text AS vtuber_model_url'},
+       ${supportsProfilePicture ? 'profile_picture_url' : 'NULL::text AS profile_picture_url'},
+       ${supportsProfilePicture ? 'profile_picture_object_key' : 'NULL::text AS profile_picture_object_key'},
+       ${supportsPortraitPicture ? 'portrait_picture_url' : 'NULL::text AS portrait_picture_url'},
+       ${supportsPortraitPicture ? 'portrait_picture_object_key' : 'NULL::text AS portrait_picture_object_key'},
+       ${supportsPortraitPictures ? 'portrait_pictures' : "'[]'::jsonb AS portrait_pictures"},
+       ${supportsFeaturedVideo ? 'featured_video_url' : 'NULL::text AS featured_video_url'},
+       ${supportsFeatured ? 'featured' : 'false AS featured'},
        social_links, is_published, created_at, updated_at`,
     values
   )
@@ -211,7 +325,11 @@ export async function updateTalentProfile(
     throw new Error('Failed to update talent profile')
   }
 
-  return result.rows[0]
+  const row = result.rows[0]
+  return {
+    ...row,
+    portrait_pictures: normalizeProfileImages(row.portrait_pictures),
+  }
 }
 
 // ============================================
@@ -219,36 +337,92 @@ export async function updateTalentProfile(
 // ============================================
 
 export async function getArtistProfileByUserId(userId: string): Promise<ArtistProfile | null> {
+  const supportsPortfolioArtColumn = await hasColumn('artist_profiles', 'portfolio_art')
+  const supportsPortfolioArtImagesColumn = await hasColumn('artist_profiles', 'portfolio_art_images')
+  const supportsFeaturedColumn = await hasColumn('artist_profiles', 'featured')
   const result = await dbQuery(
     `SELECT 
-      id, user_id, specialty, portfolio_links, commissions_open,
-      price_range, contact_email, social_media_links, is_published, 
+      id, user_id, specialty, portfolio_links,
+      ${supportsPortfolioArtColumn ? 'portfolio_art' : 'ARRAY[]::text[] AS portfolio_art'},
+      ${supportsPortfolioArtImagesColumn ? 'portfolio_art_images' : "'[]'::jsonb AS portfolio_art_images"},
+      commissions_open,
+      price_range, contact_email, social_media_links, ${supportsFeaturedColumn ? 'featured' : 'false AS featured'}, is_published, 
       created_at, updated_at
      FROM artist_profiles 
      WHERE user_id = $1`,
     [userId]
   )
-  return result.rows[0] || null
+  const row = result.rows[0]
+  return row ? { ...row, portfolio_art_images: normalizeProfileImages(row.portfolio_art_images) } : null
 }
 
 export async function createArtistProfile(userId: string): Promise<ArtistProfile> {
+  const supportsPortfolioArtColumn = await hasColumn('artist_profiles', 'portfolio_art')
+  const supportsPortfolioArtImagesColumn = await hasColumn('artist_profiles', 'portfolio_art_images')
+  const supportsFeaturedColumn = await hasColumn('artist_profiles', 'featured')
   const result = await dbQuery(
-    `INSERT INTO artist_profiles (user_id, specialty, portfolio_links, social_media_links)
-     VALUES ($1, '{}', '{}', '{"twitter": null, "instagram": null, "website": null}')
-     RETURNING id, user_id, specialty, portfolio_links, commissions_open,
-       price_range, contact_email, social_media_links, is_published, 
-       created_at, updated_at`,
+    supportsPortfolioArtColumn
+      ? (supportsFeaturedColumn
+          ? `INSERT INTO artist_profiles (user_id, specialty, portfolio_links, portfolio_art, social_media_links, featured)
+             VALUES ($1, '{}', '{}', '{}', '{"twitter": null, "instagram": null, "website": null}', false)
+             RETURNING id, user_id, specialty, portfolio_links, portfolio_art, commissions_open,
+               ${supportsPortfolioArtImagesColumn ? 'portfolio_art_images' : "'[]'::jsonb AS portfolio_art_images"},
+               price_range, contact_email, social_media_links, featured, is_published,
+               created_at, updated_at`
+          : `INSERT INTO artist_profiles (user_id, specialty, portfolio_links, portfolio_art, social_media_links)
+             VALUES ($1, '{}', '{}', '{}', '{"twitter": null, "instagram": null, "website": null}')
+             RETURNING id, user_id, specialty, portfolio_links, portfolio_art, commissions_open,
+               ${supportsPortfolioArtImagesColumn ? 'portfolio_art_images' : "'[]'::jsonb AS portfolio_art_images"},
+               price_range, contact_email, social_media_links, false AS featured, is_published,
+               created_at, updated_at`)
+      : (supportsFeaturedColumn
+          ? `INSERT INTO artist_profiles (user_id, specialty, portfolio_links, social_media_links, featured)
+             VALUES ($1, '{}', '{}', '{"twitter": null, "instagram": null, "website": null}', false)
+             RETURNING id, user_id, specialty, portfolio_links, ARRAY[]::text[] AS portfolio_art, commissions_open,
+               ${supportsPortfolioArtImagesColumn ? 'portfolio_art_images' : "'[]'::jsonb AS portfolio_art_images"},
+               price_range, contact_email, social_media_links, featured, is_published,
+               created_at, updated_at`
+          : `INSERT INTO artist_profiles (user_id, specialty, portfolio_links, social_media_links)
+             VALUES ($1, '{}', '{}', '{"twitter": null, "instagram": null, "website": null}')
+             RETURNING id, user_id, specialty, portfolio_links, ARRAY[]::text[] AS portfolio_art, commissions_open,
+               ${supportsPortfolioArtImagesColumn ? 'portfolio_art_images' : "'[]'::jsonb AS portfolio_art_images"},
+               price_range, contact_email, social_media_links, false AS featured, is_published,
+               created_at, updated_at`),
     [userId]
   )
-  return result.rows[0]
+  const row = result.rows[0]
+  return {
+    ...row,
+    portfolio_art_images: normalizeProfileImages(row.portfolio_art_images),
+  }
 }
 
 export async function updateArtistProfile(
   userId: string,
   data: Partial<ArtistProfile>
 ): Promise<ArtistProfile> {
+  const supportsPortfolioArtColumn = await hasColumn('artist_profiles', 'portfolio_art')
+  await ensureColumn('artist_profiles', "portfolio_art_images JSONB DEFAULT '[]'::jsonb", 'portfolio_art_images')
+  const supportsPortfolioArtImagesColumn = await hasColumn('artist_profiles', 'portfolio_art_images')
+  const supportsFeaturedColumn = await hasColumn('artist_profiles', 'featured')
+
+  await dbQuery(
+    supportsPortfolioArtColumn
+      ? `
+        INSERT INTO artist_profiles (user_id, specialty, portfolio_links, portfolio_art, social_media_links)
+        VALUES ($1, '{}', '{}', '{}', '{"twitter": null, "instagram": null, "website": null}')
+        ON CONFLICT (user_id) DO NOTHING
+      `
+      : `
+        INSERT INTO artist_profiles (user_id, specialty, portfolio_links, social_media_links)
+        VALUES ($1, '{}', '{}', '{"twitter": null, "instagram": null, "website": null}')
+        ON CONFLICT (user_id) DO NOTHING
+      `,
+    [userId],
+  )
+
   const updates: string[] = []
-  const values: (string | string[] | Record<string, unknown> | boolean | null)[] = []
+  const values: unknown[] = []
   let paramCount = 1
 
   if (data.specialty !== undefined) {
@@ -258,6 +432,14 @@ export async function updateArtistProfile(
   if (data.portfolio_links !== undefined) {
     updates.push(`portfolio_links = $${paramCount++}`)
     values.push(data.portfolio_links)
+  }
+  if (data.portfolio_art !== undefined && supportsPortfolioArtColumn) {
+    updates.push(`portfolio_art = $${paramCount++}`)
+    values.push(data.portfolio_art)
+  }
+  if (data.portfolio_art_images !== undefined && supportsPortfolioArtImagesColumn) {
+    updates.push(`portfolio_art_images = $${paramCount++}::jsonb`)
+    values.push(JSON.stringify(normalizeProfileImages(data.portfolio_art_images)))
   }
   if (data.commissions_open !== undefined) {
     updates.push(`commissions_open = $${paramCount++}`)
@@ -271,6 +453,10 @@ export async function updateArtistProfile(
     updates.push(`contact_email = $${paramCount++}`)
     values.push(data.contact_email)
   }
+  if (data.featured !== undefined && supportsFeaturedColumn) {
+    updates.push(`featured = $${paramCount++}`)
+    values.push(data.featured)
+  }
   if (data.social_media_links !== undefined) {
     updates.push(`social_media_links = $${paramCount++}`)
     values.push(JSON.stringify(data.social_media_links))
@@ -280,14 +466,25 @@ export async function updateArtistProfile(
     values.push(data.is_published)
   }
 
+  if (updates.length === 0) {
+    const existing = await getArtistProfileByUserId(userId)
+    if (!existing) {
+      throw new Error('Failed to update artist profile')
+    }
+    return existing
+  }
+
   values.push(userId)
 
   const result = await dbQuery(
     `UPDATE artist_profiles 
      SET ${updates.join(', ')}
      WHERE user_id = $${paramCount}
-     RETURNING id, user_id, specialty, portfolio_links, commissions_open,
-       price_range, contact_email, social_media_links, is_published, 
+     RETURNING id, user_id, specialty, portfolio_links,
+       ${supportsPortfolioArtColumn ? 'portfolio_art' : 'ARRAY[]::text[] AS portfolio_art'},
+       ${supportsPortfolioArtImagesColumn ? 'portfolio_art_images' : "'[]'::jsonb AS portfolio_art_images"},
+       commissions_open,
+       price_range, contact_email, social_media_links, ${supportsFeaturedColumn ? 'featured' : 'false AS featured'}, is_published, 
        created_at, updated_at`,
     values
   )
@@ -296,7 +493,11 @@ export async function updateArtistProfile(
     throw new Error('Failed to update artist profile')
   }
 
-  return result.rows[0]
+  const row = result.rows[0]
+  return {
+    ...row,
+    portfolio_art_images: normalizeProfileImages(row.portfolio_art_images),
+  }
 }
 
 // ============================================

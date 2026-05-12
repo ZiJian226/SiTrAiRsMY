@@ -104,37 +104,66 @@ export default function ArtistsPage() {
               <p className="text-xl opacity-70">No artists found matching your criteria.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 gap-6">
               {filteredArtists.map((artist) => (
                 <div
                   key={artist.id}
                   className="card bg-base-200 shadow-xl hover:shadow-2xl transition-all hover:-translate-y-1"
                 >
-                  <figure className="px-10 pt-10">
-                    <div className="avatar">
-                      <div className="w-32 rounded-full ring ring-secondary ring-offset-base-100 ring-offset-2">
-                        <img src={artist.avatar} alt={artist.name} />
+                  <div className="card-body p-4 md:p-5">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-stretch">
+                      <div className="md:col-span-1 rounded-xl border border-base-300 bg-base-300 p-3 min-h-[200px]">
+                        <p className="text-xs font-semibold opacity-70 mb-2">Art showcase</p>
+                        <div className="space-y-2 max-h-[240px] overflow-y-auto pr-1">
+                          {(artist.portfolioArt && artist.portfolioArt.length > 0 ? artist.portfolioArt : artist.portfolio)
+                            .slice(0, 10)
+                            .map((artUrl, index) => (
+                              <div key={index} className="w-full h-24 rounded-lg overflow-hidden bg-base-100">
+                                <img
+                                  src={artUrl}
+                                  alt={`${artist.name} art ${index + 1}`}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                            ))}
+                        </div>
                       </div>
-                    </div>
-                  </figure>
-                  <div className="card-body items-center text-center">
-                    <h2 className="card-title text-secondary">{artist.name}</h2>
-                    <p className="text-sm opacity-70">{artist.description}</p>
-                    <div className="flex flex-wrap gap-2 justify-center mt-2">
-                      {artist.specialty.map((spec) => (
-                        <span key={spec} className="badge badge-accent badge-sm">
-                          {spec}
-                        </span>
-                      ))}
-                    </div>
-                    <div className="text-sm font-semibold mt-2">{artist.priceRange}</div>
-                    {artist.commissionsOpen && (
-                      <div className="badge badge-success">Open for Commissions</div>
-                    )}
-                    <div className="card-actions mt-4">
-                      <Link href={`/artists/${artist.id}`} className="btn btn-secondary btn-sm">
-                        View Portfolio
-                      </Link>
+
+                      <div className="md:col-span-2">
+                        <div className="flex items-start gap-3 mb-2">
+                          <div className="avatar">
+                            <div className="w-14 rounded-full ring ring-secondary ring-offset-base-100 ring-offset-1">
+                              <img src={artist.avatar} alt={artist.name} className="object-cover" />
+                            </div>
+                          </div>
+                          <div>
+                            <h2 className="card-title text-secondary">{artist.name}</h2>
+                            <div className="text-sm font-semibold mt-1">{artist.priceRange}</div>
+                          </div>
+                        </div>
+
+                        <p className="text-sm opacity-70 mb-3">{artist.description}</p>
+
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {artist.specialty.map((spec) => (
+                            <span key={spec} className="badge badge-accent badge-sm">
+                              {spec}
+                            </span>
+                          ))}
+                        </div>
+
+                        <div className="card-actions mt-4 justify-between">
+                          {artist.commissionsOpen ? (
+                            <div className="badge badge-success">Open for Commissions</div>
+                          ) : (
+                            <div className="badge badge-outline">Commissions currently closed</div>
+                          )}
+
+                          <Link href={`/artists/${artist.id}`} className="btn btn-secondary btn-sm">
+                            View Portfolio
+                          </Link>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>

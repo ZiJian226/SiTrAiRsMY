@@ -6,6 +6,7 @@ import Navbar from "@/components/Navbar";
 import Container from "@/components/Container";
 import Footer from "@/components/Footer";
 import PageBackground from "@/components/PageBackground";
+import LandscapeModal from "@/components/LandscapeModal";
 import { fallbackEvents } from "@/lib/content/fallback";
 import { useCachedApiResource } from "@/lib/hooks";
 import type { EventArticle } from "@/lib/content/types";
@@ -67,8 +68,8 @@ export default function EventsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {filteredNews.map((article) => (
               <div key={article.id} className="card bg-base-200 shadow-xl hover:shadow-2xl transition-all">
-                <figure>
-                  <img src={article.image} alt={article.title} className="w-full h-64 object-cover" />
+                <figure className="aspect-video overflow-hidden">
+                  <img src={article.image} alt={article.title} className="w-full h-full object-cover" />
                 </figure>
                 <div className="card-body">
                   <div className="flex items-center gap-2 mb-2">
@@ -103,37 +104,14 @@ export default function EventsPage() {
       </div>
 
       {selectedEvent && (
-        <div className="modal modal-open">
-          <div className="modal-box max-w-3xl">
-            <button
-              type="button"
-              className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
-              onClick={() => setSelectedEvent(null)}
-            >
-              ✕
-            </button>
-            <figure className="mb-4 rounded-xl overflow-hidden">
-              <img
-                src={selectedEvent.image}
-                alt={selectedEvent.title}
-                className="w-full h-64 object-cover"
-              />
-            </figure>
-            <div className="flex items-center gap-2 mb-3">
-              <span className="badge badge-primary">{selectedEvent.category}</span>
-              <span className="text-sm opacity-70">{new Date(selectedEvent.date).toLocaleDateString()}</span>
-            </div>
-            <h2 className="text-3xl font-bold mb-3">{selectedEvent.title}</h2>
-            <p className="opacity-80 whitespace-pre-line">{selectedEvent.content || selectedEvent.excerpt}</p>
-            <div className="mt-6 flex justify-between items-center">
-              <span className="text-sm opacity-70">By {selectedEvent.author}</span>
-              <button type="button" className="btn btn-primary" onClick={() => setSelectedEvent(null)}>
-                Close
-              </button>
-            </div>
-          </div>
-          <div className="modal-backdrop" onClick={() => setSelectedEvent(null)}></div>
-        </div>
+        <LandscapeModal
+          isOpen={Boolean(selectedEvent)}
+          onClose={() => setSelectedEvent(null)}
+          imageUrl={selectedEvent.image}
+          imageAlt={selectedEvent.title}
+          title={selectedEvent.title}
+          description={`${selectedEvent.content || selectedEvent.excerpt}\n\nCategory: ${selectedEvent.category}\nDate: ${new Date(selectedEvent.date).toLocaleDateString()}\nAuthor: ${selectedEvent.author}`}
+        />
       )}
     </div>
   );

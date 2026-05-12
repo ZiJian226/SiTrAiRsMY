@@ -8,15 +8,40 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const { id } = await params;
     const body = (await request.json()) as {
       full_name?: string;
-      role?: 'admin' | 'talent' | 'artist';
+      role?: 'admin' | 'talent' | 'staff' | 'artist';
       avatar_url?: string;
       avatar_object_key?: string;
       bio?: string;
-      lore?: string;
       tags?: string[];
       youtubeUrl?: string;
       twitchUrl?: string;
       tiktokUrl?: string;
+      vtuberModelUrl?: string;
+      profilePictureUrl?: string;
+      profilePictureObjectKey?: string;
+      portraitPictureUrl?: string;
+      portraitPictureObjectKey?: string;
+      portraitPictures?: Array<{ url: string; object_key?: string }>;
+      featuredVideoUrl?: string;
+      featured?: boolean;
+      characterInfo?: {
+        dateOfBirth?: string;
+        debutDate?: string;
+        height?: string;
+        species?: string;
+        likes?: string[];
+        dislikes?: string[];
+      };
+      specialty?: string[];
+      portfolio?: string[];
+      portfolioArt?: string[];
+      portfolioArtImages?: Array<{ url: string; object_key?: string }>;
+      commissionsOpen?: boolean;
+      priceRange?: string;
+      contactEmail?: string;
+      websiteUrl?: string;
+      twitterUrl?: string;
+      instagramUrl?: string;
     };
 
     if (!body.full_name || !body.role) {
@@ -29,11 +54,29 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       avatar_url: body.avatar_url || '',
       avatar_object_key: body.avatar_object_key,
       bio: body.bio || '',
-      lore: body.lore,
       tags: body.tags || [],
       youtubeUrl: body.youtubeUrl,
       twitchUrl: body.twitchUrl,
       tiktokUrl: body.tiktokUrl,
+      vtuberModelUrl: body.vtuberModelUrl,
+      profilePictureUrl: body.profilePictureUrl,
+      profilePictureObjectKey: body.profilePictureObjectKey,
+      portraitPictureUrl: body.portraitPictureUrl,
+      portraitPictureObjectKey: body.portraitPictureObjectKey,
+      portraitPictures: body.portraitPictures,
+      featuredVideoUrl: body.featuredVideoUrl,
+      featured: body.featured,
+      characterInfo: body.characterInfo,
+      specialty: body.specialty,
+      portfolio: body.portfolio,
+      portfolioArt: body.portfolioArt,
+      portfolioArtImages: body.portfolioArtImages,
+      commissionsOpen: body.commissionsOpen,
+      priceRange: body.priceRange,
+      contactEmail: body.contactEmail,
+      websiteUrl: body.websiteUrl,
+      twitterUrl: body.twitterUrl,
+      instagramUrl: body.instagramUrl,
     });
 
     if (!updated) {

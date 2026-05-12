@@ -97,12 +97,8 @@ export default function TalentsPage() {
                 key={talent.id}
                 className="card bg-base-200 shadow-xl hover:shadow-2xl transition-all hover:-translate-y-1"
               >
-                <figure className="px-10 pt-10">
-                  <div className="avatar">
-                    <div className="w-32 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2">
-                      <img src={talent.avatar} alt={talent.name} />
-                    </div>
-                  </div>
+                <figure className="aspect-video overflow-hidden">
+                  <img src={talent.avatar} alt={talent.name} className="w-full h-full object-cover" />
                 </figure>
                 <div className="card-body items-center text-center">
                   <h2 className="card-title text-primary">{talent.name}</h2>

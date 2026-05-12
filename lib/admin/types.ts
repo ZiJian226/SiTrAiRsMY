@@ -3,7 +3,7 @@ export interface AdminUser {
   user_id: string;
   email: string;
   full_name: string;
-  role: 'admin' | 'talent' | 'artist';
+  role: 'admin' | 'talent' | 'staff' | 'artist';
   avatar_url: string;
   avatar_object_key?: string;
   bio: string;
@@ -12,11 +12,36 @@ export interface AdminUser {
 }
 
 export interface AdminProfile extends AdminUser {
-  lore?: string;
+  featured?: boolean;
+  characterInfo?: {
+    dateOfBirth?: string;
+    debutDate?: string;
+    height?: string;
+    species?: string;
+    likes?: string[];
+    dislikes?: string[];
+  };
   tags?: string[];
+  vtuberModelUrl?: string;
+  profilePictureUrl?: string;
+  profilePictureObjectKey?: string;
+  portraitPictureUrl?: string;
+  portraitPictureObjectKey?: string;
+  portraitPictures?: Array<{ url: string; object_key?: string }>;
+  featuredVideoUrl?: string;
   youtubeUrl?: string;
   twitchUrl?: string;
   tiktokUrl?: string;
+  specialty?: string[];
+  portfolio?: string[];
+  portfolioArt?: string[];
+  portfolioArtImages?: Array<{ url: string; object_key?: string }>;
+  commissionsOpen?: boolean;
+  priceRange?: string;
+  contactEmail?: string;
+  websiteUrl?: string;
+  twitterUrl?: string;
+  instagramUrl?: string;
 }
 
 export interface AdminEvent {
@@ -62,6 +87,7 @@ export interface AdminStatistics {
     total: number;
     admins: number;
     talents: number;
+    staffs: number;
     artists: number;
     newThisMonth: number;
   };

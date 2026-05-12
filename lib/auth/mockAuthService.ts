@@ -27,7 +27,7 @@ const MOCK_USERS: Record<string, MockUserRecord> = {
       id: '2',
       email: 'talent@starmy.com',
       full_name: 'Sakura Hoshino',
-      role: 'talent',
+      role: 'staff',
       avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=talent',
       bio: 'Virtual talent and content creator',
       created_at: now(),

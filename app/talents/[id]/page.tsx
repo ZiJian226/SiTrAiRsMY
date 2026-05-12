@@ -4,6 +4,7 @@ import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Container from "@/components/Container";
 import Footer from "@/components/Footer";
+import PortraitCarousel from "./PortraitCarousel";
 import { getTalentById } from "@/lib/content/repository";
 
 export default async function TalentProfilePage({ params }: { params: Promise<{ id: string }> }) {
@@ -93,18 +94,6 @@ export default async function TalentProfilePage({ params }: { params: Promise<{ 
     return match?.[1] || null;
   };
 
-  const toYouTubeEmbedUrl = (url: string) => {
-    if (url.includes('youtube.com/watch?v=')) {
-      return url.replace('youtube.com/watch?v=', 'youtube.com/embed/');
-    }
-
-    if (url.includes('youtu.be/')) {
-      return url.replace('youtu.be/', 'youtube.com/embed/');
-    }
-
-    return url;
-  };
-
   const extractTikTokVideoIdFromHtml = (html: string): string | null => {
     const match = html.match(/data-video-id="(\d+)"/);
     return match?.[1] || null;
@@ -136,8 +125,28 @@ export default async function TalentProfilePage({ params }: { params: Promise<{ 
     }
   };
 
+  const toStringArray = (value: unknown): string[] =>
+    Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
+
   const tiktokVideoId = vtuber.tiktokUrl ? await resolveTikTokVideoId(vtuber.tiktokUrl) : null;
   const twitchChannel = vtuber.twitchUrl ? extractTwitchChannel(vtuber.twitchUrl) : null;
+  const youtubeVideoId = vtuber.youtubeUrl ? extractYouTubeVideoId(vtuber.youtubeUrl) : null;
+  const featuredVideoUrl = (vtuber as { featuredVideoUrl?: string | null }).featuredVideoUrl || null;
+  const featuredVideoYoutubeId = featuredVideoUrl ? extractYouTubeVideoId(featuredVideoUrl) : null;
+  const featuredVideoTwitchChannel = featuredVideoUrl ? extractTwitchChannel(featuredVideoUrl) : null;
+  const featuredVideoPlatform = featuredVideoTwitchChannel ? 'twitch' : 'youtube';
+  const portraitPictures = vtuber.portraitPictures && vtuber.portraitPictures.length > 0 
+    ? vtuber.portraitPictures 
+    : vtuber.portraitPictureUrl 
+      ? [{ url: vtuber.portraitPictureUrl, object_key: undefined }]
+      : [];
+  const portraitOrProfileImage = portraitPictures[0]?.url || vtuber.profilePictureUrl || vtuber.avatar;
+  const profilePictureImage = vtuber.profilePictureUrl || vtuber.avatar;
+  const talentTags = toStringArray(vtuber.tags);
+  const talentPortfolio = toStringArray(vtuber.portfolio);
+  const talentCharacterInfo = vtuber.characterInfo && typeof vtuber.characterInfo === 'object' ? vtuber.characterInfo : undefined;
+  const characterLikes = toStringArray(talentCharacterInfo?.likes);
+  const characterDislikes = toStringArray(talentCharacterInfo?.dislikes);
 
   const headerStore = await headers();
   const forwardedHost = headerStore.get('x-forwarded-host');
@@ -174,32 +183,67 @@ export default async function TalentProfilePage({ params }: { params: Promise<{ 
   };
 
   const getPlatformBrandColor = (platform: string) => {
-    const colors: Record<string, { bg: string; border: string; text: string; icon: string; btn: string }> = {
-      youtube: { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700', icon: '🎥', btn: 'btn-error' },
-      twitch: { bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-700', icon: '🎮', btn: 'btn-secondary' },
-      tiktok: { bg: 'bg-gray-900', border: 'border-gray-700', text: 'text-white', icon: '🎵', btn: 'btn-ghost' },
+    const colors: Record<string, { bg: string; border: string; text: string; btn: string }> = {
+      youtube: { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700', btn: 'btn-error' },
+      twitch: { bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-700', btn: 'btn-secondary' },
+      tiktok: { bg: 'bg-neutral-900', border: 'border-neutral-700', text: 'text-white', btn: 'btn-ghost' },
     };
-    return colors[platform.toLowerCase()] || { bg: 'bg-base-300', border: 'border-base-400', text: 'text-base-content', icon: '🔗', btn: 'btn-outline' };
+    return colors[platform.toLowerCase()] || { bg: 'bg-base-300', border: 'border-base-400', text: 'text-base-content', btn: 'btn-outline' };
   };
 
-  const SocialProfileCard = ({ url, platform, title }: { url: string; platform: string; title: string }) => {
+  const PlatformIcon = ({ platform, className = 'w-6 h-6' }: { platform: string; className?: string }) => {
+    switch (platform.toLowerCase()) {
+      case 'youtube':
+        return (
+          <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+            <path fill="#FF0000" d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.6 3.5 12 3.5 12 3.5s-7.6 0-9.4.6A3 3 0 0 0 .5 6.2 31 31 0 0 0 0 12a31 31 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.8.6 9.4.6 9.4.6s7.6 0 9.4-.6a3 3 0 0 0 2.1-2.1A31 31 0 0 0 24 12a31 31 0 0 0-.5-5.8Z" />
+            <path fill="#fff" d="m9.75 15.5 6.5-3.5-6.5-3.5v7Z" />
+          </svg>
+        );
+      case 'twitch':
+        return (
+          <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+            <path fill="#9146FF" d="M2 1h20v14l-5 5h-4l-3 3H7v-3H2V1Zm18 12V3H4v15h4v2l2-2h5l5-5Z" />
+            <path fill="#9146FF" d="M9 7h2v6H9zm5 0h2v6h-2z" />
+          </svg>
+        );
+      case 'tiktok':
+        return (
+          <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+            <path fill="#25F4EE" d="M14.4 3v11.6a3.4 3.4 0 1 1-3.4-3.4c.2 0 .5 0 .7.1V8a6.6 6.6 0 1 0 6 6.6V9.7a7.3 7.3 0 0 0 4.3 1.4V7.8A4 4 0 0 1 18.8 4H14.4Z" />
+            <path fill="#FE2C55" d="M13.6 2v11.6a3.4 3.4 0 1 1-3.4-3.4c.3 0 .5 0 .8.1V7a6.6 6.6 0 1 0 6 6.6V8.7a7.2 7.2 0 0 0 4.3 1.4V6.8a4 4 0 0 1-3.2-3.7h-4.5Z" />
+            <path fill="#fff" d="M15.3 3.5v10.2a4.9 4.9 0 1 1-4.8-4.9h.2v2.3h-.2a2.6 2.6 0 1 0 2.6 2.6V3.5h2.2Zm2.6 1.3a6.1 6.1 0 0 0 2.4 2.4v1.6a7.8 7.8 0 0 1-2.4-1.1V4.8Z" />
+          </svg>
+        );
+      default:
+        return (
+          <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+            <path fill="currentColor" d="M10.6 13.4a1 1 0 0 1 0-1.4l2.8-2.8a1 1 0 1 1 1.4 1.4L12 13.4a1 1 0 0 1-1.4 0Zm-3.5 3.5a4 4 0 0 1 0-5.7l2-2a1 1 0 1 1 1.4 1.4l-2 2a2 2 0 1 0 2.8 2.8l2-2a1 1 0 1 1 1.4 1.4l-2 2a4 4 0 0 1-5.7 0Z" />
+          </svg>
+        );
+    }
+  };
+
+  const SocialEmbedFallback = ({ url, platform, title }: { url: string; platform: string; title: string }) => {
     const username = extractUsernameFromUrl(url, platform);
     const branding = getPlatformBrandColor(platform);
 
     return (
-      <div className={`card ${branding.bg} shadow-md border-2 ${branding.border}`}>
-        <div className="card-body items-center text-center py-6">
-          <div className="text-5xl mb-3">{branding.icon}</div>
-          <h3 className={`card-title text-xl ${branding.text}`}>{title}</h3>
+      <div className={`h-full flex items-center justify-center ${branding.bg} border ${branding.border} p-5`}>
+        <div className="text-center">
+          <div className="flex justify-center mb-3">
+            <PlatformIcon platform={platform} className="w-12 h-12" />
+          </div>
+          <h3 className={`font-semibold text-xl ${branding.text}`}>{title}</h3>
           {username && <p className="text-sm opacity-80">{username}</p>}
-          <div className="card-actions mt-4">
+          <div className="mt-4">
             <a
               href={url}
               target="_blank"
               rel="noopener noreferrer"
               className={`btn btn-sm gap-2 ${branding.btn}`}
             >
-              Visit Profile →
+              Open profile
             </a>
           </div>
         </div>
@@ -216,294 +260,290 @@ export default async function TalentProfilePage({ params }: { params: Promise<{ 
           ← Back to Talents
         </Link>
 
-        {/* Profile Header */}
-        <div className="card bg-base-200 shadow-xl mb-8">
-          <div className="card-body">
-            <div className="flex flex-col md:flex-row gap-8 items-center md:items-start">
-              <div className="avatar">
-                <div className="w-48 rounded-full ring ring-primary ring-offset-base-100 ring-offset-4">
-                  <img src={vtuber.avatar} alt={vtuber.name} />
-                </div>
-              </div>
-              <div className="flex-1 text-center md:text-left">
-                <h1 className="text-4xl font-bold text-primary mb-4">
-                  {vtuber.name}
-                </h1>
-                <p className="text-lg mb-6">{vtuber.description}</p>
-                <div className="flex flex-wrap gap-2 justify-center md:justify-start mb-6">
-                  {vtuber.tags.map((tag) => (
-                    <span key={tag} className="badge badge-secondary badge-lg">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-                <div className="flex flex-wrap gap-4 justify-center md:justify-start">
-                  {vtuber.youtubeUrl && (
-                    <a
-                      href={vtuber.youtubeUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn btn-primary"
-                    >
-                      YouTube
-                    </a>
-                  )}
-                  {vtuber.twitchUrl && (
-                    <a
-                      href={vtuber.twitchUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn btn-secondary"
-                    >
-                      Twitch
-                    </a>
-                  )}
-                  {vtuber.tiktokUrl && (
-                    <a
-                      href={vtuber.tiktokUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn btn-accent"
-                    >
-                      TikTok
-                    </a>
-                  )}
-                </div>
-              </div>
-            </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
+          {/* Left Column: Portrait Carousel */}
+          <div className="lg:col-span-1">
+            <PortraitCarousel 
+              name={vtuber.name} 
+              portraitPictures={portraitPictures}
+              tags={talentTags}
+            />
           </div>
-        </div>
 
-        <div className="card bg-base-200 shadow-xl mb-8">
-          <div className="card-body">
-            <h2 className="card-title text-2xl mb-4">📖 Introduction / Lore</h2>
-            {vtuber.lore ? (
-              <p className="text-lg leading-relaxed whitespace-pre-line">{vtuber.lore}</p>
-            ) : (
-              <p className="text-base opacity-70 italic">
-                Lore coming soon! Stay tuned for {vtuber.name}'s backstory...
-              </p>
-            )}
-          </div>
-        </div>
-
-        <div className="card bg-base-200 shadow-xl mb-8">
-          <div className="card-body">
-            <h2 className="card-title text-2xl mb-4">ℹ️ Character Info</h2>
-            {vtuber.characterInfo ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {vtuber.characterInfo.dateOfBirth && (
-                  <div>
-                    <span className="font-semibold text-primary">Date of Birth:</span>
-                    <p className="text-lg">{vtuber.characterInfo.dateOfBirth}</p>
-                  </div>
-                )}
-                {vtuber.characterInfo.debutDate && (
-                  <div>
-                    <span className="font-semibold text-primary">Debut Date:</span>
-                    <p className="text-lg">{vtuber.characterInfo.debutDate}</p>
-                  </div>
-                )}
-                {vtuber.characterInfo.height && (
-                  <div>
-                    <span className="font-semibold text-primary">Height:</span>
-                    <p className="text-lg">{vtuber.characterInfo.height}</p>
-                  </div>
-                )}
-                {vtuber.characterInfo.species && (
-                  <div>
-                    <span className="font-semibold text-primary">Species:</span>
-                    <p className="text-lg">{vtuber.characterInfo.species}</p>
-                  </div>
-                )}
-                {vtuber.characterInfo.likes && vtuber.characterInfo.likes.length > 0 && (
-                  <div className="md:col-span-2">
-                    <span className="font-semibold text-primary">Likes:</span>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {vtuber.characterInfo.likes.map((like, idx) => (
-                        <span key={idx} className="badge badge-success badge-lg">
-                          ❤️ {like}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {vtuber.characterInfo.dislikes && vtuber.characterInfo.dislikes.length > 0 && (
-                  <div className="md:col-span-2">
-                    <span className="font-semibold text-primary">Dislikes:</span>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {vtuber.characterInfo.dislikes.map((dislike, idx) => (
-                        <span key={idx} className="badge badge-error badge-lg">
-                          💔 {dislike}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <p className="text-base opacity-70 italic">
-                Character information coming soon!
-              </p>
-            )}
-          </div>
-        </div>
-
-        {/* Streaming Schedule */}
-        {vtuber.schedule && vtuber.schedule.length > 0 && (
-          <div className="card bg-base-200 shadow-xl mb-8">
-            <div className="card-body">
-              <h2 className="card-title text-2xl mb-4">📅 Streaming Schedule (MYT)</h2>
-              <div className="overflow-x-auto">
-                <table className="table">
-                  <thead>
-                    <tr>
-                      <th>Day</th>
-                      <th>Time</th>
-                      <th>Stream Title</th>
-                      <th>Platform</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {vtuber.schedule.map((slot) => (
-                      <tr key={slot.id} className="hover">
-                        <td className="font-semibold">{slot.day}</td>
-                        <td>{slot.time}</td>
-                        <td>{slot.title}</td>
-                        <td>
-                          <span className={`badge ${getPlatformColor(slot.platform)}`}>
-                            {getPlatformIcon(slot.platform)} {slot.platform}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <div className="alert alert-info mt-4">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-                <span>Schedule may change. Follow on social media for updates!</span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Content Embeds & Portfolio */}
-        <div className="space-y-8">
-          {/* Portfolio Gallery */}
-          {vtuber.portfolio && vtuber.portfolio.length > 0 && (
+          {/* Right Column: All Existing Sections */}
+          <div className="lg:col-span-2 space-y-8">
             <div className="card bg-base-200 shadow-xl">
               <div className="card-body">
-                <h2 className="card-title text-2xl mb-4">🎨 Portfolio</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {vtuber.portfolio.map((link, idx) => (
-                    <div key={idx} className="relative overflow-hidden rounded-lg group aspect-video bg-base-300">
-                      {/* Try to embed or display portfolio links */}
-                      {link.includes('youtube.com') || link.includes('youtu.be') ? (
-                        <iframe
-                          className="w-full h-full"
-                          src={link.replace('youtube.com/watch?v=', 'youtube.com/embed/').replace('youtu.be/', 'youtube.com/embed/')}
-                          allowFullScreen
-                          title={`Portfolio ${idx + 1}`}
-                        />
-                      ) : link.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-                        <img
-                          src={link}
-                          alt={`Portfolio ${idx + 1}`}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            e.currentTarget.src = 'https://placehold.co/400x300/333/FFF/png?text=Portfolio+' + (idx + 1)
-                          }}
-                        />
-                      ) : (
-                        <a
-                          href={link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="w-full h-full flex items-center justify-center hover:bg-base-200 transition-colors"
-                        >
-                          <div className="text-center">
-                            <p className="text-sm mb-2">Portfolio Link</p>
-                            <p className="text-xs opacity-70 truncate max-w-xs">{link}</p>
+                <div className="flex flex-col md:flex-row md:items-center gap-4 mb-3">
+                  <div className="avatar">
+                    <div className="w-20 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2">
+                      <img src={profilePictureImage} alt={`${vtuber.name} profile picture`} className="object-cover" />
+                    </div>
+                  </div>
+                  <div>
+                    <h1 className="text-4xl font-bold text-primary">{vtuber.name}</h1>
+                  </div>
+                </div>
+                <p className="text-lg">{vtuber.description}</p>
+              </div>
+            </div>
+
+            <div className="card bg-base-200 shadow-xl">
+              <div className="card-body">
+                <h2 className="card-title text-2xl mb-4">ℹ️ Character Info</h2>
+                {talentCharacterInfo ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {talentCharacterInfo.dateOfBirth && (
+                      <div>
+                        <span className="font-semibold text-primary">Date of Birth:</span>
+                        <p className="text-lg">{talentCharacterInfo.dateOfBirth}</p>
+                      </div>
+                    )}
+                    {talentCharacterInfo.debutDate && (
+                      <div>
+                        <span className="font-semibold text-primary">Debut Date:</span>
+                        <p className="text-lg">{talentCharacterInfo.debutDate}</p>
+                      </div>
+                    )}
+                    {talentCharacterInfo.height && (
+                      <div>
+                        <span className="font-semibold text-primary">Height:</span>
+                        <p className="text-lg">{talentCharacterInfo.height}</p>
+                      </div>
+                    )}
+                    {talentCharacterInfo.species && (
+                      <div>
+                        <span className="font-semibold text-primary">Species:</span>
+                        <p className="text-lg">{talentCharacterInfo.species}</p>
+                      </div>
+                    )}
+                    {characterLikes.length > 0 && (
+                      <div className="md:col-span-2">
+                        <span className="font-semibold text-primary">Likes:</span>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {characterLikes.map((like, idx) => (
+                            <span key={idx} className="badge badge-success badge-lg">
+                              ❤️ {like}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {characterDislikes.length > 0 && (
+                      <div className="md:col-span-2">
+                        <span className="font-semibold text-primary">Dislikes:</span>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {characterDislikes.map((dislike, idx) => (
+                            <span key={idx} className="badge badge-error badge-lg">
+                              💔 {dislike}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-base opacity-70 italic">
+                    Character information coming soon!
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {featuredVideoUrl && (
+              <div className="card bg-base-200 shadow-xl">
+                <div className="card-body">
+                  <h2 className="card-title text-2xl mb-4">🎬 Featured Video</h2>
+                  {featuredVideoTwitchChannel ? (
+                    <div className="aspect-video xl:aspect-[21/9] rounded-xl overflow-hidden bg-base-300">
+                      <iframe
+                        className="w-full h-full"
+                        src={`https://player.twitch.tv/?channel=${encodeURIComponent(featuredVideoTwitchChannel)}&${twitchParentQuery}`}
+                        title={`${vtuber.name} featured Twitch video`}
+                        loading="lazy"
+                        allowFullScreen
+                      />
+                    </div>
+                  ) : featuredVideoYoutubeId ? (
+                    <div className="aspect-video rounded-xl overflow-hidden bg-base-300">
+                      <iframe
+                        className="w-full h-full"
+                        src={`https://www.youtube.com/embed/${featuredVideoYoutubeId}`}
+                        title={`${vtuber.name} featured YouTube video`}
+                        allowFullScreen
+                        loading="lazy"
+                      />
+                    </div>
+                  ) : (
+                    <SocialEmbedFallback url={featuredVideoUrl} platform={featuredVideoPlatform} title="Featured Video" />
+                  )}
+                </div>
+              </div>
+            )}
+
+            {vtuber.schedule && vtuber.schedule.length > 0 && (
+              <div className="card bg-base-200 shadow-xl">
+                <div className="card-body">
+                  <h2 className="card-title text-2xl mb-4">📅 Streaming Schedule (MYT)</h2>
+                  <div className="overflow-x-auto">
+                    <table className="table">
+                      <thead>
+                        <tr>
+                          <th>Day</th>
+                          <th>Time</th>
+                          <th>Stream Title</th>
+                          <th>Platform</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {vtuber.schedule.map((slot) => (
+                          <tr key={slot.id} className="hover">
+                            <td className="font-semibold">{slot.day}</td>
+                            <td>{slot.time}</td>
+                            <td>{slot.title}</td>
+                            <td>
+                              <span className={`badge ${getPlatformColor(slot.platform)}`}>
+                                {getPlatformIcon(slot.platform)} {slot.platform}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {talentPortfolio.length > 0 && (
+              <div className="card bg-base-200 shadow-xl">
+                <div className="card-body">
+                  <h2 className="card-title text-2xl mb-4">🎨 Portfolio</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {talentPortfolio.map((link, idx) => {
+                      const youtubeMatch = link.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{6,})/);
+                      const youtubeId = youtubeMatch ? youtubeMatch[1] : null;
+                      const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(link);
+
+                      return (
+                        <div key={idx} className="relative overflow-hidden rounded-lg group aspect-video bg-base-300">
+                          {youtubeId ? (
+                            <iframe
+                              className="w-full h-full"
+                              src={`https://www.youtube.com/embed/${youtubeId}`}
+                              allowFullScreen
+                              title={`Portfolio ${idx + 1}`}
+                            />
+                          ) : isImage ? (
+                            <img
+                              src={link}
+                              alt={`Portfolio ${idx + 1}`}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <a
+                              href={link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="w-full h-full flex items-center justify-center hover:bg-base-100 transition-colors no-underline"
+                            >
+                              <div className="text-center px-4">
+                                <p className="text-lg font-semibold mb-2">📌 Portfolio</p>
+                                <p className="text-sm opacity-80 break-all">{new URL(link).hostname}</p>
+                                <p className="text-xs opacity-60 mt-2">Click to visit</p>
+                              </div>
+                            </a>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {(vtuber.tiktokUrl || vtuber.twitchUrl || vtuber.youtubeUrl) && (
+              <div className="card bg-base-200 shadow-xl">
+                <div className="card-body">
+                  <h2 className="card-title text-2xl mb-4">📺 Social Platforms</h2>
+                  <div className="space-y-5">
+                    {vtuber.twitchUrl && (
+                      <div className="card bg-base-200 shadow-xl h-full">
+                        <div className="card-body p-4">
+                          <h3 className="card-title text-xl mb-3 flex items-center gap-2">
+                            <PlatformIcon platform="twitch" className="w-6 h-6" />
+                            Twitch
+                          </h3>
+                          {twitchChannel ? (
+                            <div className="aspect-video xl:aspect-[21/9] rounded-xl overflow-hidden bg-base-300">
+                              <iframe
+                                className="w-full h-full"
+                                src={`https://player.twitch.tv/?channel=${encodeURIComponent(twitchChannel)}&${twitchParentQuery}`}
+                                title={`${vtuber.name} Twitch`}
+                                loading="lazy"
+                                allowFullScreen
+                              />
+                            </div>
+                          ) : (
+                            <SocialEmbedFallback url={vtuber.twitchUrl} platform="twitch" title="Twitch Channel" />
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+                      {vtuber.tiktokUrl && (
+                        <div className="card bg-base-200 shadow-xl h-full">
+                          <div className="card-body p-4">
+                            <h3 className="card-title text-xl mb-3 flex items-center gap-2">
+                              <PlatformIcon platform="tiktok" className="w-6 h-6" />
+                              TikTok
+                            </h3>
+                            {tiktokVideoId ? (
+                              <div className="aspect-video rounded-xl overflow-hidden bg-base-300">
+                                <iframe
+                                  className="w-full h-full"
+                                  src={`https://www.tiktok.com/embed/v2/${tiktokVideoId}`}
+                                  title={`${vtuber.name} TikTok`}
+                                  loading="lazy"
+                                />
+                              </div>
+                            ) : (
+                              <SocialEmbedFallback url={vtuber.tiktokUrl} platform="tiktok" title="TikTok Profile" />
+                            )}
                           </div>
-                        </a>
+                        </div>
+                      )}
+
+                      {vtuber.youtubeUrl && (
+                        <div className="card bg-base-200 shadow-xl h-full">
+                          <div className="card-body p-4">
+                            <h3 className="card-title text-xl mb-3 flex items-center gap-2">
+                              <PlatformIcon platform="youtube" className="w-6 h-6" />
+                              YouTube
+                            </h3>
+                            {youtubeVideoId ? (
+                              <div className="aspect-video rounded-xl overflow-hidden bg-base-300">
+                                <iframe
+                                  className="w-full h-full"
+                                  src={`https://www.youtube.com/embed/${youtubeVideoId}`}
+                                  title={`${vtuber.name} YouTube`}
+                                  allowFullScreen
+                                  loading="lazy"
+                                />
+                              </div>
+                            ) : (
+                              <SocialEmbedFallback url={vtuber.youtubeUrl} platform="youtube" title="YouTube Channel" />
+                            )}
+                          </div>
+                        </div>
                       )}
                     </div>
-                  ))}
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
-
-          {/* TikTok Embed Example */}
-          {vtuber.tiktokUrl && (
-            <div className="card bg-base-200 shadow-xl">
-              <div className="card-body">
-                <h2 className="card-title text-2xl mb-6">🎵 TikTok</h2>
-                {tiktokVideoId ? (
-                  <div className="aspect-video bg-base-300 rounded-lg overflow-hidden mb-4">
-                    <iframe
-                      className="w-full h-full"
-                      src={`https://www.tiktok.com/embed/v2/${tiktokVideoId}`}
-                      title={`${vtuber.name} TikTok`}
-                      loading="lazy"
-                    />
-                  </div>
-                ) : null}
-                {!tiktokVideoId && (
-                  <SocialProfileCard url={vtuber.tiktokUrl} platform="tiktok" title="TikTok Profile" />
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Twitch Stream Embed Example */}
-          {vtuber.twitchUrl && (
-            <div className="card bg-base-200 shadow-xl">
-              <div className="card-body">
-                <h2 className="card-title text-2xl mb-6">🎮 Twitch</h2>
-                {twitchChannel ? (
-                  <div className="aspect-video bg-base-300 rounded-lg overflow-hidden mb-4">
-                    <iframe
-                      className="w-full h-full"
-                      src={`https://player.twitch.tv/?channel=${encodeURIComponent(twitchChannel)}&${twitchParentQuery}`}
-                      title={`${vtuber.name} Twitch`}
-                      loading="lazy"
-                      allowFullScreen
-                    />
-                  </div>
-                ) : null}
-                {!twitchChannel && (
-                  <SocialProfileCard url={vtuber.twitchUrl} platform="twitch" title="Twitch Channel" />
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* YouTube Embed Example */}
-          {vtuber.youtubeUrl && (
-            <div className="card bg-base-200 shadow-xl">
-              <div className="card-body">
-                <h2 className="card-title text-2xl mb-6">🎥 YouTube Channel</h2>
-                {extractYouTubeVideoId(vtuber.youtubeUrl) ? (
-                  <div className="aspect-video bg-base-300 rounded-lg overflow-hidden mb-4">
-                    <iframe
-                      className="w-full h-full"
-                      src={`https://www.youtube.com/embed/${extractYouTubeVideoId(vtuber.youtubeUrl)}`}
-                      title={`${vtuber.name} YouTube`}
-                      allowFullScreen
-                      loading="lazy"
-                    />
-                  </div>
-                ) : null}
-                {!extractYouTubeVideoId(vtuber.youtubeUrl) && (
-                  <SocialProfileCard url={vtuber.youtubeUrl} platform="youtube" title="YouTube Channel" />
-                )}
-              </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </Container>
 

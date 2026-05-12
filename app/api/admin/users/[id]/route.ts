@@ -8,7 +8,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const { id } = await params;
     const body = (await request.json()) as {
       full_name?: string;
-      role?: 'admin' | 'talent' | 'artist';
+      role?: 'admin' | 'talent' | 'staff' | 'artist';
       avatar_url?: string;
       avatar_object_key?: string;
       bio?: string;

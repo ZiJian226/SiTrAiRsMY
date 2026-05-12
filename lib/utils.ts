@@ -29,6 +29,8 @@ export const getRoleBadgeClass = (role: UserRole): string => {
       return 'badge-error';
     case 'talent':
       return 'badge-primary';
+    case 'staff':
+      return 'badge-info';
     case 'artist':
       return 'badge-secondary';
     default:

@@ -56,20 +56,22 @@ export default function DashboardPage() {
             </button>
           </div>
           
-          {profile.role === 'admin' && (
+          {(profile.role === 'admin' || profile.role === 'staff') && (
             <div className="alert alert-info mb-6">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
               </svg>
               <span>
-                You have admin privileges. Access the{' '}
-                <Link href="/admin" className="link link-primary font-semibold">Admin Panel</Link>
+                You have {profile.role === 'admin' ? 'admin privileges' : 'staff access'}. Open the{' '}
+                <Link href={profile.role === 'admin' ? '/admin' : '/dashboard/applications'} className="link link-primary font-semibold">
+                  {profile.role === 'admin' ? 'Admin Panel' : 'Applications Dashboard'}
+                </Link>
               </span>
             </div>
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {(profile.role === 'talent' || profile.role === 'artist') && (
+            {(profile.role === 'talent' || profile.role === 'staff' || profile.role === 'artist') && (
               <>
                 <Link href="/dashboard/profile" className="card bg-base-200 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all">
                   <div className="card-body">
@@ -101,31 +103,35 @@ export default function DashboardPage() {
               </>
             )}
 
-            {profile.role === 'admin' && (
+            {(profile.role === 'admin' || profile.role === 'staff') && (
               <>
-                <Link href="/admin" className="card bg-gradient-to-br from-primary to-secondary shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all">
+                <Link href={profile.role === 'admin' ? '/admin' : '/dashboard/applications'} className="card bg-gradient-to-br from-primary to-secondary shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all">
                   <div className="card-body">
                     <h2 className="card-title text-white">
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                       </svg>
-                      Admin Panel
+                      {profile.role === 'admin' ? 'Admin Panel' : 'Applications Dashboard'}
                     </h2>
                     <p className="text-white opacity-90">
-                      Manage users, profiles, events, gallery, and merchandise
+                      {profile.role === 'admin'
+                        ? 'Manage users, profiles, events, gallery, and merchandise'
+                        : 'Review career and community applications'}
                     </p>
                   </div>
                 </Link>
 
-                <Link href="/admin/audit-logs" className="card bg-base-200 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all">
+                {profile.role === 'admin' && (
+                  <Link href="/admin/audit-logs" className="card bg-base-200 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all">
                   <div className="card-body">
                     <h2 className="card-title text-accent">🧾 Audit Logs</h2>
                     <p className="opacity-70">
                       Review account change history and user actions
                     </p>
                   </div>
-                </Link>
+                  </Link>
+                )}
               </>
             )}
           </div>

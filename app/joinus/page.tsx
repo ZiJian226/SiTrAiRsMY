@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import Link from "next/link";
@@ -7,7 +7,7 @@ import Container from "@/components/Container";
 import Footer from "@/components/Footer";
 import PageBackground from "@/components/PageBackground";
 
-export default function CareerPage() {
+export default function JoinUsPage() {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -61,7 +61,7 @@ export default function CareerPage() {
   // Staff positions for vtuber agency
   const staffPositions = [
     {
-      title: "Community Moderator (Junior)",
+      title: "Community Moderator",
       department: "Community & Relations",
       description: "Support daily community moderation, fan support tickets, and event chat operations.",
       icon: "👥"
@@ -73,7 +73,7 @@ export default function CareerPage() {
       icon: "🎯"
     },
     {
-      title: "Graphic Designer (Junior)",
+      title: "Graphic Designer",
       department: "Creative",
       description: "Produce stream overlays, thumbnails, and campaign visual assets.",
       icon: "🎨"

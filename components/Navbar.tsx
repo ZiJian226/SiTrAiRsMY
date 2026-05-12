@@ -49,7 +49,7 @@ export default function Navbar() {
                 <summary>More</summary>
                 <ul>
                   <li><Link href="/about">About Us</Link></li>
-                  <li><Link href="/career">Career</Link></li>
+                  <li><Link href="/joinus">Join Us</Link></li>
                   <li><Link href="/faq">FAQ</Link></li>
                 </ul>
               </details>
@@ -83,7 +83,7 @@ export default function Navbar() {
               <summary>More</summary>
               <ul className="bg-base-100 shadow-lg">
                 <li><Link href="/about">About Us</Link></li>
-                <li><Link href="/career">Career</Link></li>
+                <li><Link href="/joinus">Join Us</Link></li>
                 <li><Link href="/faq">FAQ</Link></li>
               </ul>
             </details>

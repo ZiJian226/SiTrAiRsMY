@@ -7,6 +7,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   try {
     const { id } = await params;
     const body = (await request.json()) as {
+      email?: string;
       full_name?: string;
       role?: 'admin' | 'talent' | 'staff' | 'artist';
       avatar_url?: string;
@@ -14,11 +15,12 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       bio?: string;
     };
 
-    if (!body.full_name || !body.role) {
-      return NextResponse.json({ error: 'full_name and role are required' }, { status: 400 });
+    if (!body.email || !body.full_name || !body.role) {
+      return NextResponse.json({ error: 'email, full_name and role are required' }, { status: 400 });
     }
 
     const updated = await updateAdminUser(id, {
+      email: body.email,
       full_name: body.full_name,
       role: body.role,
       avatar_url: body.avatar_url || '',

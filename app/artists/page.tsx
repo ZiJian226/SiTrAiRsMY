@@ -6,6 +6,7 @@ import Navbar from "@/components/Navbar";
 import Container from "@/components/Container";
 import Footer from "@/components/Footer";
 import PageBackground from "@/components/PageBackground";
+import ArtistCardShowcase from "@/components/ArtistCardShowcase";
 import { fallbackArtists } from "@/lib/content/fallback";
 import { useCachedApiResource } from "@/lib/hooks";
 import type { ArtistProfile } from "@/lib/content/types";
@@ -112,21 +113,17 @@ export default function ArtistsPage() {
                 >
                   <div className="card-body p-4 md:p-5">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-stretch">
-                      <div className="md:col-span-1 rounded-xl border border-base-300 bg-base-300 p-3 min-h-[200px]">
+                      {/* Art Showcase Carousel */}
+                      <div className="md:col-span-1">
                         <p className="text-xs font-semibold opacity-70 mb-2">Art showcase</p>
-                        <div className="space-y-2 max-h-[240px] overflow-y-auto pr-1">
-                          {(artist.portfolioArt && artist.portfolioArt.length > 0 ? artist.portfolioArt : artist.portfolio)
-                            .slice(0, 10)
-                            .map((artUrl, index) => (
-                              <div key={index} className="w-full h-24 rounded-lg overflow-hidden bg-base-100">
-                                <img
-                                  src={artUrl}
-                                  alt={`${artist.name} art ${index + 1}`}
-                                  className="w-full h-full object-cover"
-                                />
-                              </div>
-                            ))}
-                        </div>
+                        <ArtistCardShowcase
+                          artUrls={
+                            artist.portfolioArtImages && artist.portfolioArtImages.length > 0
+                              ? artist.portfolioArtImages.map(img => img.url)
+                              : (artist.portfolioArt && artist.portfolioArt.length > 0 ? artist.portfolioArt : artist.portfolio)
+                          }
+                          artistName={artist.name}
+                        />
                       </div>
 
                       <div className="md:col-span-2">

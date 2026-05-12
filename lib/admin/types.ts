@@ -67,6 +67,18 @@ export interface AdminGalleryItem {
   artist_name: string;
   is_published: boolean;
   featured: boolean;
+  media?: AdminGalleryMedia[];
+}
+
+export interface AdminGalleryMedia {
+  id: string;
+  gallery_item_id: string;
+  media_type: 'photo' | 'video';
+  media_url: string;
+  media_object_key?: string;
+  thumbnail_url?: string;
+  is_primary: boolean;
+  sort_order: number;
 }
 
 export interface AdminMerchandiseItem {

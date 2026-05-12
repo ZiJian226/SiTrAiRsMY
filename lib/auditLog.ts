@@ -15,6 +15,8 @@ export async function ensureAuditLogTable(): Promise<void> {
     return;
   }
 
+  await dbQuery('CREATE EXTENSION IF NOT EXISTS pgcrypto');
+
   await dbQuery(`
     CREATE TABLE IF NOT EXISTS user_audit_logs (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -81,6 +83,6 @@ export async function logUserAuditEvent(input: {
       ],
     );
   } catch (error) {
-    console.error('Failed to write audit log event:', error);
+    console.error('Failed to write audit log event:', error)
   }
 }

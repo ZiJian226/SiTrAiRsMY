@@ -57,26 +57,6 @@ export default function TalentsPage() {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-
-          <div className="flex flex-wrap gap-2">
-            <button
-              className={`btn btn-sm ${!selectedTag ? "btn-primary" : "btn-outline"}`}
-              onClick={() => setSelectedTag(null)}
-            >
-              All
-            </button>
-            {allTags.map((tag) => (
-              <button
-                key={tag}
-                className={`btn btn-sm ${
-                  selectedTag === tag ? "btn-primary" : "btn-outline"
-                }`}
-                onClick={() => setSelectedTag(tag)}
-              >
-                {tag}
-              </button>
-            ))}
-          </div>
         </div>
 
         {/* Talents Grid */}

@@ -9,12 +9,13 @@ import Footer from '@/components/Footer'
 import PageBackground from '@/components/PageBackground'
 import Link from 'next/link'
 import type { UserRole } from '@/lib/auth/types'
+import type { AdminUser } from '@/lib/admin/types'
 
 export default function AdminUsersPage() {
   const { user, profile, loading } = useAuth()
   const router = useRouter()
   
-  const [users, setUsers] = useState<Profile[]>([])
+  const [users, setUsers] = useState<AdminUser[]>([])
   const [dataLoading, setDataLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [imageUploading, setImageUploading] = useState(false)
@@ -27,7 +28,7 @@ export default function AdminUsersPage() {
   const [sendingResetEmail, setSendingResetEmail] = useState<string | null>(null)
 
   const [showModal, setShowModal] = useState(false)
-  const [editingUser, setEditingUser] = useState<Profile | null>(null)
+  const [editingUser, setEditingUser] = useState<AdminUser | null>(null)
   const [formData, setFormData] = useState({
     email: '',
     full_name: '',
@@ -72,7 +73,7 @@ export default function AdminUsersPage() {
         throw new Error('Failed to load users')
       }
 
-      const data = (await response.json()) as Profile[]
+      const data = (await response.json()) as AdminUser[]
       setUsers(data)
     } catch (error) {
       console.error(error)
@@ -107,7 +108,7 @@ export default function AdminUsersPage() {
     setShowModal(true)
   }
 
-  function openEditModal(user: Profile) {
+  function openEditModal(user: AdminUser) {
     setEditingUser(user)
     setFormData({
       email: user.email,
@@ -220,6 +221,7 @@ export default function AdminUsersPage() {
       case 'admin': return 'badge-error'
       case 'talent': return 'badge-primary'
       case 'artist': return 'badge-secondary'
+      case 'staff': return 'badge-info'
       default: return 'badge-ghost'
     }
   }
@@ -352,11 +354,11 @@ export default function AdminUsersPage() {
                               Edit
                             </button>
                             <button
-                              onClick={() => handleSendResetEmail(u.id)}
+                              onClick={() => handleSendResetEmail(u.user_id)}
                               className="btn btn-sm btn-secondary"
-                              disabled={sendingResetEmail === u.id}
+                              disabled={sendingResetEmail === u.user_id}
                             >
-                              {sendingResetEmail === u.id ? 'Sending...' : 'Send Reset Email'}
+                              {sendingResetEmail === u.user_id ? 'Sending...' : 'Send Reset Email'}
                             </button>
                             <button 
                               onClick={() => handleDelete(u.id)}
@@ -390,6 +392,10 @@ export default function AdminUsersPage() {
                   <div className="stat-title">Artists</div>
                   <div className="stat-value text-secondary">{users.filter(u => u.role === 'artist').length}</div>
                 </div>
+                <div className="stat">
+                  <div className="stat-title">Staffs</div>
+                  <div className="stat-value text-secondary">{users.filter(u => u.role === 'staff').length}</div>
+                </div>
               </div>
             </div>
           </div>
@@ -417,11 +423,10 @@ export default function AdminUsersPage() {
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   required
-                  disabled={!!editingUser}
                 />
                 {editingUser && (
                   <label className="label">
-                    <span className="label-text-alt opacity-70">Email cannot be changed</span>
+                    <span className="label-text-alt opacity-70">Changing email updates both login and profile records.</span>
                   </label>
                 )}
               </div>

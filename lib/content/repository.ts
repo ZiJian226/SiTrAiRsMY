@@ -173,6 +173,7 @@ async function getProfilesByRole(role: 'talent' | 'staff'): Promise<Talent[]> {
   const supportsTalentLikes = supportsTalentProfiles && (await hasColumn('talent_profiles', 'likes'));
   const supportsTalentDislikes = supportsTalentProfiles && (await hasColumn('talent_profiles', 'dislikes'));
   const supportsTalentPortfolio = supportsTalentProfiles && (await hasColumn('talent_profiles', 'portfolio_links'));
+  const supportsFeaturedVideo = supportsTalentProfiles && (await hasColumn('talent_profiles', 'featured_video_url'));
 
   const rows = await tryQuery<{
     id: string;
@@ -184,6 +185,7 @@ async function getProfilesByRole(role: 'talent' | 'staff'): Promise<Talent[]> {
     avatar_url: string | null;
     tags: string[] | null;
     social_links: unknown;
+    featured_video_url: string | null;
     vtuber_model_url: string | null;
     profile_picture_url: string | null;
     portrait_picture_url: string | null;
@@ -209,6 +211,7 @@ async function getProfilesByRole(role: 'talent' | 'staff'): Promise<Talent[]> {
       p.avatar_url,
       tp.tags,
       tp.social_links,
+      ${supportsFeaturedVideo ? 'tp.featured_video_url' : 'NULL::text AS featured_video_url'},
       ${supportsVtuberModel ? 'tp.vtuber_model_url' : 'NULL::text AS vtuber_model_url'},
       ${supportsProfilePicture ? 'tp.profile_picture_url' : 'NULL::text AS profile_picture_url'},
       ${supportsPortraitPicture ? 'tp.portrait_picture_url' : 'NULL::text AS portrait_picture_url'},
@@ -238,6 +241,7 @@ async function getProfilesByRole(role: 'talent' | 'staff'): Promise<Talent[]> {
       p.avatar_url,
       NULL::text[] AS tags,
       NULL::jsonb AS social_links,
+      NULL::text AS featured_video_url,
       NULL::text AS vtuber_model_url,
       NULL::text AS profile_picture_url,
       NULL::text AS portrait_picture_url,
@@ -283,6 +287,7 @@ async function getProfilesByRole(role: 'talent' | 'staff'): Promise<Talent[]> {
       tiktokUrl: tiktok,
       twitchUrl: twitch,
       youtubeUrl: youtube,
+      featuredVideoUrl: normalizeOptionalString(row.featured_video_url),
       featured: Boolean(row.featured),
       characterInfo: {
         dateOfBirth: normalizeDateValue(row.date_of_birth),
@@ -588,13 +593,39 @@ export async function getGalleryItems(): Promise<GalleryEntry[]> {
     return fallbackGalleryItems;
   }
 
-  return rows.map(row => ({
-    id: row.id,
-    title: row.title,
-    description: row.description || 'No description available yet.',
-    image: resolveRenderableImageUrl(row.image_url),
-    category: row.category,
-    date: row.created_at,
-    featured: Boolean(row.featured),
+  return Promise.all(rows.map(async row => {
+    // Fetch media items for this gallery item
+    const mediaRows = await tryQuery<{
+      id: string;
+      media_type: string;
+      media_url: string;
+      is_primary: boolean;
+    }>(
+      `
+      SELECT id, media_type, media_url, is_primary
+      FROM gallery_media
+      WHERE gallery_item_id = $1
+      ORDER BY sort_order ASC, created_at ASC
+      `,
+      [row.id]
+    );
+
+    const media = mediaRows ? mediaRows.map(m => ({
+      id: m.id,
+      media_type: m.media_type as 'photo' | 'video',
+      media_url: resolveRenderableImageUrl(m.media_url),
+      is_primary: Boolean(m.is_primary),
+    })) : undefined;
+
+    return {
+      id: row.id,
+      title: row.title,
+      description: row.description || 'No description available yet.',
+      image: resolveRenderableImageUrl(row.image_url),
+      category: row.category,
+      date: row.created_at,
+      featured: Boolean(row.featured),
+      media: media && media.length > 0 ? media : undefined,
+    };
   }));
 }

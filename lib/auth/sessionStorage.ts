@@ -13,7 +13,7 @@ export class BrowserSessionStorage implements AuthSessionStorage {
     try {
       return JSON.parse(raw) as AuthSession;
     } catch (error) {
-      console.error('Failed to parse saved auth session:', error);
+
       this.clear();
       return null;
     }

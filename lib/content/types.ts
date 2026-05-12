@@ -24,6 +24,12 @@ export interface GalleryEntry {
   category: string;
   date: string;
   featured?: boolean;
+  media?: Array<{
+    id: string;
+    media_type: 'photo' | 'video';
+    media_url: string;
+    is_primary: boolean;
+  }>;
 }
 
 export interface HomePayload {

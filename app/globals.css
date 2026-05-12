@@ -6,6 +6,10 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
+body.landscape-modal-open .navbar {
+  display: none;
+}
+
 /* Force DaisyUI theme application */
 @plugin "daisyui/theme" {
   name: "dark";

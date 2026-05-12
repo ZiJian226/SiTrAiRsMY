@@ -241,7 +241,7 @@ export default function Home() {
                 >
                   <figure className="relative w-full h-full">
                     <img
-                      src={talent.profilePictureUrl || talent.portraitPictureUrl || talent.avatar}
+                      src={talent.profilePictureUrl || talent.avatar || talent.portraitPictureUrl }
                       alt={talent.name}
                       className="w-full h-full object-contain bg-base-300 group-hover:scale-105 transition-transform"
                     />
@@ -285,7 +285,12 @@ export default function Home() {
                 >
                   <figure className="relative w-full h-56 overflow-hidden bg-base-300">
                     <img
-                      src={artist.portfolioArt?.[0] || artist.portfolio?.[0] || artist.avatar}
+                      src={
+                        artist.avatar ||
+                        artist.portfolioArtImages?.[0]?.url ||
+                        artist.portfolioArt?.[0] ||
+                        artist.portfolio?.[0]
+                      }
                       alt={artist.name}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                     />
@@ -336,7 +341,7 @@ export default function Home() {
                 >
                   <figure className="relative w-full h-56 overflow-hidden bg-base-300">
                     <img
-                      src={staff.profilePictureUrl || staff.portraitPictureUrl || staff.avatar}
+                      src={staff.profilePictureUrl || staff.avatar || staff.portraitPictureUrl }
                       alt={staff.name}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                     />

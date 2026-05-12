@@ -53,7 +53,7 @@ export async function createCareerApplication(
 
     return result.rows[0] as CareerApplication;
   } catch (error) {
-    console.error('Error creating career application:', error);
+
     throw error;
   }
 }
@@ -90,7 +90,7 @@ export async function createCommunityApplication(
 
     return result.rows[0] as CommunityApplication;
   } catch (error) {
-    console.error('Error creating community application:', error);
+
     throw error;
   }
 }
@@ -115,7 +115,7 @@ export async function getCareerApplications(
     const result = await dbQuery(query, params);
     return (result.rows || []) as CareerApplication[];
   } catch (error) {
-    console.error('Error fetching career applications:', error);
+
     throw error;
   }
 }
@@ -140,7 +140,7 @@ export async function getCommunityApplications(
     const result = await dbQuery(query, params);
     return (result.rows || []) as CommunityApplication[];
   } catch (error) {
-    console.error('Error fetching community applications:', error);
+
     throw error;
   }
 }
@@ -159,7 +159,7 @@ export async function getCareerApplicationById(
 
     return (result.rows?.[0] || null) as CareerApplication | null;
   } catch (error) {
-    console.error('Error fetching career application:', error);
+
     throw error;
   }
 }
@@ -178,7 +178,7 @@ export async function getCommunityApplicationById(
 
     return (result.rows?.[0] || null) as CommunityApplication | null;
   } catch (error) {
-    console.error('Error fetching community application:', error);
+
     throw error;
   }
 }
@@ -202,7 +202,7 @@ export async function updateCareerApplication(
 
     return (result.rows?.[0] || null) as CareerApplication | null;
   } catch (error) {
-    console.error('Error updating career application:', error);
+
     throw error;
   }
 }
@@ -226,7 +226,7 @@ export async function updateCommunityApplication(
 
     return (result.rows?.[0] || null) as CommunityApplication | null;
   } catch (error) {
-    console.error('Error updating community application:', error);
+
     throw error;
   }
 }
@@ -262,7 +262,7 @@ export async function getApplicationStats(): Promise<{
       communityPending: communityResult.rows?.[0]?.pending || 0,
     };
   } catch (error) {
-    console.error('Error fetching application statistics:', error);
+
     throw error;
   }
 }

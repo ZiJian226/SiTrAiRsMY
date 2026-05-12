@@ -41,6 +41,11 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/staffs" className="link link-hover text-sm">
+                  Staffs
+                </Link>
+              </li>
+              <li>
                 <Link href="/events" className="link link-hover text-sm">
                   Events
                 </Link>
@@ -48,6 +53,11 @@ export default function Footer() {
               <li>
                 <Link href="/gallery" className="link link-hover text-sm">
                   Gallery
+                </Link>
+              </li>
+              <li>
+                <Link href="/community" className="link link-hover text-sm">
+                  Community
                 </Link>
               </li>
             </ul>
@@ -63,8 +73,8 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/contact" className="link link-hover text-sm">
-                  Contact
+                <Link href="/joinus" className="link link-hover text-sm">
+                  Join Us
                 </Link>
               </li>
               <li>

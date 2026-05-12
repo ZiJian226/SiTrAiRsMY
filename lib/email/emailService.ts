@@ -46,6 +46,9 @@ function getTransporter() {
       host: process.env.SMTP_HOST,
       port: parseInt(process.env.SMTP_PORT || '587', 10),
       secure: process.env.SMTP_SECURE === 'true',
+      // Require STARTTLS and enforce minimum TLS version (Oracle requires TLS v1.2)
+      requireTLS: true,
+      tls: { minVersion: 'TLSv1.2' },
       auth: process.env.SMTP_USER
         ? {
             user: process.env.SMTP_USER,
@@ -61,6 +64,27 @@ export async function sendEmail(options: EmailOptions, userId?: string): Promise
     const transporter = getTransporter()
     const from = process.env.EMAIL_FROM || 'noreply@starmy.app'
 
+    // Verify SMTP connection (helps surface auth/TLS/connectivity issues early)
+    try {
+      await transporter.verify()
+    } catch (verifyErr) {
+      if (userId) {
+        try {
+          await logEmail({
+            userId,
+            emailTo: options.to,
+            emailType: 'password_reset',
+            subject: options.subject,
+            status: 'failed',
+            errorMessage: verifyErr instanceof Error ? (verifyErr.stack || verifyErr.message) : String(verifyErr)
+          })
+        } catch (logErr) {
+          // Silently fail logging error
+        }
+      }
+      return false
+    }
+
     // Send email
     await transporter.sendMail({
       from,
@@ -72,29 +96,37 @@ export async function sendEmail(options: EmailOptions, userId?: string): Promise
 
     // Log email send
     if (userId) {
-      await logEmail({
-        userId,
-        emailTo: options.to,
-        emailType: 'password_reset',
-        subject: options.subject,
-        status: 'sent'
-      })
+      try {
+        await logEmail({
+          userId,
+          emailTo: options.to,
+          emailType: 'password_reset',
+          subject: options.subject,
+          status: 'sent'
+        })
+      } catch (logErr) {
+        // Silently fail logging
+      }
     }
 
     return true
   } catch (error) {
-    console.error('Email send failed:', error)
+    const errMsg = error instanceof Error ? (error.stack || error.message) : JSON.stringify(error)
 
-    // Log failed email
+    // Log failed email with stack when available
     if (userId) {
-      await logEmail({
-        userId,
-        emailTo: options.to,
-        emailType: 'password_reset',
-        subject: options.subject,
-        status: 'failed',
-        errorMessage: error instanceof Error ? error.message : 'Unknown error'
-      })
+      try {
+        await logEmail({
+          userId,
+          emailTo: options.to,
+          emailType: 'password_reset',
+          subject: options.subject,
+          status: 'failed',
+          errorMessage: errMsg
+        })
+      } catch (logErr) {
+        // Silently fail logging
+      }
     }
 
     return false
@@ -116,7 +148,7 @@ async function logEmail(data: {
       [data.userId, data.emailTo, data.emailType, data.subject, data.status, data.errorMessage || null]
     )
   } catch (err) {
-    console.error('Failed to log email:', err)
+    // Silently fail logging
   }
 }
 

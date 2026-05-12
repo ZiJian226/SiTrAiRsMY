@@ -5,6 +5,8 @@ import type { Artist } from "@/lib/types";
 
 export default function CommissionForm({ artist }: { artist: Artist }) {
   const [formSubmitted, setFormSubmitted] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -13,15 +15,34 @@ export default function CommissionForm({ artist }: { artist: Artist }) {
     deadline: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, this would send data to an API
-    console.log("Commission request:", formData);
-    setFormSubmitted(true);
-    setTimeout(() => {
-      setFormSubmitted(false);
-      setFormData({ name: "", email: "", description: "", budget: "", deadline: "" });
-    }, 3000);
+    setSubmitting(true);
+    setFormError(null);
+
+    try {
+      const response = await fetch(`/api/artists/${artist.id}/commissions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json().catch(() => null) as { error?: string } | null;
+
+      if (!response.ok) {
+        throw new Error(data?.error || "Failed to submit commission request");
+      }
+
+      setFormSubmitted(true);
+      setTimeout(() => {
+        setFormSubmitted(false);
+        setFormData({ name: "", email: "", description: "", budget: "", deadline: "" });
+      }, 3000);
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : "Failed to submit commission request");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -29,7 +50,7 @@ export default function CommissionForm({ artist }: { artist: Artist }) {
   };
 
   return (
-    <div className="card bg-base-200 shadow-xl">
+    <div id="commission-form" className="card bg-base-200 shadow-xl">
       <div className="card-body">
         <h2 className="card-title text-2xl mb-4">Request a Commission</h2>
         
@@ -49,6 +70,11 @@ export default function CommissionForm({ artist }: { artist: Artist }) {
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
+            {formError && (
+              <div className="alert alert-error">
+                <span>{formError}</span>
+              </div>
+            )}
             <div className="form-control">
               <label className="label">
                 <span className="label-text">Your Name</span>
@@ -121,8 +147,8 @@ export default function CommissionForm({ artist }: { artist: Artist }) {
               />
             </div>
 
-            <button type="submit" className="btn btn-secondary w-full">
-              Submit Request
+            <button type="submit" className="btn btn-secondary w-full" disabled={submitting}>
+              {submitting ? 'Submitting...' : 'Submit Request'}
             </button>
           </form>
         )}

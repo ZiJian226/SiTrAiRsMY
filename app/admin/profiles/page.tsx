@@ -1531,56 +1531,54 @@ export default function AdminProfilesPage() {
                           </div>
                         )}
 
-                        {editForm.showPortfolio && (
-                          <div className="form-control mt-4">
-                            <label className="label">
-                              <span className="label-text font-semibold">Portfolio Art Images</span>
+                        <div className="form-control mt-4">
+                          <label className="label">
+                            <span className="label-text font-semibold">Portfolio Art Images</span>
+                          </label>
+                          <div className="flex flex-col gap-2">
+                            <label className="input input-bordered join-item flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                multiple
+                                onChange={(e) => {
+                                  const files = Array.from(e.currentTarget.files || [])
+                                  if (files.length > 0) {
+                                    void handlePortfolioArtFilesChange(files)
+                                  }
+                                  e.currentTarget.value = ''
+                                }}
+                                disabled={saving || portfolioArtUploading}
+                              />
+                              <span className="text-accent">📸 Upload Portfolio Art</span>
                             </label>
-                            <div className="flex flex-col gap-2">
-                              <label className="input input-bordered join-item flex items-center gap-2 cursor-pointer">
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  className="hidden"
-                                  multiple
-                                  onChange={(e) => {
-                                    const files = Array.from(e.currentTarget.files || [])
-                                    if (files.length > 0) {
-                                      void handlePortfolioArtFilesChange(files)
-                                    }
-                                    e.currentTarget.value = ''
-                                  }}
-                                  disabled={saving || portfolioArtUploading}
-                                />
-                                <span className="text-accent">📸 Upload Portfolio Art</span>
-                              </label>
-                              {imageUploadError && (
-                                <div className="alert alert-error">
-                                  <span>{imageUploadError}</span>
-                                </div>
-                              )}
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
-                              {portfolioArtImages.map((image, idx) => (
-                                <div key={idx} className="card bg-base-300 shadow-md image-full">
-                                  <figure>
-                                    <img src={image.url} alt={`Portfolio art ${idx + 1}`} className="w-full h-40 object-cover" />
-                                  </figure>
-                                  <div className="card-body p-2 items-end justify-end">
-                                    <button
-                                      type="button"
-                                      className="btn btn-ghost btn-sm btn-circle bg-base-100"
-                                      onClick={() => handleRemovePortfolioArt(idx)}
-                                      disabled={saving}
-                                    >
-                                      ✕
-                                    </button>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
+                            {imageUploadError && (
+                              <div className="alert alert-error">
+                                <span>{imageUploadError}</span>
+                              </div>
+                            )}
                           </div>
-                        )}
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
+                            {portfolioArtImages.map((image, idx) => (
+                              <div key={idx} className="card bg-base-300 shadow-md image-full">
+                                <figure>
+                                  <img src={image.url} alt={`Portfolio art ${idx + 1}`} className="w-full h-40 object-cover" />
+                                </figure>
+                                <div className="card-body p-2 items-end justify-end">
+                                  <button
+                                    type="button"
+                                    className="btn btn-ghost btn-sm btn-circle bg-base-100"
+                                    onClick={() => handleRemovePortfolioArt(idx)}
+                                    disabled={saving}
+                                  >
+                                    ✕
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   )}

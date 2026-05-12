@@ -48,9 +48,20 @@ export default function AdminAuditLogsPage() {
   }, [user, profile])
 
   async function loadAuditLogs() {
+    if (!user) {
+      setItems([])
+      setDataLoading(false)
+      return
+    }
+
     setDataLoading(true)
     try {
-      const response = await fetch('/api/admin/audit-logs?limit=200', { cache: 'no-store' })
+      const response = await fetch('/api/admin/audit-logs?limit=200', {
+        cache: 'no-store',
+        headers: {
+          'x-user-id': user.id,
+        },
+      })
       if (!response.ok) {
         throw new Error('Failed to load audit logs')
       }

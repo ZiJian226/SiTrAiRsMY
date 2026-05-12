@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, Children } from "react";
+import { useMemo, useState } from "react";
 import LandscapeModal from "@/components/LandscapeModal";
 import type { PortraitPicture } from "@/lib/types";
 
@@ -46,7 +46,7 @@ export default function ArtistPortfolioColumn({
   const goNext = () => setPageIndex((current) => Math.min(totalPages - 1, current + 1));
 
   return (
-    <div className="card bg-base-200 shadow-xl lg:sticky lg:top-24">
+    <div className="card bg-base-200 shadow-xl">
       <div className="card-body">
         <h2 className="card-title text-2xl">🖼️ Art Showcase</h2>
         <p className="text-sm opacity-70">Browse artwork collection</p>
@@ -55,13 +55,13 @@ export default function ArtistPortfolioColumn({
           <div className="space-y-4">
             {/* Art Grid with Carousel */}
             <div className="space-y-3">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 min-h-[200px]">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 min-h-[200px] max-h-[600px] overflow-y-auto">
                 {visibleItems.map((item, index) => (
                   <button
                     key={`${item.url}-${pageIndex}-${index}`}
                     type="button"
                     onClick={() => setSelectedImage(item.url)}
-                    className="relative aspect-square rounded-xl overflow-hidden border border-base-300 bg-base-300 hover:scale-[1.02] transition-transform group"
+                    className="relative aspect-square rounded-xl overflow-hidden border border-base-300 bg-base-300 hover:scale-[1.02] transition-transform group flex-shrink-0"
                   >
                     <img
                       src={item.url}
@@ -141,8 +141,7 @@ export default function ArtistPortfolioColumn({
           onClose={() => setSelectedImage(null)}
           imageUrl={selectedImage}
           imageAlt={`${artistName} artwork`}
-          title={`${artistName} Artwork`}
-          description="High resolution portfolio preview"
+          showDetails={false}
         />
       )}
     </div>

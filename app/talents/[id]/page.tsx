@@ -5,6 +5,7 @@ import Navbar from "@/components/Navbar";
 import Container from "@/components/Container";
 import Footer from "@/components/Footer";
 import PortraitCarousel from "./PortraitCarousel";
+import { VideoEmbedWithAudio } from "@/components/VideoEmbedWithAudio";
 import { getTalentById } from "@/lib/content/repository";
 
 export default async function TalentProfilePage({ params }: { params: Promise<{ id: string }> }) {
@@ -89,6 +90,19 @@ export default async function TalentProfilePage({ params }: { params: Promise<{ 
     }
   };
 
+  const extractTwitchVideoId = (url: string): string | null => {
+  try {
+    const parsed = new URL(url);
+    if (!/twitch\.tv$/i.test(parsed.hostname)) return null;
+    const match = parsed.pathname.match(/\/videos\/(\d+)/);
+    if (match) return match[1];
+    return null;
+  } catch {
+    const match = url.match(/twitch\.tv\/videos\/(\d+)/i);
+    return match?.[1] || null;
+    }
+  };
+
   const extractTikTokVideoId = (url: string): string | null => {
     const match = url.match(/\/video\/(\d+)/);
     return match?.[1] || null;
@@ -133,8 +147,13 @@ export default async function TalentProfilePage({ params }: { params: Promise<{ 
   const youtubeVideoId = vtuber.youtubeUrl ? extractYouTubeVideoId(vtuber.youtubeUrl) : null;
   const featuredVideoUrl = (vtuber as { featuredVideoUrl?: string | null }).featuredVideoUrl || null;
   const featuredVideoYoutubeId = featuredVideoUrl ? extractYouTubeVideoId(featuredVideoUrl) : null;
-  const featuredVideoTwitchChannel = featuredVideoUrl ? extractTwitchChannel(featuredVideoUrl) : null;
-  const featuredVideoPlatform = featuredVideoTwitchChannel ? 'twitch' : 'youtube';
+  const featuredVideoTwitchVideo = featuredVideoUrl ? extractTwitchVideoId(featuredVideoUrl) : null;
+  const featuredVideoTikTokId = featuredVideoUrl ? await resolveTikTokVideoId(featuredVideoUrl) : null;
+  const featuredVideoPlatform = featuredVideoTwitchVideo
+    ? 'twitch'
+    : featuredVideoTikTokId
+      ? 'tiktok'
+      : 'youtube';
   const portraitPictures = vtuber.portraitPictures && vtuber.portraitPictures.length > 0 
     ? vtuber.portraitPictures 
     : vtuber.portraitPictureUrl 
@@ -354,26 +373,22 @@ export default async function TalentProfilePage({ params }: { params: Promise<{ 
               <div className="card bg-base-200 shadow-xl">
                 <div className="card-body">
                   <h2 className="card-title text-2xl mb-4">🎬 Featured Video</h2>
-                  {featuredVideoTwitchChannel ? (
-                    <div className="aspect-video xl:aspect-[21/9] rounded-xl overflow-hidden bg-base-300">
-                      <iframe
-                        className="w-full h-full"
-                        src={`https://player.twitch.tv/?channel=${encodeURIComponent(featuredVideoTwitchChannel)}&${twitchParentQuery}`}
-                        title={`${vtuber.name} featured Twitch video`}
-                        loading="lazy"
-                        allowFullScreen
+                  {featuredVideoTwitchVideo ? (
+                     <VideoEmbedWithAudio
+                        src={`https://player.twitch.tv/?video=${featuredVideoTwitchVideo}&${twitchParentQuery}`}
+                        title={`${vtuber.name} Twitch VOD`}
+                        aspectRatio="aspect-video xl:aspect-[21/9]"
                       />
-                    </div>
+                  ) : featuredVideoTikTokId ? (
+                     <VideoEmbedWithAudio
+                       src={`https://www.tiktok.com/player/v1/${featuredVideoTikTokId}`}
+                       title={`${vtuber.name} featured TikTok video`}
+                     />
                   ) : featuredVideoYoutubeId ? (
-                    <div className="aspect-video rounded-xl overflow-hidden bg-base-300">
-                      <iframe
-                        className="w-full h-full"
-                        src={`https://www.youtube.com/embed/${featuredVideoYoutubeId}`}
-                        title={`${vtuber.name} featured YouTube video`}
-                        allowFullScreen
-                        loading="lazy"
-                      />
-                    </div>
+                     <VideoEmbedWithAudio
+                       src={`https://www.youtube.com/embed/${featuredVideoYoutubeId}`}
+                       title={`${vtuber.name} featured YouTube video`}
+                     />
                   ) : (
                     <SocialEmbedFallback url={featuredVideoUrl} platform={featuredVideoPlatform} title="Featured Video" />
                   )}
@@ -428,12 +443,10 @@ export default async function TalentProfilePage({ params }: { params: Promise<{ 
                       return (
                         <div key={idx} className="relative overflow-hidden rounded-lg group aspect-video bg-base-300">
                           {youtubeId ? (
-                            <iframe
-                              className="w-full h-full"
-                              src={`https://www.youtube.com/embed/${youtubeId}`}
-                              allowFullScreen
-                              title={`Portfolio ${idx + 1}`}
-                            />
+                             <VideoEmbedWithAudio
+                               src={`https://www.youtube.com/embed/${youtubeId}`}
+                               title={`Portfolio ${idx + 1}`}
+                             />
                           ) : isImage ? (
                             <img
                               src={link}
@@ -475,15 +488,11 @@ export default async function TalentProfilePage({ params }: { params: Promise<{ 
                             Twitch
                           </h3>
                           {twitchChannel ? (
-                            <div className="aspect-video xl:aspect-[21/9] rounded-xl overflow-hidden bg-base-300">
-                              <iframe
-                                className="w-full h-full"
-                                src={`https://player.twitch.tv/?channel=${encodeURIComponent(twitchChannel)}&${twitchParentQuery}`}
-                                title={`${vtuber.name} Twitch`}
-                                loading="lazy"
-                                allowFullScreen
-                              />
-                            </div>
+                             <VideoEmbedWithAudio
+                               src={`https://player.twitch.tv/?channel=${encodeURIComponent(twitchChannel)}&${twitchParentQuery}`}
+                               title={`${vtuber.name} Twitch`}
+                               aspectRatio="aspect-video xl:aspect-[21/9]"
+                             />
                           ) : (
                             <SocialEmbedFallback url={vtuber.twitchUrl} platform="twitch" title="Twitch Channel" />
                           )}
@@ -500,14 +509,10 @@ export default async function TalentProfilePage({ params }: { params: Promise<{ 
                               TikTok
                             </h3>
                             {tiktokVideoId ? (
-                              <div className="aspect-video rounded-xl overflow-hidden bg-base-300">
-                                <iframe
-                                  className="w-full h-full"
-                                  src={`https://www.tiktok.com/embed/v2/${tiktokVideoId}`}
-                                  title={`${vtuber.name} TikTok`}
-                                  loading="lazy"
-                                />
-                              </div>
+                               <VideoEmbedWithAudio
+                                 src={`https://www.tiktok.com/embed/v2/${tiktokVideoId}`}
+                                 title={`${vtuber.name} TikTok`}
+                               />
                             ) : (
                               <SocialEmbedFallback url={vtuber.tiktokUrl} platform="tiktok" title="TikTok Profile" />
                             )}
@@ -523,15 +528,10 @@ export default async function TalentProfilePage({ params }: { params: Promise<{ 
                               YouTube
                             </h3>
                             {youtubeVideoId ? (
-                              <div className="aspect-video rounded-xl overflow-hidden bg-base-300">
-                                <iframe
-                                  className="w-full h-full"
-                                  src={`https://www.youtube.com/embed/${youtubeVideoId}`}
-                                  title={`${vtuber.name} YouTube`}
-                                  allowFullScreen
-                                  loading="lazy"
-                                />
-                              </div>
+                               <VideoEmbedWithAudio
+                                 src={`https://www.youtube.com/embed/${youtubeVideoId}`}
+                                 title={`${vtuber.name} YouTube`}
+                               />
                             ) : (
                               <SocialEmbedFallback url={vtuber.youtubeUrl} platform="youtube" title="YouTube Channel" />
                             )}

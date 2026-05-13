@@ -156,6 +156,22 @@ CREATE TABLE gallery_items (
 );
 
 -- ============================================
+-- GALLERY MEDIA TABLE
+-- ============================================
+CREATE TABLE gallery_media (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  gallery_item_id UUID NOT NULL REFERENCES gallery_items(id) ON DELETE CASCADE,
+  media_type TEXT NOT NULL CHECK (media_type IN ('photo', 'video')),
+  media_url TEXT NOT NULL,
+  media_object_key TEXT,
+  thumbnail_url TEXT,
+  is_primary BOOLEAN DEFAULT false,
+  sort_order INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ============================================
 -- CAREER APPLICATIONS TABLE
 -- ============================================
 CREATE TABLE career_applications (
@@ -240,6 +256,9 @@ CREATE TRIGGER update_events_updated_at BEFORE UPDATE ON events
 CREATE TRIGGER update_gallery_items_updated_at BEFORE UPDATE ON gallery_items
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+CREATE TRIGGER update_gallery_media_updated_at BEFORE UPDATE ON gallery_media
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
 -- ============================================
 -- INDEXES FOR PERFORMANCE
 -- ============================================
@@ -260,6 +279,9 @@ CREATE INDEX idx_events_published ON events(is_published);
 CREATE INDEX idx_events_date ON events(event_date);
 CREATE INDEX idx_gallery_items_published ON gallery_items(is_published);
 CREATE INDEX idx_gallery_items_category ON gallery_items(category);
+CREATE INDEX idx_gallery_media_gallery_item_id ON gallery_media(gallery_item_id);
+CREATE INDEX idx_gallery_media_is_primary ON gallery_media(gallery_item_id, is_primary);
+CREATE INDEX idx_gallery_media_sort_order ON gallery_media(gallery_item_id, sort_order);
 CREATE INDEX idx_user_audit_logs_actor_user_id ON user_audit_logs(actor_user_id);
 CREATE INDEX idx_user_audit_logs_target_user_id ON user_audit_logs(target_user_id);
 CREATE INDEX idx_user_audit_logs_action ON user_audit_logs(action);

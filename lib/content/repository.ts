@@ -599,13 +599,14 @@ export async function getGalleryItems(): Promise<GalleryEntry[]> {
       id: string;
       media_type: string;
       media_url: string;
+      media_object_key: string | null;
       is_primary: boolean;
     }>(
       `
-      SELECT id, media_type, media_url, is_primary
+      SELECT id, media_type, media_url, media_object_key, is_primary
       FROM gallery_media
       WHERE gallery_item_id = $1
-      ORDER BY sort_order ASC, created_at ASC
+      ORDER BY is_primary DESC, sort_order ASC, created_at ASC
       `,
       [row.id]
     );
@@ -613,15 +614,17 @@ export async function getGalleryItems(): Promise<GalleryEntry[]> {
     const media = mediaRows ? mediaRows.map(m => ({
       id: m.id,
       media_type: m.media_type as 'photo' | 'video',
-      media_url: resolveRenderableImageUrl(m.media_url),
+      media_url: resolveRenderableImageUrl(m.media_url, m.media_object_key),
       is_primary: Boolean(m.is_primary),
     })) : undefined;
+
+    const primary = media && media.length > 0 ? (media.find((m) => m.is_primary) || media[0]) : undefined;
 
     return {
       id: row.id,
       title: row.title,
       description: row.description || 'No description available yet.',
-      image: resolveRenderableImageUrl(row.image_url),
+      image: primary?.media_url || resolveRenderableImageUrl(row.image_url),
       category: row.category,
       date: row.created_at,
       featured: Boolean(row.featured),

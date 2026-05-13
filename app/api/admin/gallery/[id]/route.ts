@@ -15,9 +15,17 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       artist_name?: string;
       is_published?: boolean;
       featured?: boolean;
+      media?: Array<{
+        media_type: 'photo' | 'video';
+        media_url: string;
+        media_object_key?: string;
+        thumbnail_url?: string;
+        is_primary?: boolean;
+        sort_order?: number;
+      }>;
     };
 
-    if (!body.title && !body.image_url && !body.image_object_key && !body.description && !body.category && !body.artist_name && typeof body.is_published !== 'boolean' && typeof body.featured !== 'boolean') {
+    if (!body.title && !body.image_url && !body.image_object_key && !body.description && !body.category && !body.artist_name && typeof body.is_published !== 'boolean' && typeof body.featured !== 'boolean' && !Array.isArray(body.media)) {
       return NextResponse.json({ error: 'No fields provided to update' }, { status: 400 });
     }
 
@@ -30,6 +38,16 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       artist_name: body.artist_name,
       is_published: body.is_published,
       featured: body.featured,
+      media: body.media?.map((item, index) => ({
+        id: '',
+        gallery_item_id: '',
+        media_type: item.media_type,
+        media_url: item.media_url,
+        media_object_key: item.media_object_key,
+        thumbnail_url: item.thumbnail_url,
+        is_primary: Boolean(item.is_primary),
+        sort_order: Number.isFinite(item.sort_order) ? Number(item.sort_order) : index,
+      })),
     });
 
     if (!updated) {

@@ -40,6 +40,7 @@ export default function GalleryMediaShowcase({
 
   const isVideo = currentItem.media_type === 'video'
   const mediaUrl = currentItem.media_url
+  const host = typeof window !== 'undefined' ? window.location.hostname : 'localhost'
 
   const goToPrev = () => {
     if (canNavigate) {
@@ -81,7 +82,24 @@ export default function GalleryMediaShowcase({
       if (twitchId) {
         return (
           <iframe
-            src={`https://player.twitch.tv/?video=${twitchId}&parent=starmyriad.ddns.net`}
+            src={`https://player.twitch.tv/?video=${twitchId}&parent=${host}`}
+            height="100%"
+            width="100%"
+            title={`${title} - Video ${currentIndex + 1}`}
+            allowFullScreen
+            className="w-full h-full"
+          />
+        )
+      }
+
+      // Check if it's a TikTok URL
+      const tiktokMatch = mediaUrl.match(/(?:tiktok\.com\/.*\/video\/)(\d+)/)
+      const tiktokId = tiktokMatch ? tiktokMatch[1] : null
+
+      if (tiktokId) {
+        return (
+          <iframe
+            src={`https://www.tiktok.com/embed/v2/${tiktokId}`}
             height="100%"
             width="100%"
             title={`${title} - Video ${currentIndex + 1}`}

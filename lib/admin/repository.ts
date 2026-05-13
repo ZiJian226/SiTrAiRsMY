@@ -54,6 +54,26 @@ type AdminGalleryItemRow = {
   featured: boolean;
 };
 
+type GalleryMediaRow = {
+  id: string;
+  gallery_item_id: string;
+  media_type: 'photo' | 'video';
+  media_url: string;
+  media_object_key: string | null;
+  thumbnail_url: string | null;
+  is_primary: boolean;
+  sort_order: number;
+};
+
+type GalleryMediaInput = {
+  media_type: 'photo' | 'video';
+  media_url: string;
+  media_object_key?: string;
+  thumbnail_url?: string;
+  is_primary?: boolean;
+  sort_order?: number;
+};
+
 type AdminProfileRow = {
   id: string;
   user_id: string;
@@ -190,6 +210,10 @@ async function hasArtistProfilesTable(): Promise<boolean> {
 
 async function hasTalentProfilesTable(): Promise<boolean> {
   return hasColumn('talent_profiles', 'user_id');
+}
+
+async function hasGalleryMediaTable(): Promise<boolean> {
+  return hasColumn('gallery_media', 'gallery_item_id');
 }
 
 async function ensureProfilesForAllUsers(): Promise<void> {
@@ -476,6 +500,7 @@ export async function getAdminGalleryItems(): Promise<AdminGalleryItem[]> {
   await ensureColumn('gallery_items', 'featured BOOLEAN NOT NULL DEFAULT false', 'featured');
   const supportsImageObjectKey = await hasColumn('gallery_items', 'image_object_key');
   const supportsFeatured = await hasColumn('gallery_items', 'featured');
+  const supportsGalleryMedia = await hasGalleryMediaTable();
   const result = await dbQuery(
     supportsImageObjectKey && supportsFeatured
       ? `
@@ -505,7 +530,17 @@ export async function getAdminGalleryItems(): Promise<AdminGalleryItem[]> {
   const rows = result.rows as AdminGalleryItemRow[];
 
   return Promise.all(rows.map(async (row) => {
-    const media = await getGalleryMedia(row.id);
+    const media = supportsGalleryMedia ? await getGalleryMedia(row.id) : [];
+    const fallbackMedia: AdminGalleryMedia[] = [{
+      id: `fallback-${row.id}`,
+      gallery_item_id: row.id,
+      media_type: 'photo',
+      media_url: resolveRenderableImageUrl(row.image_url, row.image_object_key),
+      media_object_key: row.image_object_key || undefined,
+      is_primary: true,
+      sort_order: 0,
+    }];
+
     return {
       id: row.id,
       title: row.title,
@@ -516,7 +551,7 @@ export async function getAdminGalleryItems(): Promise<AdminGalleryItem[]> {
       artist_name: safeString(row.artist_name, 'Unknown Artist'),
       is_published: Boolean(row.is_published),
       featured: Boolean(row.featured),
-      media: media.length > 0 ? media : undefined,
+      media: media.length > 0 ? media : fallbackMedia,
     };
   }));
 }
@@ -1303,16 +1338,24 @@ export async function createAdminGalleryItem(input: Omit<AdminGalleryItem, 'id'>
 
   const row = result.rows[0] as AdminGalleryItemRow;
 
+  if (Array.isArray(input.media) && input.media.length > 0) {
+    await replaceGalleryMedia(row.id, input.media);
+  }
+
+  const media = await getGalleryMedia(row.id);
+  const primaryMedia = media.find(item => item.is_primary) ?? media[0];
+
   return {
     id: row.id,
     title: row.title,
-    image_url: resolveRenderableImageUrl(row.image_url, row.image_object_key),
+    image_url: primaryMedia?.media_url ?? resolveRenderableImageUrl(row.image_url, row.image_object_key),
     image_object_key: row.image_object_key || undefined,
     description: safeString(row.description),
     category: safeString(row.category, 'other'),
     artist_name: safeString(row.artist_name, 'Unknown Artist'),
     is_published: Boolean(row.is_published),
     featured: Boolean(row.featured),
+    media: media.length > 0 ? media : undefined,
   };
 }
 
@@ -1436,17 +1479,24 @@ export async function updateAdminGalleryItem(id: string, input: Partial<Omit<Adm
     return null;
   }
 
+  if (Array.isArray(input.media)) {
+    await replaceGalleryMedia(id, input.media);
+  }
+
   const row = result.rows[0] as AdminGalleryItemRow;
+  const media = await getGalleryMedia(id);
+  const primaryMedia = media.find(item => item.is_primary) ?? media[0];
   return {
     id: row.id,
     title: row.title,
-    image_url: resolveRenderableImageUrl(row.image_url, row.image_object_key),
+    image_url: primaryMedia?.media_url ?? resolveRenderableImageUrl(row.image_url, row.image_object_key),
     image_object_key: row.image_object_key || undefined,
     description: safeString(row.description),
     category: safeString(row.category, 'other'),
     artist_name: safeString(row.artist_name, 'Unknown Artist'),
     is_published: Boolean(row.is_published),
     featured: Boolean(row.featured),
+    media: media.length > 0 ? media : undefined,
   };
 }
 
@@ -1459,6 +1509,10 @@ export async function deleteAdminGalleryItem(id: string): Promise<boolean> {
  * Get all media items for a gallery item
  */
 export async function getGalleryMedia(galleryItemId: string): Promise<AdminGalleryMedia[]> {
+  if (!(await hasGalleryMediaTable())) {
+    return [];
+  }
+
   const result = await dbQuery(
     `
     SELECT id, gallery_item_id, media_type, media_url, media_object_key, thumbnail_url, is_primary, sort_order
@@ -1469,7 +1523,8 @@ export async function getGalleryMedia(galleryItemId: string): Promise<AdminGalle
     [galleryItemId]
   );
 
-  return result.rows.map((row: any) => ({
+  const rows = result.rows as GalleryMediaRow[];
+  return rows.map((row) => ({
     id: row.id,
     gallery_item_id: row.gallery_item_id,
     media_type: row.media_type,
@@ -1479,6 +1534,88 @@ export async function getGalleryMedia(galleryItemId: string): Promise<AdminGalle
     is_primary: Boolean(row.is_primary),
     sort_order: row.sort_order,
   }));
+}
+
+async function replaceGalleryMedia(galleryItemId: string, mediaList: GalleryMediaInput[]): Promise<void> {
+  if (!(await hasGalleryMediaTable())) {
+    return;
+  }
+
+  const cleaned = mediaList
+    .map((item, index) => ({
+      media_type: item.media_type,
+      media_url: safeString(item.media_url).trim(),
+      media_object_key: item.media_object_key?.trim() || null,
+      thumbnail_url: item.thumbnail_url?.trim() || null,
+      is_primary: Boolean(item.is_primary),
+      sort_order: Number.isFinite(item.sort_order) ? Number(item.sort_order) : index,
+    }))
+    .filter((item) => item.media_url.length > 0);
+
+  if (cleaned.length === 0) {
+    await dbQuery('DELETE FROM gallery_media WHERE gallery_item_id = $1', [galleryItemId]);
+    return;
+  }
+
+  const hasPrimary = cleaned.some(item => item.is_primary);
+  if (!hasPrimary) {
+    cleaned[0].is_primary = true;
+  }
+
+  await dbQuery('DELETE FROM gallery_media WHERE gallery_item_id = $1', [galleryItemId]);
+
+  for (const item of cleaned) {
+    await dbQuery(
+      `
+      INSERT INTO gallery_media (gallery_item_id, media_type, media_url, media_object_key, thumbnail_url, is_primary, sort_order)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `,
+      [
+        galleryItemId,
+        item.media_type,
+        item.media_url,
+        item.media_object_key,
+        item.thumbnail_url,
+        item.is_primary,
+        item.sort_order,
+      ],
+    );
+  }
+
+  const primaryResult = await dbQuery(
+    `
+    SELECT media_url, media_object_key
+    FROM gallery_media
+    WHERE gallery_item_id = $1 AND is_primary = true
+    ORDER BY sort_order ASC
+    LIMIT 1
+    `,
+    [galleryItemId],
+  );
+
+  const primary = primaryResult.rows[0] as { media_url: string; media_object_key: string | null } | undefined;
+  if (primary) {
+    const supportsImageObjectKey = await hasColumn('gallery_items', 'image_object_key');
+    if (supportsImageObjectKey) {
+      await dbQuery(
+        `
+        UPDATE gallery_items
+        SET image_url = $2, image_object_key = $3, updated_at = NOW()
+        WHERE id = $1
+        `,
+        [galleryItemId, primary.media_url, primary.media_object_key],
+      );
+    } else {
+      await dbQuery(
+        `
+        UPDATE gallery_items
+        SET image_url = $2, updated_at = NOW()
+        WHERE id = $1
+        `,
+        [galleryItemId, primary.media_url],
+      );
+    }
+  }
 }
 
 /**

@@ -24,6 +24,14 @@ export async function POST(request: NextRequest) {
       artist_name?: string;
       is_published?: boolean;
       featured?: boolean;
+      media?: Array<{
+        media_type: 'photo' | 'video';
+        media_url: string;
+        media_object_key?: string;
+        thumbnail_url?: string;
+        is_primary?: boolean;
+        sort_order?: number;
+      }>;
     };
 
     if (!body.title || !body.image_url) {
@@ -39,6 +47,16 @@ export async function POST(request: NextRequest) {
       artist_name: body.artist_name || 'Unknown Artist',
       is_published: Boolean(body.is_published),
       featured: Boolean(body.featured),
+      media: body.media?.map((item, index) => ({
+        id: '',
+        gallery_item_id: '',
+        media_type: item.media_type,
+        media_url: item.media_url,
+        media_object_key: item.media_object_key,
+        thumbnail_url: item.thumbnail_url,
+        is_primary: Boolean(item.is_primary),
+        sort_order: Number.isFinite(item.sort_order) ? Number(item.sort_order) : index,
+      })),
     });
 
     return NextResponse.json(created, { status: 201 });

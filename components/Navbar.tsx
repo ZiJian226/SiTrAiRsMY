@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ASSETS } from "@/lib/assetPath";
+import { MusicToggle } from "./MusicToggle";
 
 export default function Navbar() {
   return (
@@ -90,7 +91,9 @@ export default function Navbar() {
           </li>
         </ul>
       </div>
-      <div className="navbar-end hidden lg:flex"> </div>
+      <div className="navbar-end hidden lg:flex gap-2">
+        <MusicToggle />
+      </div>
     </div>
   );
 }

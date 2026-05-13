@@ -40,7 +40,7 @@ export default function ArtistCardShowcase({ artUrls, artistName }: ArtistCardSh
       <img
         src={currentArt}
         alt={`${artistName} art ${currentIndex + 1}`}
-        className="w-auto h-auto max-w-full max-h-full object-cover transition-opacity"
+        className="w-auto h-auto max-w-full max-h-full object-contain transition-opacity justify-self-center self-center"
         loading="lazy"
       />
 

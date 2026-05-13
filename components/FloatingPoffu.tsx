@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { ASSETS } from "@/lib/assetPath";
+import { useAudio } from "@/contexts/AudioContext";
 
 export default function FloatingPoffu() {
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -17,6 +18,7 @@ export default function FloatingPoffu() {
   const prevPathname = useRef(pathname);
   const animationFrame = useRef<number | undefined>(undefined);
   const poffuRef = useRef<HTMLDivElement | null>(null);
+  const { playPoffuSound } = useAudio();
   const poffuSize = 50;
   const stopDistance = 50;
   const particleCounter = useRef(0);
@@ -421,6 +423,7 @@ export default function FloatingPoffu() {
         }}
         onMouseEnter={() => !isTransitioning && setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
+        onClick={() => playPoffuSound()}
       >
         <img
           src={

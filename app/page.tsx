@@ -7,6 +7,7 @@ import Container from "@/components/Container";
 import Footer from "@/components/Footer";
 import LazyRow from "@/components/LazyRow";
 import PagedCarousel from "@/components/PagedCarousel";
+import GalleryMediaShowcase from "@/components/GalleryMediaShowcase";
 import LandscapeModal from "@/components/LandscapeModal";
 import EdgeStarAnimation from "@/components/EdgeStarAnimation";
 import { ASSETS } from "@/lib/assetPath";
@@ -21,6 +22,7 @@ export default function Home() {
     imageUrl: string;
     title?: string;
     description?: string;
+    mediaItems?: GalleryEntry['media']
   } | null>(null);
 
   const { data: artists } = useCachedApiResource<ArtistProfile[]>({
@@ -87,8 +89,8 @@ export default function Home() {
   const staffShowcase = featuredStaffs.length > 0 ? featuredStaffs : staffs.slice(0, 6);
   const artistShowcase = featuredArtists.length > 0 ? featuredArtists : artists.slice(0, 6);
 
-  const openModal = (imageUrl: string, title?: string, description?: string) => {
-    setModalData({ imageUrl, title, description });
+  const openModal = (imageUrl: string, title?: string, description?: string, mediaItems?: GalleryEntry['media']) => {
+    setModalData({ imageUrl, title, description, mediaItems });
     setModalOpen(true);
   };
 
@@ -142,7 +144,7 @@ export default function Home() {
         <Container>
           <div className="text-center max-w-3xl mx-auto">
             <h1 className="text-5xl font-bold pb-2 mb-4 bg-gradient-to-r from-secondary to-primary-content bg-clip-text text-transparent">
-              Welcome to StarMy
+              Welcome to StarMyriad
             </h1>
             <p className="text-xl mb-8">
               Your gateway to the vibrant world of VTubers and talented artists.
@@ -200,14 +202,18 @@ export default function Home() {
               <div
                 key={item.id}
                 className="flex-shrink-0 w-[320px] card bg-base-200 shadow-xl overflow-hidden cursor-pointer hover:shadow-2xl transition-all group"
-                onClick={() => openModal(item.image, item.title, item.description)}
+                onClick={() => openModal(item.image, item.title, item.description, item.media)}
               >
                 <figure className="relative aspect-square overflow-hidden">
-                  <img
-                    src={item.image}
-                    alt={item.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                  />
+                  {item.media && item.media.length > 0 ? (
+                    <GalleryMediaShowcase media={item.media} title={item.title} height="h-80" isPreview={true} previewImage={item.image} />
+                  ) : (
+                    <img
+                      src={item.image}
+                      alt={item.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                    />
+                  )}
                   <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/40 transition-colors">
                     <div className="text-white opacity-0 group-hover:opacity-100 transition-opacity text-center">
                       <p className="text-sm font-semibold">Click to view</p>
@@ -379,6 +385,7 @@ export default function Home() {
           imageUrl={modalData.imageUrl}
           title={modalData.title}
           description={modalData.description}
+          mediaItems={modalData.mediaItems}
         />
       )}
 

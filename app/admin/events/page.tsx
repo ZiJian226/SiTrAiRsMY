@@ -412,7 +412,7 @@ export default function AdminEventsPage() {
               {editingEvent ? 'Edit Event' : 'Create New Event'}
             </h3>
             
-            <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="space-y-4">
+            <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="space-y-4 two-column-form-layout">
               <div className="form-control">
                 <label className="label">
                   <span className="label-text font-semibold">Event Title</span>
@@ -440,36 +440,34 @@ export default function AdminEventsPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text font-semibold">Date & Time</span>
-                  </label>
-                  <input
-                    type="datetime-local"
-                    className="input input-bordered"
-                    value={formData.event_date}
-                    onChange={(e) => setFormData({ ...formData, event_date: e.target.value })}
-                    required
-                  />
-                </div>
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text font-semibold">Date & Time</span>
+                </label>
+                <input
+                  type="datetime-local"
+                  className="input input-bordered w-full"
+                  value={formData.event_date}
+                  onChange={(e) => setFormData({ ...formData, event_date: e.target.value })}
+                  required
+                />
+              </div>
 
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text font-semibold">Category</span>
-                  </label>
-                  <select
-                    className="select select-bordered"
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  >
-                    <option value="showcase">Showcase</option>
-                    <option value="community">Community</option>
-                    <option value="collab">Collaboration</option>
-                    <option value="special">Special</option>
-                    <option value="other">Other</option>
-                  </select>
-                </div>
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text font-semibold">Category</span>
+                </label>
+                <select
+                  className="select select-bordered w-full"
+                  value={formData.category}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                >
+                  <option value="showcase">Showcase</option>
+                  <option value="community">Community</option>
+                  <option value="collab">Collaboration</option>
+                  <option value="special">Special</option>
+                  <option value="other">Other</option>
+                </select>
               </div>
 
               <div className="form-control">

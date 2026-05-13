@@ -74,6 +74,18 @@ type GalleryMediaInput = {
   sort_order?: number;
 };
 
+function inferGalleryMediaType(mediaType: 'photo' | 'video', mediaUrl: string): 'photo' | 'video' {
+  if (mediaType === 'video') {
+    return 'video';
+  }
+
+  if (/\.(mp4|webm|mov|mkv|m4v)(?:[?#].*)?$/i.test(mediaUrl)) {
+    return 'video';
+  }
+
+  return mediaType;
+}
+
 type AdminProfileRow = {
   id: string;
   user_id: string;
@@ -1543,7 +1555,7 @@ async function replaceGalleryMedia(galleryItemId: string, mediaList: GalleryMedi
 
   const cleaned = mediaList
     .map((item, index) => ({
-      media_type: item.media_type,
+      media_type: inferGalleryMediaType(item.media_type, safeString(item.media_url).trim()),
       media_url: safeString(item.media_url).trim(),
       media_object_key: item.media_object_key?.trim() || null,
       thumbnail_url: item.thumbnail_url?.trim() || null,

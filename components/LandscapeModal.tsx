@@ -53,9 +53,12 @@ export default function LandscapeModal({
 
   const youtubeId = currentItem?.media_url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/)?.[1] || null
   const twitchVideoId = currentItem?.media_url.match(/twitch\.tv\/videos\/(\d+)/)?.[1] || null
-  const tiktokVideoId = currentItem?.media_url.match(/(?:tiktok\.com\/.*\/video\/)(\d+)/)?.[1] || null
+  const tiktokVideoId = (currentItem?.media_url && currentItem.media_url.includes('tiktok'))
+    ? currentItem.media_url.match(/tiktok\.com\/.*?\/(?:video\/)?(\d+)/)?.[1]
+    : null
 
-  const isVideo = currentItem?.media_type === 'video'
+  const urlLooksLikeVideo = !!(currentItem?.media_url && currentItem.media_url.match(/\.(mp4|webm|ogg|mov|mkv)(?:\?|$)/i))
+  const isVideo = currentItem?.media_type === 'video' || urlLooksLikeVideo
   const host = typeof window !== 'undefined' ? window.location.hostname : 'localhost'
 
   function goPrev() {
@@ -76,8 +79,8 @@ export default function LandscapeModal({
     }
 
     document.body.classList.add('landscape-modal-open')
-    // Check if current media is a video
-    const isCurrentVideo = currentItem?.media_type === 'video'
+    // Check if current media is a video (infer from URL as fallback)
+    const isCurrentVideo = currentItem?.media_type === 'video' || !!(currentItem?.media_url && currentItem.media_url.match(/\.(mp4|webm|ogg|mov|mkv)(?:\?|$)/i))
     setVideoPlaying(isCurrentVideo || isEmbedPlaying)
     
     return () => {
@@ -178,7 +181,7 @@ export default function LandscapeModal({
 
             {isVideo && !youtubeId && !twitchVideoId && tiktokVideoId && (
               <iframe
-                src={`https://www.tiktok.com/embed/v2/${tiktokVideoId}`}
+                src={`https://www.tiktok.com/player/v1/${tiktokVideoId}`}
                 height="100%"
                 width="100%"
                 title={title || 'TikTok video preview'}

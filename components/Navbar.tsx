@@ -1,16 +1,45 @@
+"use client";
+
 import Link from "next/link";
+import { useState } from "react";
 import { ASSETS } from "@/lib/assetPath";
 import { MusicToggle } from "./MusicToggle";
 
 export default function Navbar() {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  const closeSidebar = () => setIsSidebarOpen(false);
+  const toggleSidebar = () => setIsSidebarOpen((prev) => !prev);
+
+  const navItems = [
+    { label: "Talents", href: "/talents" },
+    { label: "Artists", href: "/artists" },
+    { label: "Staffs", href: "/staffs" },
+    { label: "Events", href: "/events" },
+    { label: "Gallery", href: "/gallery" },
+    { label: "Community", href: "/community" },
+  ];
+
+  const moreItems = [
+    { label: "About Us", href: "/about" },
+    { label: "Join Us", href: "/joinus" },
+    { label: "FAQ", href: "/faq" },
+  ];
+
   return (
-    <div className="navbar bg-base-100 shadow-lg sticky top-0 z-50">
-      <div className="navbar-start lg:flex">
-        <div className="dropdown text-5xl">
-          <div tabIndex={0} role="button" className="btn btn-ghost lg:hidden">
+    <>
+      <div className="navbar bg-base-100 shadow-lg sticky top-0 z-50 lg:min-h-25">
+        {/* ===== MOBILE: Hamburger (visible only on mobile) ===== */}
+        <div className="navbar-start flex-1">
+          <div className="hidden lg:block w-auto" aria-hidden="true"></div>
+          <button
+            className="btn btn-ghost text-2xl lg:hidden"
+            onClick={toggleSidebar}
+            aria-label="Menu"
+          >
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5"
+              className="h-6 w-6"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -22,33 +51,78 @@ export default function Navbar() {
                 d="M4 6h16M4 12h8m-8 6h16"
               />
             </svg>
-          </div>
-          <ul
-            tabIndex={0}
-            className="menu menu-sm dropdown-content bg-base-100 rounded-box z-[1] mt-3 w-52 p-2 shadow"
-          >
-            <li>
-              <Link href="/talents">Talents</Link>
-            </li>
-            <li>
-              <Link href="/artists">Artists</Link>
-            </li>
-            <li>
-              <Link href="/staffs">Staffs</Link>
-            </li>
-            <li>
-              <Link href="/events">Events</Link>
-            </li>
-            <li>
-              <Link href="/gallery">Gallery</Link>
-            </li>
-            <li>
-              <Link href="/community">Community</Link>
-            </li>
-            <li>
+          </button>
+          <Link
+              href="/"
+              className="flex items-center lg:hidden transition-all duration-300 hover:drop-shadow-[0_0_8px_rgba(141,118,209,0.8)] hover:scale-110"
+              aria-label="StarMy Home"
+            >
+              <img
+                src={ASSETS.images.icons.logo}
+                alt="StarMy Logo"
+                width="100"
+                height="48"
+                className="object-contain"
+              />
+            </Link>
+        </div>
+
+        {/* ===== DESKTOP: Horizontal menu (visible only on desktop) ===== */}
+        <div className="navbar-center hidden lg:flex lg:absolute lg:left-1/2 lg:transform lg:-translate-x-1/2">
+          <ul className="menu menu-horizontal items-center md:gap-8 text-xl font-bold">
+            <Link
+              href="/"
+              className="flex items-center transition-all duration-300 hover:drop-shadow-[0_0_8px_rgba(141,118,209,0.8)] hover:scale-110"
+              aria-label="StarMy Home"
+            >
+              <img
+                src={ASSETS.images.icons.logo}
+                alt="StarMy Logo"
+                width="100"
+                height="48"
+                className="object-contain"
+              />
+            </Link>
+            <Link
+              className="hover:drop-shadow-[0_0_8px_rgba(141,118,209,0.8)] hover:scale-110 duration-300"
+              href="/talents"
+            >
+              Talents
+            </Link>
+            <Link
+              className="hover:drop-shadow-[0_0_8px_rgba(141,118,209,0.8)] hover:scale-110 duration-300"
+              href="/artists"
+            >
+              Artists
+            </Link>
+            <Link
+              className="hover:drop-shadow-[0_0_8px_rgba(141,118,209,0.8)] hover:scale-110 duration-300"
+              href="/staffs"
+            >
+              Staffs
+            </Link>
+            <Link
+              className="hover:drop-shadow-[0_0_8px_rgba(141,118,209,0.8)] hover:scale-110 duration-300"
+              href="/events"
+            >
+              Events
+            </Link>
+            <Link
+              className="hover:drop-shadow-[0_0_8px_rgba(141,118,209,0.8)] hover:scale-110 duration-300"
+              href="/gallery"
+            >
+              Gallery
+            </Link>
+            <Link
+              className="hover:drop-shadow-[0_0_8px_rgba(141,118,209,0.8)] hover:scale-110 duration-300"
+              href="/community"
+            >
+              Community
+            </Link>
+            <li className="hover:drop-shadow-[0_0_8px_rgba(141,118,209,0.8)] hover:scale-110 duration-300">
               <details>
                 <summary>More</summary>
-                <ul>
+                <ul className="bg-base-100 shadow-lg">
                   <li><Link href="/about">About Us</Link></li>
                   <li><Link href="/joinus">Join Us</Link></li>
                   <li><Link href="/faq">FAQ</Link></li>
@@ -57,43 +131,76 @@ export default function Navbar() {
             </li>
           </ul>
         </div>
+
+        {/* ===== MusicToggle: visible on both mobile and desktop (right side) ===== */}
+        <div className="navbar-end lg:flex-1 lg:justify-end">
+          <MusicToggle />
+        </div>
       </div>
-      <div className="navbar-center ho hidden lg:flex">
-        <ul className="menu menu-horizontal items-center md:gap-8 text-xl font-bold">
-          <Link
-            href="/"
-            className="flex items-center transition-all duration-300 hover:drop-shadow-[0_0_8px_rgba(141,118,209,0.8)] hover:scale-110"
-            aria-label="StarMy Home"
-          >
-          <img
-            src={ASSETS.images.icons.logo}
-            alt="StarMy Logo"
-            width="100"
-            height="48"
-            className="object-contain"
-          />
-          </Link>
-          <Link className="hover:drop-shadow-[0_0_8px_rgba(141,118,209,0.8)] hover:scale-110 duration-300" href="/talents">Talents</Link>
-          <Link className="hover:drop-shadow-[0_0_8px_rgba(141,118,209,0.8)] hover:scale-110 duration-300" href="/artists">Artists</Link>
-          <Link className="hover:drop-shadow-[0_0_8px_rgba(141,118,209,0.8)] hover:scale-110 duration-300" href="/staffs">Staffs</Link>
-          <Link className="hover:drop-shadow-[0_0_8px_rgba(141,118,209,0.8)] hover:scale-110 duration-300" href="/events">Events</Link>
-          <Link className="hover:drop-shadow-[0_0_8px_rgba(141,118,209,0.8)] hover:scale-110 duration-300" href="/gallery">Gallery</Link>
-          <Link className="hover:drop-shadow-[0_0_8px_rgba(141,118,209,0.8)] hover:scale-110 duration-300" href="/community">Community</Link>
-          <li className="hover:drop-shadow-[0_0_8px_rgba(141,118,209,0.8)] hover:scale-110 duration-300">
-            <details>
-              <summary>More</summary>
-              <ul className="bg-base-100 shadow-lg">
-                <li><Link href="/about">About Us</Link></li>
-                <li><Link href="/joinus">Join Us</Link></li>
-                <li><Link href="/faq">FAQ</Link></li>
-              </ul>
-            </details>
-          </li>
-        </ul>
+
+      {/* ===== MOBILE SIDEBAR (only appears when hamburger is clicked) ===== */}
+      <div
+        className={`fixed inset-0 z-50 transition-all duration-300 lg:hidden ${
+          isSidebarOpen ? "visible" : "invisible"
+        }`}
+      >
+        <div
+          className={`absolute inset-0 bg-black/50 transition-opacity duration-300 ${
+            isSidebarOpen ? "opacity-100" : "opacity-0"
+          }`}
+          onClick={closeSidebar}
+        />
+        <div
+          className={`absolute left-0 top-0 h-full w-72 bg-base-100 shadow-2xl transition-transform duration-300 ${
+            isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
+        >
+          <div className="flex items-center justify-between p-4 border-b border-base-200">
+            <img
+              src={ASSETS.images.icons.logo}
+              alt="StarMy Logo"
+              width="80"
+              height="38"
+              className="object-contain"
+            />
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={closeSidebar}
+              aria-label="Close menu"
+            >
+              ✕
+            </button>
+          </div>
+          <ul className="menu menu-lg p-4 pt-2 gap-1 text-base font-semibold">
+            {navItems.map((item) => (
+              <li key={item.href} onClick={closeSidebar}>
+                <Link href={item.href} className="py-3 px-4 rounded-lg block">
+                  {item.label}
+                </Link>
+              </li>
+            ))}
+            <li>
+              <details>
+                <summary className="py-3 px-4 rounded-lg">More</summary>
+                <ul className="ml-4 mt-1">
+                  {moreItems.map((item) => (
+                    <li key={item.href} onClick={closeSidebar}>
+                      <Link href={item.href} className="py-2 px-4 rounded-lg block">
+                        {item.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            </li>
+          </ul>
+          <div className="absolute bottom-6 left-0 w-full px-4">
+            <div className="flex justify-center">
+              <MusicToggle />
+            </div>
+          </div>
+        </div>
       </div>
-      <div className="navbar-end hidden lg:flex gap-2">
-        <MusicToggle />
-      </div>
-    </div>
+    </>
   );
 }

@@ -13,12 +13,16 @@ interface GalleryMediaShowcaseProps {
   media: GalleryMediaItem[]
   title: string
   height?: string
+  isPreview?: boolean
+  previewImage?: string | null
 }
 
 export default function GalleryMediaShowcase({
   media,
   title,
-  height = 'h-64'
+  height = 'h-64',
+  isPreview = false,
+  previewImage = null,
 }: GalleryMediaShowcaseProps) {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [showControls, setShowControls] = useState(false)
@@ -55,6 +59,79 @@ export default function GalleryMediaShowcase({
   }
 
   const renderMedia = () => {
+    // If collapsed preview requested, prefer the current media item (so navigating shows correct preview).
+    if (isPreview) {
+      // If current item exists, show it (video first-frame or image)
+      if (currentItem && currentItem.media_url) {
+        const currentUrlIsVideo = currentItem.media_type === 'video' || !!currentItem.media_url.match(/\.(mp4|webm|ogg|mov|mkv)(?:\?|$)/i)
+        if (currentUrlIsVideo) {
+          return (
+            <video
+              src={currentItem.media_url}
+              muted
+              playsInline
+              preload="metadata"
+              className="w-full h-full object-cover"
+              onLoadedData={(e) => {
+                try {
+                  const v = e.currentTarget as HTMLVideoElement
+                  v.currentTime = 0
+                  v.pause()
+                } catch (err) {
+                  // ignore
+                }
+              }}
+            />
+          )
+        }
+
+        return (
+          <img
+            src={currentItem.media_url}
+            alt={`${title} - Preview ${currentIndex + 1}`}
+            className="w-full h-full object-cover transition-opacity"
+            loading="lazy"
+          />
+        )
+      }
+
+      // Fallback to provided previewImage or YouTube thumbnail
+      if (previewImage) {
+        return (
+          <img
+            src={previewImage}
+            alt={`${title} - Preview ${currentIndex + 1}`}
+            className="w-full h-full object-cover transition-opacity"
+            loading="lazy"
+          />
+        )
+      }
+
+      const youtubeThumbMatch = mediaUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/)
+      const youtubeThumbId = youtubeThumbMatch ? youtubeThumbMatch[1] : null
+      if (youtubeThumbId) {
+        return (
+          <img
+            src={`https://img.youtube.com/vi/${youtubeThumbId}/hqdefault.jpg`}
+            alt={`${title} - Preview ${currentIndex + 1}`}
+            className="w-full h-full object-cover transition-opacity"
+            loading="lazy"
+          />
+        )
+      }
+
+      return (
+        <div className="w-full h-full flex items-center justify-center bg-base-200">
+          <img
+            src={'https://placehold.co/800x450/111/FFF/png?text=Preview'}
+            alt={`${title} - Preview ${currentIndex + 1}`}
+            className="w-full h-full object-cover"
+            loading="lazy"
+          />
+        </div>
+      )
+    }
+
     if (isVideo) {
       // Check if it's a YouTube URL
       const youtubeMatch = mediaUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/)
@@ -93,13 +170,13 @@ export default function GalleryMediaShowcase({
       }
 
       // Check if it's a TikTok URL
-      const tiktokMatch = mediaUrl.match(/(?:tiktok\.com\/.*\/video\/)(\d+)/)
+      const tiktokMatch = mediaUrl.match(/(?:tiktok\.com\/.*?\/)?(?:video\/)?(\d+)/)
       const tiktokId = tiktokMatch ? tiktokMatch[1] : null
 
-      if (tiktokId) {
+      if (tiktokId && mediaUrl.includes('tiktok')) {
         return (
           <iframe
-            src={`https://www.tiktok.com/embed/v2/${tiktokId}`}
+            src={`https://www.tiktok.com/player/v1/${tiktokId}`}
             height="100%"
             width="100%"
             title={`${title} - Video ${currentIndex + 1}`}

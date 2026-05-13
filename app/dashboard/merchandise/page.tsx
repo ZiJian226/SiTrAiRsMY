@@ -370,7 +370,7 @@ export default function MerchandiseManagerPage() {
               </div>
             )}
             
-            <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="space-y-4">
+            <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="space-y-4 two-column-form-layout">
               <div className="form-control">
                 <label className="label">
                   <span className="label-text font-semibold">Product Image</span>

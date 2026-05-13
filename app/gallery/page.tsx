@@ -82,6 +82,8 @@ export default function GalleryPage() {
                         media={item.media} 
                         title={item.title} 
                         height="h-48"
+                        isPreview={true}
+                        previewImage={item.image}
                       />
                     </div>
                   ) : (

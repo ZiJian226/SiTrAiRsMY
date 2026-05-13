@@ -7,6 +7,8 @@ import Navbar from '@/components/Navbar'
 import Container from '@/components/Container'
 import Footer from '@/components/Footer'
 import PageBackground from '@/components/PageBackground'
+import FormField from '@/components/FormField'
+import FormSection from '@/components/FormSection'
 import Link from 'next/link'
 import type { UserRole } from '@/lib/auth/types'
 import type { AdminUser } from '@/lib/admin/types'
@@ -406,122 +408,135 @@ export default function AdminUsersPage() {
       {/* Modal */}
       {showModal && (
         <div className="modal modal-open">
-          <div className="modal-box max-w-2xl">
+          <div className="modal-box max-w-4xl max-h-[90vh] overflow-y-auto">
             <h3 className="font-bold text-2xl mb-6">
               {editingUser ? 'Edit User' : 'Create New User'}
             </h3>
             
-            <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="space-y-4">
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text font-semibold">Email</span>
-                </label>
-                <input
-                  type="email"
-                  className="input input-bordered"
-                  placeholder="user@example.com"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="space-y-6 two-column-form-layout">
+              <FormSection title="Account Information" description="Basic user account details">
+                <FormField 
+                  label="Email" 
                   required
-                />
-                {editingUser && (
-                  <label className="label">
-                    <span className="label-text-alt opacity-70">Changing email updates both login and profile records.</span>
-                  </label>
-                )}
-              </div>
-
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text font-semibold">Full Name</span>
-                </label>
-                <input
-                  type="text"
-                  className="input input-bordered"
-                  placeholder="Enter full name"
-                  value={formData.full_name}
-                  onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                />
-              </div>
-
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text font-semibold">Role</span>
-                </label>
-                <select
-                  className="select select-bordered"
-                  value={formData.role}
-                  onChange={(e) => setFormData({ ...formData, role: e.target.value as any })}
+                  help={editingUser ? "Changing email updates both login and profile records." : "User login email address"}
                 >
-                  <option value="talent">Talent</option>
-                  <option value="artist">Artist</option>
-                  <option value="admin">Admin</option>
-                </select>
-              </div>
+                  <input
+                    type="email"
+                    className="input input-bordered w-full"
+                    placeholder="user@example.com"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    disabled={saving}
+                    required
+                  />
+                </FormField>
 
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text font-semibold">Avatar URL</span>
-                </label>
-                <input
-                  type="text"
-                  className="input input-bordered"
-                  placeholder="https://example.com/avatar.jpg or /api/media/users/avatars/..."
-                  value={formData.avatar_url}
-                  onChange={(e) => setFormData({ ...formData, avatar_url: e.target.value, avatar_object_key: '' })}
-                  disabled={imageUploading}
-                />
-                <label className="label">
-                  <span className="label-text-alt opacity-70">Or upload avatar to Oracle Object Storage</span>
-                </label>
-                <input
-                  type="file"
-                  className="file-input file-input-bordered"
-                  accept="image/*"
-                  disabled={imageUploading}
-                  onChange={(e) => {
-                    const file = e.target.files?.[0]
-                    if (file) {
-                      void handleAvatarFileChange(file)
-                    }
-                    e.currentTarget.value = ''
-                  }}
-                />
-                {imageUploading && (
-                  <label className="label">
-                    <span className="label-text-alt text-primary">Uploading avatar...</span>
-                  </label>
-                )}
-                {imageUploadError && (
-                  <label className="label">
-                    <span className="label-text-alt text-error">{imageUploadError}</span>
-                  </label>
-                )}
-              </div>
+                <FormField label="Full Name">
+                  <input
+                    type="text"
+                    className="input input-bordered w-full"
+                    placeholder="Enter full name"
+                    value={formData.full_name}
+                    onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                    disabled={saving}
+                  />
+                </FormField>
 
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text font-semibold">Bio</span>
-                </label>
-                <textarea
-                  className="textarea textarea-bordered h-24"
-                  placeholder="User bio..."
-                  value={formData.bio}
-                  onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-                />
-              </div>
+                <FormField 
+                  label="Role" 
+                  required
+                  sublabel="User type and permissions"
+                >
+                  <select
+                    className="select select-bordered w-full"
+                    value={formData.role}
+                    onChange={(e) => setFormData({ ...formData, role: e.target.value as any })}
+                    disabled={saving}
+                  >
+                    <option value="talent">Talent</option>
+                    <option value="artist">Artist</option>
+                    <option value="staff">Staff</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </FormField>
+              </FormSection>
 
-              <div className="modal-action">
-                <button type="button" onClick={() => setShowModal(false)} className="btn btn-ghost">
+              <FormSection title="Avatar & Profile" description="Profile picture and bio">
+                <FormField 
+                  label="Avatar" 
+                  help="Upload or provide URL for profile picture"
+                >
+                  <div className="space-y-2">
+                    <input
+                      type="file"
+                      className="file-input file-input-bordered w-full"
+                      accept="image/*"
+                      disabled={saving || imageUploading}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) {
+                          void handleAvatarFileChange(file)
+                        }
+                        e.currentTarget.value = ''
+                      }}
+                    />
+                    {imageUploading && (
+                      <div className="flex items-center gap-2 text-primary text-sm">
+                        <span className="loading loading-spinner loading-sm"></span>
+                        Uploading avatar...
+                      </div>
+                    )}
+                    {imageUploadError && (
+                      <p className="text-error text-sm font-semibold">{imageUploadError}</p>
+                    )}
+                  </div>
+                </FormField>
+
+                <FormField 
+                  label="Avatar URL" 
+                  help="Or paste direct URL to image"
+                >
+                  <input
+                    type="text"
+                    className="input input-bordered w-full text-sm"
+                    placeholder="https://example.com/avatar.jpg or /api/media/..."
+                    value={formData.avatar_url}
+                    onChange={(e) => setFormData({ ...formData, avatar_url: e.target.value, avatar_object_key: '' })}
+                    disabled={saving || imageUploading}
+                  />
+                </FormField>
+
+                <FormField label="Bio">
+                  <textarea
+                    className="textarea textarea-bordered w-full h-24"
+                    placeholder="User bio or description..."
+                    value={formData.bio}
+                    onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                    disabled={saving}
+                  />
+                </FormField>
+              </FormSection>
+
+              <div className="modal-action pt-4 border-t border-base-300">
+                <button 
+                  type="button" 
+                  onClick={() => setShowModal(false)} 
+                  className="btn btn-ghost"
+                  disabled={saving}
+                >
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary" disabled={saving}>
+                <button 
+                  type="submit" 
+                  className="btn btn-primary" 
+                  disabled={saving}
+                >
                   {saving ? 'Saving...' : editingUser ? 'Save Changes' : 'Create User'}
                 </button>
               </div>
             </form>
           </div>
-          <div className="modal-backdrop" onClick={() => setShowModal(false)}></div>
+          <div className="modal-backdrop" onClick={() => !saving && setShowModal(false)}></div>
         </div>
       )}
     </div>

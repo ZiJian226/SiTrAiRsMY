@@ -22,6 +22,19 @@ const ALLOWED_MIME_TYPES = new Set([
   'video/x-matroska',
 ]);
 
+function inferMediaType(file: File): 'photo' | 'video' {
+  if (file.type.startsWith('video/')) {
+    return 'video';
+  }
+
+  const lowerName = file.name.toLowerCase();
+  if (/(\.mp4|\.webm|\.mov|\.mkv|\.m4v)$/.test(lowerName)) {
+    return 'video';
+  }
+
+  return 'photo';
+}
+
 function sanitizeFileName(fileName: string): string {
   return fileName
     .toLowerCase()
@@ -73,7 +86,7 @@ export async function POST(request: Request) {
       url: buildObjectStorageMediaUrl(objectKey),
       contentType: file.type,
       size: file.size,
-      mediaType: file.type.startsWith('video/') ? 'video' : 'photo',
+      mediaType: inferMediaType(file),
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to upload media';

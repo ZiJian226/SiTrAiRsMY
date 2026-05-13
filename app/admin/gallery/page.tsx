@@ -31,6 +31,18 @@ interface EditableMedia {
   sort_order: number
 }
 
+function inferMediaType(mediaType: 'photo' | 'video', mediaUrl: string): 'photo' | 'video' {
+  if (mediaType === 'video') {
+    return 'video'
+  }
+
+  if (/\.(mp4|webm|mov|mkv|m4v)(?:[?#].*)?$/i.test(mediaUrl)) {
+    return 'video'
+  }
+
+  return mediaType
+}
+
 function ensurePrimary(media: EditableMedia[]): EditableMedia[] {
   if (media.length === 0) {
     return [{ media_type: 'photo', media_url: '', is_primary: true, sort_order: 0 }]
@@ -148,23 +160,31 @@ export default function AdminGalleryPage() {
   }
 
   function openEditModal(item: GalleryItem) {
-    const incomingMedia = Array.isArray(item.media)
+    // Load media from the item, preferring item.media array over single image
+    const incomingMedia = Array.isArray(item.media) && item.media.length > 0
       ? item.media
           .map((entry, index) => ({
-            media_type: entry.media_type,
-            media_url: entry.media_url,
-            media_object_key: entry.media_object_key,
+            media_type: inferMediaType(entry.media_type as 'photo' | 'video', entry.media_url),
+            media_url: entry.media_url && typeof entry.media_url === 'string' ? entry.media_url : '',
+            media_object_key: entry.media_object_key || undefined,
             is_primary: Boolean(entry.is_primary),
-            sort_order: Number.isFinite(entry.sort_order) ? Number(entry.sort_order) : index,
+            sort_order: Number.isFinite(Number(entry.sort_order)) ? Number(entry.sort_order) : index,
           }))
-          .filter((entry) => entry.media_url.trim().length > 0)
+          .filter((entry) => entry.media_url && entry.media_url.trim().length > 0)
       : []
 
-    const normalizedMedia = ensurePrimary(
-      incomingMedia.length > 0
-        ? incomingMedia
-        : [{ media_type: 'photo', media_url: item.image_url, media_object_key: item.image_object_key, is_primary: true, sort_order: 0 }],
-    )
+    // If no media array, fall back to single image_url
+    const fallbackMedia: EditableMedia[] = incomingMedia.length === 0 && item.image_url
+      ? [{ 
+          media_type: 'photo', 
+          media_url: item.image_url, 
+          media_object_key: item.image_object_key, 
+          is_primary: true, 
+          sort_order: 0 
+        }]
+      : []
+
+    const normalizedMedia = ensurePrimary(incomingMedia.length > 0 ? incomingMedia : fallbackMedia)
 
     setEditingItem(item)
     setFormData({
@@ -222,7 +242,7 @@ export default function AdminGalleryPage() {
       const normalizedMedia = ensurePrimary(
         formData.media
           .map((entry, index) => ({
-            media_type: entry.media_type,
+            media_type: inferMediaType(entry.media_type, entry.media_url.trim()),
             media_url: entry.media_url.trim(),
             media_object_key: entry.media_object_key?.trim() || undefined,
             is_primary: Boolean(entry.is_primary),
@@ -355,7 +375,7 @@ export default function AdminGalleryPage() {
       updateMedia(index, {
         media_url: data.url,
         media_object_key: data.key,
-        media_type: data.mediaType ?? formData.media[index]?.media_type ?? 'photo',
+        media_type: inferMediaType(data.mediaType ?? formData.media[index]?.media_type ?? 'photo', data.url),
       })
     } catch (error) {
       setImageUploadError(error instanceof Error ? error.message : 'Failed to upload media')
@@ -447,7 +467,7 @@ export default function AdminGalleryPage() {
               <div key={item.id} className="card bg-base-200 shadow-xl group">
                 <figure className="relative overflow-hidden">
                   {item.media && item.media.length > 0 ? (
-                    <GalleryMediaShowcase media={item.media} title={item.title} height="h-64" />
+                    <GalleryMediaShowcase media={item.media} title={item.title} height="h-64" isPreview={true} previewImage={item.image_url} />
                   ) : (
                     <img 
                       src={item.image_url} 
@@ -540,7 +560,7 @@ export default function AdminGalleryPage() {
               {editingItem ? 'Edit Gallery Item' : 'Upload New Item'}
             </h3>
             
-            <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="space-y-4">
+            <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="space-y-4 two-column-form-layout">
               <div className="form-control">
                 <label className="label">
                   <span className="label-text font-semibold">Title</span>
@@ -580,19 +600,27 @@ export default function AdminGalleryPage() {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="form-control">
+                        <label className="label">
+                          <span className="label-text font-semibold text-xs">Media Type</span>
+                        </label>
                         <select
-                          className="select select-bordered"
+                          className="select select-bordered w-full"
                           value={media.media_type}
                           onChange={(e) => updateMedia(index, { media_type: e.target.value as 'photo' | 'video' })}
                         >
                           <option value="photo">Photo</option>
                           <option value="video">Video</option>
                         </select>
+                      </div>
 
+                      <div className="form-control">
+                        <label className="label">
+                          <span className="label-text font-semibold text-xs">Media URL</span>
+                        </label>
                         <input
                           type="text"
-                          className="input input-bordered"
+                          className="input input-bordered w-full"
                           placeholder={media.media_type === 'video' ? 'YouTube/Twitch/TikTok/direct video URL' : 'Image URL'}
                           value={media.media_url}
                           onChange={(e) => updateMedia(index, { media_url: e.target.value, media_object_key: undefined })}
@@ -630,7 +658,51 @@ export default function AdminGalleryPage() {
                       )}
 
                       {media.media_url && media.media_type === 'video' && (
-                        <p className="text-xs opacity-70 break-all">Video URL: {media.media_url}</p>
+                        <div className="rounded-lg overflow-hidden bg-base-100 aspect-video flex items-center justify-center">
+                          {(() => {
+                            // YouTube video
+                            const ytMatch = media.media_url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/)
+                            if (ytMatch) {
+                              return <iframe
+                                src={`https://www.youtube.com/embed/${ytMatch[1]}?rel=0`}
+                                className="w-full h-full"
+                                allowFullScreen
+                                title={`Media Preview ${index + 1}`}
+                              />
+                            }
+                            
+                            // Twitch video
+                            const twitchMatch = media.media_url.match(/twitch\.tv\/videos\/(\d+)/)
+                            if (twitchMatch) {
+                              const host = typeof window !== 'undefined' ? window.location.hostname : 'localhost'
+                              return <iframe
+                                src={`https://player.twitch.tv/?video=${twitchMatch[1]}&parent=${host}`}
+                                className="w-full h-full"
+                                allowFullScreen
+                                title={`Media Preview ${index + 1}`}
+                              />
+                            }
+                            
+                            // TikTok video (player/v1 format)
+                            const tiktokMatch = media.media_url.match(/(?:tiktok\.com\/.*?\/)?(?:video\/)?(\d+)/)
+                            if (tiktokMatch && media.media_url.includes('tiktok')) {
+                              return <iframe
+                                src={`https://www.tiktok.com/player/v1/${tiktokMatch[1]}`}
+                                className="w-full h-full"
+                                allowFullScreen
+                                title={`Media Preview ${index + 1}`}
+                              />
+                            }
+                            
+                            // Direct video file (HTML5 video)
+                            return <video
+                              src={media.media_url}
+                              controls
+                              className="w-full h-full object-contain"
+                              title={`Media Preview ${index + 1}`}
+                            />
+                          })()}
+                        </div>
                       )}
                     </div>
                   </div>
@@ -661,39 +733,37 @@ export default function AdminGalleryPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text font-semibold">Category</span>
-                  </label>
-                  <select
-                    className="select select-bordered"
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  >
-                    <option value="artwork">Artwork</option>
-                    <option value="illustration">Illustration</option>
-                    <option value="fanart">Fan Art</option>
-                    <option value="photo">Photo</option>
-                    <option value="video">Video</option>
-                    <option value="3d">3D Model</option>
-                    <option value="other">Other</option>
-                  </select>
-                </div>
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text font-semibold">Category</span>
+                </label>
+                <select
+                  className="select select-bordered w-full"
+                  value={formData.category}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                >
+                  <option value="artwork">Artwork</option>
+                  <option value="illustration">Illustration</option>
+                  <option value="fanart">Fan Art</option>
+                  <option value="photo">Photo</option>
+                  <option value="video">Video</option>
+                  <option value="3d">3D Model</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
 
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text font-semibold">Artist Name</span>
-                  </label>
-                  <input
-                    type="text"
-                    className="input input-bordered"
-                    placeholder="Artist name"
-                    value={formData.artist_name}
-                    onChange={(e) => setFormData({ ...formData, artist_name: e.target.value })}
-                    required
-                  />
-                </div>
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text font-semibold">Artist Name</span>
+                </label>
+                <input
+                  type="text"
+                  className="input input-bordered w-full"
+                  placeholder="Artist name"
+                  value={formData.artist_name}
+                  onChange={(e) => setFormData({ ...formData, artist_name: e.target.value })}
+                  required
+                />
               </div>
 
               <div className="form-control">

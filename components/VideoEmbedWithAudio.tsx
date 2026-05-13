@@ -76,22 +76,39 @@ export const VideoEmbedWithAudio = ({
 
   useEffect(() => {
     const onMessage = (event: MessageEvent) => {
-      if (platformRef.current !== 'youtube') return;
       if (event.source !== iframeRef.current?.contentWindow) return;
 
-      if (typeof event.data !== 'string') return;
+      // Handle YouTube state change messages
+      if (platformRef.current === 'youtube') {
+        if (typeof event.data !== 'string') return;
 
-      try {
-        const data = JSON.parse(event.data) as { event?: string; info?: number };
-        if (data.event !== 'onStateChange') return;
+        try {
+          const data = JSON.parse(event.data) as { event?: string; info?: number };
+          if (data.event !== 'onStateChange') return;
 
-        if (data.info === 1) {
+          if (data.info === 1) {
+            setVideoPlaying(true);
+          } else if (data.info === 0 || data.info === 2) {
+            setVideoPlaying(false);
+          }
+        } catch {
+          // Ignore non-JSON player messages.
+        }
+      }
+
+      // Handle TikTok player state change messages
+      if (platformRef.current === 'tiktok') {
+        if (typeof event.data !== 'object' || !event.data) return;
+
+        const data = event.data as { type?: string; value?: number; 'x-tiktok-player'?: boolean };
+        if (data.type !== 'onStateChange' || !data['x-tiktok-player']) return;
+
+        // TikTok state codes: -1 (init), 0 (ended), 1 (playing), 2 (paused), 3 (buffering)
+        if (data.value === 1 || data.value === 3) {
           setVideoPlaying(true);
-        } else if (data.info === 0 || data.info === 2) {
+        } else if (data.value === 0 || data.value === 2 || data.value === -1) {
           setVideoPlaying(false);
         }
-      } catch {
-        // Ignore non-JSON player messages.
       }
     };
 
@@ -117,10 +134,13 @@ export const VideoEmbedWithAudio = ({
         '*'
       );
     }
+    // TikTok player/v1 sends state messages automatically, no initialization needed
   };
 
   const handlePointerDown = () => {
-    if (platformRef.current !== 'youtube') {
+    // Assume user intends to play non-YouTube/TikTok embeds on interaction.
+    // YouTube and TikTok handle their own state via postMessage events.
+    if (platformRef.current !== 'youtube' && platformRef.current !== 'tiktok') {
       setVideoPlaying(true);
     }
   };

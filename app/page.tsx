@@ -147,7 +147,7 @@ export default function Home() {
               Welcome to StarMyriad
             </h1>
             <p className="text-xl mb-8">
-              Your gateway to the vibrant world of VTubers and talented artists.
+              Your gateway to the vibrant world of Malaysian VTubers and talented artists.
               Discover amazing content creators, explore stunning artwork, and commission your dream projects.
             </p>
           </div>

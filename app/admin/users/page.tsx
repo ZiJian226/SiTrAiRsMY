@@ -413,7 +413,7 @@ export default function AdminUsersPage() {
               {editingUser ? 'Edit User' : 'Create New User'}
             </h3>
             
-            <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="space-y-6 two-column-form-layout">
+            <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="">
               <FormSection title="Account Information" description="Basic user account details">
                 <FormField 
                   label="Email" 

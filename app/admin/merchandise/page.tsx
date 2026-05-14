@@ -416,14 +416,14 @@ export default function AdminMerchandisePage() {
               {editingItem ? 'Edit Product' : 'Create New Product'}
             </h3>
             
-            <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="space-y-4 two-column-form-layout">
+            <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="two-column-form-layout">
               <div className="form-control">
                 <label className="label">
                   <span className="label-text font-semibold">Product Name</span>
                 </label>
                 <input
                   type="text"
-                  className="input input-bordered"
+                  className="input input-bordered w-full"
                   placeholder="Enter product name"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -436,7 +436,7 @@ export default function AdminMerchandisePage() {
                   <span className="label-text font-semibold">Description</span>
                 </label>
                 <textarea
-                  className="textarea textarea-bordered h-24"
+                  className="textarea textarea-bordered h-24 w-full col-span-2"
                   placeholder="Describe the product..."
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -444,55 +444,53 @@ export default function AdminMerchandisePage() {
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text font-semibold">Price ($)</span>
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    className="input input-bordered"
-                    placeholder="0.00"
-                    value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
-                    required
-                  />
-                </div>
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text font-semibold">Price ($)</span>
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  className="input input-bordered w-full"
+                  placeholder="0.00"
+                  value={formData.price}
+                  onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
+                  required
+                />
+              </div>
 
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text font-semibold">Stock</span>
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    className="input input-bordered"
-                    placeholder="0"
-                    value={formData.stock}
-                    onChange={(e) => setFormData({ ...formData, stock: parseInt(e.target.value) || 0 })}
-                    required
-                  />
-                </div>
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text font-semibold">Stock</span>
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  className="input input-bordered w-full"
+                  placeholder="0"
+                  value={formData.stock}
+                  onChange={(e) => setFormData({ ...formData, stock: parseInt(e.target.value) || 0 })}
+                  required
+                />
+              </div>
 
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text font-semibold">Category</span>
-                  </label>
-                  <select
-                    className="select select-bordered"
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  >
-                    <option value="collectibles">Collectibles</option>
-                    <option value="apparel">Apparel</option>
-                    <option value="stickers">Stickers</option>
-                    <option value="accessories">Accessories</option>
-                    <option value="digital">Digital</option>
-                    <option value="other">Other</option>
-                  </select>
-                </div>
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text font-semibold">Category</span>
+                </label>
+                <select
+                  className="select select-bordered w-full"
+                  value={formData.category}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                >
+                  <option value="collectibles">Collectibles</option>
+                  <option value="apparel">Apparel</option>
+                  <option value="stickers">Stickers</option>
+                  <option value="accessories">Accessories</option>
+                  <option value="digital">Digital</option>
+                  <option value="other">Other</option>
+                </select>
               </div>
 
               <div className="form-control">
@@ -501,7 +499,7 @@ export default function AdminMerchandisePage() {
                 </label>
                 <input
                   type="text"
-                  className="input input-bordered"
+                  className="input input-bordered w-full"
                   placeholder="Which talent is this for?"
                   value={formData.talent_name}
                   onChange={(e) => setFormData({ ...formData, talent_name: e.target.value })}
@@ -515,18 +513,18 @@ export default function AdminMerchandisePage() {
                 </label>
                 <input
                   type="text"
-                  className="input input-bordered"
+                  className="input input-bordered w-full"
                   placeholder="https://example.com/image.jpg or /api/media/merchandise/..."
                   value={formData.image_url}
                   onChange={(e) => setFormData({ ...formData, image_url: e.target.value, image_object_key: '' })}
                   disabled={imageUploading}
                 />
                 <label className="label">
-                  <span className="label-text-alt opacity-70">Or upload image to Oracle Object Storage</span>
+                  <span className="label-text-alt opacity-70 block w-full max-w-full whitespace-normal break-words leading-snug">Or upload image to Oracle Object Storage</span>
                 </label>
                 <input
                   type="file"
-                  className="file-input file-input-bordered"
+                  className="file-input file-input-bordered w-full"
                   accept="image/*"
                   disabled={imageUploading}
                   onChange={(e) => {

@@ -164,6 +164,7 @@ async function getProfilesByRole(role: 'talent' | 'staff'): Promise<Talent[]> {
   const supportsVtuberModel = supportsTalentProfiles && (await hasColumn('talent_profiles', 'vtuber_model_url'));
   const supportsProfilePicture = supportsTalentProfiles && (await hasColumn('talent_profiles', 'profile_picture_url'));
   const supportsPortraitPicture = supportsTalentProfiles && (await hasColumn('talent_profiles', 'portrait_picture_url'));
+  const supportsSupportUrl = supportsTalentProfiles && (await hasColumn('talent_profiles', 'support_url'));
   const supportsPortraitPictures = supportsTalentProfiles && (await hasColumn('talent_profiles', 'portrait_pictures'));
   const supportsTalentFeatured = supportsTalentProfiles && (await hasColumn('talent_profiles', 'featured'));
   const supportsTalentDob = supportsTalentProfiles && (await hasColumn('talent_profiles', 'date_of_birth'));
@@ -189,6 +190,7 @@ async function getProfilesByRole(role: 'talent' | 'staff'): Promise<Talent[]> {
     vtuber_model_url: string | null;
     profile_picture_url: string | null;
     portrait_picture_url: string | null;
+    support_url?: string | null;
     portrait_pictures: unknown;
     featured: boolean | null;
     date_of_birth: string | null;
@@ -215,6 +217,7 @@ async function getProfilesByRole(role: 'talent' | 'staff'): Promise<Talent[]> {
       ${supportsVtuberModel ? 'tp.vtuber_model_url' : 'NULL::text AS vtuber_model_url'},
       ${supportsProfilePicture ? 'tp.profile_picture_url' : 'NULL::text AS profile_picture_url'},
       ${supportsPortraitPicture ? 'tp.portrait_picture_url' : 'NULL::text AS portrait_picture_url'},
+      ${supportsSupportUrl ? 'tp.support_url' : 'NULL::text AS support_url'},
       ${supportsPortraitPictures ? 'tp.portrait_pictures' : 'NULL::jsonb AS portrait_pictures'},
       ${supportsTalentFeatured ? 'tp.featured' : 'false AS featured'},
       ${supportsTalentDob ? 'tp.date_of_birth' : 'NULL::date AS date_of_birth'},
@@ -245,6 +248,7 @@ async function getProfilesByRole(role: 'talent' | 'staff'): Promise<Talent[]> {
       NULL::text AS vtuber_model_url,
       NULL::text AS profile_picture_url,
       NULL::text AS portrait_picture_url,
+      NULL::text AS support_url,
       NULL::jsonb AS portrait_pictures,
       false AS featured,
       NULL::date AS date_of_birth,
@@ -274,6 +278,8 @@ async function getProfilesByRole(role: 'talent' | 'staff'): Promise<Talent[]> {
     const tiktok = normalizeOptionalString(social.tiktok) || normalizeOptionalString(social.tiktokUrl);
     const twitch = normalizeOptionalString(social.twitch) || normalizeOptionalString(social.twitchUrl);
     const youtube = normalizeOptionalString(social.youtube) || normalizeOptionalString(social.youtubeUrl);
+    const instagram = normalizeOptionalString(social.instagram) || normalizeOptionalString(social.instagramUrl);
+    const xUrl = normalizeOptionalString(social.x) || normalizeOptionalString(social.twitter) || normalizeOptionalString(social.xUrl) || normalizeOptionalString(social.twitterUrl);
 
     const portraitPictures = normalizeProfileImages(row.portrait_pictures);
 
@@ -287,6 +293,8 @@ async function getProfilesByRole(role: 'talent' | 'staff'): Promise<Talent[]> {
       tiktokUrl: tiktok,
       twitchUrl: twitch,
       youtubeUrl: youtube,
+      instagramUrl: instagram,
+      xUrl,
       featuredVideoUrl: normalizeOptionalString(row.featured_video_url),
       featured: Boolean(row.featured),
       characterInfo: {
@@ -302,6 +310,7 @@ async function getProfilesByRole(role: 'talent' | 'staff'): Promise<Talent[]> {
       vtuberModelUrl: row.vtuber_model_url || undefined,
       profilePictureUrl: row.profile_picture_url || undefined,
       portraitPictureUrl: row.portrait_picture_url || undefined,
+      supportUrl: row.support_url || undefined,
       portraitPictures: portraitPictures.length > 0 ? portraitPictures : undefined,
     };
   });
@@ -447,6 +456,7 @@ export async function getArtists(): Promise<ArtistProfile[]> {
 
     return {
       id: row.id,
+      artistProfileId: row.artist_profile_id || undefined,
       name: row.full_name || 'Unnamed Artist',
       description: row.bio || 'Artist profile is being updated.',
       avatar: row.avatar_url || DEFAULT_AVATAR,

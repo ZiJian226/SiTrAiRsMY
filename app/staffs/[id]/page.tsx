@@ -161,6 +161,11 @@ export default async function StaffProfilePage({ params }: { params: Promise<{ i
       : [];
   const portraitOrProfileImage = portraitPictures[0]?.url || vtuber.profilePictureUrl || vtuber.avatar;
   const profilePictureImage = vtuber.profilePictureUrl || vtuber.avatar;
+  const socialButtons = [
+    vtuber.supportUrl ? { label: 'Support', href: vtuber.supportUrl, className: 'btn-primary' } : null,
+    vtuber.instagramUrl ? { label: 'Instagram', href: vtuber.instagramUrl, className: 'btn-secondary' } : null,
+    vtuber.xUrl ? { label: 'X', href: vtuber.xUrl, className: 'btn-outline' } : null,
+  ].filter(Boolean) as Array<{ label: string; href: string; className: string }>;
   const talentTags = toStringArray(vtuber.tags);
   const talentPortfolio = toStringArray(vtuber.portfolio);
   const talentCharacterInfo = vtuber.characterInfo && typeof vtuber.characterInfo === 'object' ? vtuber.characterInfo : undefined;
@@ -302,6 +307,15 @@ export default async function StaffProfilePage({ params }: { params: Promise<{ i
                   <div className="md:col-span-2 flex flex-col justify-center">
                     <h1 className="text-5xl font-bold text-primary mb-3">{vtuber.name}</h1>
                     <p className="text-lg opacity-90">{vtuber.description}</p>
+                    {socialButtons.length > 0 && (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {socialButtons.map((button) => (
+                          <a key={button.label} href={button.href} target="_blank" rel="noopener noreferrer" className={`btn btn-sm ${button.className}`}>
+                            {button.label === 'Support' ? '💖 Support' : button.label}
+                          </a>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

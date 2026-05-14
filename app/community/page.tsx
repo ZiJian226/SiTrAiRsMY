@@ -29,6 +29,7 @@ export default function CommunityPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: formData.name,
+          email: `${formData.discordName.replace(/\s+/g, '.')}@starweaver.local`,
           discordName: formData.discordName,
           supportingInfo: formData.supportingInfo,
           isMalaysian: formData.isMalaysian,
@@ -44,7 +45,7 @@ export default function CommunityPage() {
       setSubmitted(true);
       setTimeout(() => {
         setSubmitted(false);
-        setFormData({ name: "", discordName: "", supportingInfo: "", isMalaysian: true });
+          setFormData({ name: "", discordName: "", supportingInfo: "", isMalaysian: true });
       }, 3000);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');

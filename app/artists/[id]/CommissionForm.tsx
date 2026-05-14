@@ -20,8 +20,10 @@ export default function CommissionForm({ artist }: { artist: Artist }) {
     setSubmitting(true);
     setFormError(null);
 
+    const artistProfileId = artist.artistProfileId || artist.id;
+
     try {
-      const response = await fetch(`/api/artists/${artist.id}/commissions`, {
+      const response = await fetch(`/api/artists/${artistProfileId}/commissions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -69,7 +71,7 @@ export default function CommissionForm({ artist }: { artist: Artist }) {
             <span>Your commission request has been submitted!</span>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="two-column-form-layout">
             {formError && (
               <div className="alert alert-error">
                 <span>{formError}</span>
@@ -83,7 +85,7 @@ export default function CommissionForm({ artist }: { artist: Artist }) {
                 type="text"
                 name="name"
                 placeholder="Enter your name"
-                className="input input-bordered input-secondary"
+                className="input input-bordered input-secondary w-full"
                 value={formData.name}
                 onChange={handleChange}
                 required
@@ -98,7 +100,7 @@ export default function CommissionForm({ artist }: { artist: Artist }) {
                 type="email"
                 name="email"
                 placeholder="your@email.com"
-                className="input input-bordered input-secondary"
+                className="input input-bordered input-secondary w-full"
                 value={formData.email}
                 onChange={handleChange}
                 required
@@ -112,7 +114,7 @@ export default function CommissionForm({ artist }: { artist: Artist }) {
               <textarea
                 name="description"
                 placeholder="Describe your commission request in detail..."
-                className="textarea textarea-bordered textarea-secondary h-24"
+                className="textarea textarea-bordered textarea-secondary h-24 w-full"
                 value={formData.description}
                 onChange={handleChange}
                 required
@@ -127,7 +129,7 @@ export default function CommissionForm({ artist }: { artist: Artist }) {
                 type="text"
                 name="budget"
                 placeholder="e.g., $200"
-                className="input input-bordered input-secondary"
+                className="input input-bordered input-secondary w-full"
                 value={formData.budget}
                 onChange={handleChange}
                 required
@@ -141,25 +143,28 @@ export default function CommissionForm({ artist }: { artist: Artist }) {
               <input
                 type="date"
                 name="deadline"
-                className="input input-bordered input-secondary"
+                className="input input-bordered input-secondary w-full"
                 value={formData.deadline}
                 onChange={handleChange}
               />
             </div>
 
-            <button type="submit" className="btn btn-secondary w-full" disabled={submitting}>
-              {submitting ? 'Submitting...' : 'Submit Request'}
-            </button>
+            <div className="form-control">
+              <label className="label" />
+              <div className="flex gap-3 w-full">
+                <a
+                  href={`mailto:${artist.contactEmail}`}
+                  className="btn btn-outline btn-secondary flex-1"
+                >
+                  Email Directly
+                </a>
+                <button type="submit" className="btn btn-secondary flex-1" disabled={submitting}>
+                  {submitting ? 'Submitting...' : 'Submit Request'}
+                </button>
+              </div>
+            </div>
           </form>
         )}
-
-        <div className="divider">OR</div>
-        <a
-          href={`mailto:${artist.contactEmail}`}
-          className="btn btn-outline btn-secondary w-full"
-        >
-          Email Directly
-        </a>
       </div>
     </div>
   );

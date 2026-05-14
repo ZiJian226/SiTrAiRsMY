@@ -560,14 +560,14 @@ export default function AdminGalleryPage() {
               {editingItem ? 'Edit Gallery Item' : 'Upload New Item'}
             </h3>
             
-            <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="space-y-4 two-column-form-layout">
+            <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="two-column-form-layout">
               <div className="form-control">
                 <label className="label">
                   <span className="label-text font-semibold">Title</span>
                 </label>
                 <input
                   type="text"
-                  className="input input-bordered"
+                  className="input input-bordered w-full"
                   placeholder="Enter item title"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}

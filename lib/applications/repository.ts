@@ -63,10 +63,10 @@ export async function createCareerApplication(
  */
 export async function createCommunityApplication(
   name: string,
+  email: string,
   discordName: string,
   supportingInfo: string,
   isMalaysian: boolean = true,
-  email?: string | null,
   country: string = 'Malaysia'
 ): Promise<CommunityApplication> {
   try {
@@ -81,7 +81,7 @@ export async function createCommunityApplication(
       `INSERT INTO community_applications (name, email, discord_name, is_malaysian, country, supporting_info, status)
        VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING *`,
-      [name, email || null, discordName, isMalaysian, country, supportingInfo, 'pending']
+      [name, email, discordName, isMalaysian, country, supportingInfo, 'pending']
     );
 
     if (!result.rows || result.rows.length === 0) {

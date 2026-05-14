@@ -22,10 +22,16 @@ export interface CommissionRequestRecord {
 async function getArtistProfileById(artistProfileId: string) {
   const result = await dbQuery(
     `
-    SELECT p.id, p.user_id, p.full_name, p.role, COALESCE(ap.commissions_open, false) AS commissions_open
+    SELECT
+      p.id AS profile_id,
+      p.user_id,
+      p.full_name,
+      p.role,
+      ap.id AS artist_profile_id,
+      COALESCE(ap.commissions_open, false) AS commissions_open
     FROM profiles p
     LEFT JOIN artist_profiles ap ON ap.user_id = p.user_id
-    WHERE p.id = $1
+    WHERE (p.id = $1 OR ap.id = $1)
       AND p.role = 'artist'
     LIMIT 1
     `,
@@ -34,10 +40,11 @@ async function getArtistProfileById(artistProfileId: string) {
 
   return result.rows[0] as
     | {
-        id: string;
+        profile_id: string;
         user_id: string;
         full_name: string | null;
         role: 'artist';
+        artist_profile_id: string | null;
         commissions_open: boolean;
       }
     | undefined;
@@ -72,6 +79,29 @@ export async function createCommissionRequest(input: {
     throw new Error('Artist not found');
   }
 
+  // If no artist_profile exists, create one automatically
+  let resolvedArtistProfileId = artist.artist_profile_id;
+  if (!resolvedArtistProfileId) {
+    try {
+      const createResult = await dbQuery(
+        `
+        INSERT INTO artist_profiles (user_id, commissions_open)
+        VALUES ($1, true)
+        ON CONFLICT (user_id) DO UPDATE SET commissions_open = true
+        RETURNING id
+        `,
+        [artist.user_id],
+      );
+      resolvedArtistProfileId = createResult.rows[0]?.id;
+    } catch (err) {
+      throw new Error('Failed to create artist profile for commissions');
+    }
+  }
+
+  if (!resolvedArtistProfileId) {
+    throw new Error('This artist does not have a valid profile for commissions');
+  }
+
   if (!artist.commissions_open) {
     throw new Error('This artist is currently not accepting commissions');
   }
@@ -91,7 +121,7 @@ export async function createCommissionRequest(input: {
     RETURNING *
     `,
     [
-      input.artistProfileId,
+      resolvedArtistProfileId,
       input.clientName,
       input.clientEmail,
       input.description,

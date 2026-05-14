@@ -31,6 +31,7 @@ export interface TalentProfile {
   portrait_picture_url: string | null
   portrait_picture_object_key: string | null
   portrait_pictures: ProfileImage[]
+  support_url: string | null
   featured_video_url: string | null
   featured: boolean
   social_links: Record<string, string | null>
@@ -149,6 +150,7 @@ export async function getTalentProfileByUserId(userId: string): Promise<TalentPr
   const supportsVtuberModelColumn = await hasColumn('talent_profiles', 'vtuber_model_url')
   const supportsProfilePicture = await hasColumn('talent_profiles', 'profile_picture_url')
   const supportsPortraitPicture = await hasColumn('talent_profiles', 'portrait_picture_url')
+  const supportsSupportUrl = await hasColumn('talent_profiles', 'support_url')
   const supportsPortraitPictures = await hasColumn('talent_profiles', 'portrait_pictures')
   const supportsFeaturedVideo = await hasColumn('talent_profiles', 'featured_video_url')
   const supportsFeatured = await hasColumn('talent_profiles', 'featured')
@@ -163,6 +165,7 @@ export async function getTalentProfileByUserId(userId: string): Promise<TalentPr
       ${supportsProfilePicture ? 'profile_picture_url' : 'NULL::text AS profile_picture_url'},
       ${supportsProfilePicture ? 'profile_picture_object_key' : 'NULL::text AS profile_picture_object_key'},
       ${supportsPortraitPicture ? 'portrait_picture_url' : 'NULL::text AS portrait_picture_url'},
+      ${supportsSupportUrl ? 'support_url' : 'NULL::text AS support_url'},
       ${supportsPortraitPicture ? 'portrait_picture_object_key' : 'NULL::text AS portrait_picture_object_key'},
       ${supportsPortraitPictures ? 'portrait_pictures' : "'[]'::jsonb AS portrait_pictures"},
       ${supportsFeaturedVideo ? 'featured_video_url' : 'NULL::text AS featured_video_url'},
@@ -180,6 +183,7 @@ export async function getTalentProfileByUserId(userId: string): Promise<TalentPr
   const portraitPictures = normalizeProfileImages(row.portrait_pictures)
   return {
     ...row,
+    support_url: row.support_url || null,
     portrait_pictures: portraitPictures.length > 0
       ? portraitPictures
       : row.portrait_picture_url
@@ -198,7 +202,9 @@ export async function updateTalentProfile(
   const supportsProfilePicture = await hasColumn('talent_profiles', 'profile_picture_url')
   const supportsPortraitPicture = await hasColumn('talent_profiles', 'portrait_picture_url')
   await ensureColumn('talent_profiles', "portrait_pictures JSONB DEFAULT '[]'::jsonb", 'portrait_pictures')
+  await ensureColumn('talent_profiles', "support_url TEXT", 'support_url')
   const supportsPortraitPictures = await hasColumn('talent_profiles', 'portrait_pictures')
+  const supportsSupportUrl = await hasColumn('talent_profiles', 'support_url')
   const supportsFeaturedVideo = await hasColumn('talent_profiles', 'featured_video_url')
   const supportsFeatured = await hasColumn('talent_profiles', 'featured')
   const updates: string[] = []
@@ -277,6 +283,10 @@ export async function updateTalentProfile(
     updates.push(`portrait_picture_object_key = $${paramCount++}`)
     values.push(data.portrait_picture_object_key)
   }
+  if (data.support_url !== undefined && supportsSupportUrl) {
+    updates.push(`support_url = $${paramCount++}`)
+    values.push(data.support_url)
+  }
   if (data.portrait_pictures !== undefined && supportsPortraitPictures) {
     updates.push(`portrait_pictures = $${paramCount++}::jsonb`)
     values.push(JSON.stringify(normalizeProfileImages(data.portrait_pictures)))
@@ -310,11 +320,12 @@ export async function updateTalentProfile(
       avatar_url, avatar_object_key, date_of_birth, 
        height, species, likes, dislikes, tags, portfolio_links,
        ${supportsVtuberModelColumn ? 'vtuber_model_url' : 'NULL::text AS vtuber_model_url'},
-       ${supportsProfilePicture ? 'profile_picture_url' : 'NULL::text AS profile_picture_url'},
-       ${supportsProfilePicture ? 'profile_picture_object_key' : 'NULL::text AS profile_picture_object_key'},
-       ${supportsPortraitPicture ? 'portrait_picture_url' : 'NULL::text AS portrait_picture_url'},
-       ${supportsPortraitPicture ? 'portrait_picture_object_key' : 'NULL::text AS portrait_picture_object_key'},
-       ${supportsPortraitPictures ? 'portrait_pictures' : "'[]'::jsonb AS portrait_pictures"},
+      ${supportsProfilePicture ? 'profile_picture_url' : 'NULL::text AS profile_picture_url'},
+      ${supportsProfilePicture ? 'profile_picture_object_key' : 'NULL::text AS profile_picture_object_key'},
+      ${supportsPortraitPicture ? 'portrait_picture_url' : 'NULL::text AS portrait_picture_url'},
+      ${supportsSupportUrl ? 'support_url' : 'NULL::text AS support_url'},
+      ${supportsPortraitPicture ? 'portrait_picture_object_key' : 'NULL::text AS portrait_picture_object_key'},
+      ${supportsPortraitPictures ? 'portrait_pictures' : "'[]'::jsonb AS portrait_pictures"},
        ${supportsFeaturedVideo ? 'featured_video_url' : 'NULL::text AS featured_video_url'},
        ${supportsFeatured ? 'featured' : 'false AS featured'},
        social_links, is_published, created_at, updated_at`,

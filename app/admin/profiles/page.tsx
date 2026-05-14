@@ -30,6 +30,8 @@ interface Profile {
   youtubeUrl?: string
   twitchUrl?: string
   tiktokUrl?: string
+  instagramUrl?: string
+  xUrl?: string
   featuredVideoUrl?: string
   featured?: boolean
   profilePictureUrl?: string
@@ -46,7 +48,7 @@ interface Profile {
   contactEmail?: string
   websiteUrl?: string
   twitterUrl?: string
-  instagramUrl?: string
+  supportUrl?: string
   // Visibility toggles
   showCharacterInfo?: boolean
   showSocialLinks?: boolean
@@ -212,6 +214,9 @@ export default function AdminProfilesPage() {
       portraitPictures: nextPortraitPictures,
       portraitPictureUrl: nextPortraitPictures[0]?.url || profileForEdit.portraitPictureUrl || '',
       portraitPictureObjectKey: nextPortraitPictures[0]?.object_key || profileForEdit.portraitPictureObjectKey || '',
+      supportUrl: profileForEdit.supportUrl || profileForEdit.websiteUrl || '',
+      instagramUrl: profileForEdit.instagramUrl || '',
+      xUrl: profileForEdit.xUrl || profileForEdit.twitterUrl || '',
     })
 
     // Reset input helpers
@@ -728,51 +733,52 @@ export default function AdminProfilesPage() {
                     <div className="card-body">
                       <h4 className="card-title text-primary">📋 Profile Header</h4>
                       
-                      <div className="form-control">
-                        <label className="label">
-                          <span className="label-text font-semibold">Full Name</span>
-                        </label>
-                        <input
-                          type="text"
-                          className="input input-bordered"
-                          value={editForm.full_name}
-                          onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })}
-                          disabled={saving}
-                        />
-                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="form-control">
+                          <label className="label">
+                            <span className="label-text font-semibold">Full Name</span>
+                          </label>
+                          <input
+                            type="text"
+                            className="input input-bordered w-full"
+                            value={editForm.full_name}
+                            onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })}
+                            disabled={saving}
+                          />
+                        </div>
 
-                      <div className="form-control">
-                        <label className="label">
-                          <span className="label-text font-semibold">Email</span>
-                        </label>
-                        <input
-                          type="email"
-                          className="input input-bordered"
-                          value={editForm.email}
-                          onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
-                          disabled={saving}
-                        />
-                      </div>
+                        <div className="form-control">
+                          <label className="label">
+                            <span className="label-text font-semibold">Email</span>
+                          </label>
+                          <input
+                            type="email"
+                            className="input input-bordered w-full"
+                            value={editForm.email}
+                            onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                            disabled={saving}
+                          />
+                        </div>
 
-                      {/* Avatar */}
-                      <div className="form-control">
-                        <label className="label">
-                          <span className="label-text font-semibold">Avatar</span>
-                        </label>
-                        <input
-                          type="url"
-                          className="input input-bordered"
-                          placeholder="https://example.com/avatar.jpg or /api/media/users/avatars/..."
-                          value={editForm.avatar_url || ''}
-                          onChange={(e) => setEditForm({ ...editForm, avatar_url: e.target.value, avatar_object_key: '' })}
-                          disabled={saving || imageUploading}
-                        />
-                        <label className="label">
-                          <span className="label-text-alt opacity-70">Or upload avatar to Oracle Object Storage</span>
+                        {/* Avatar */}
+                        <div className="form-control md:col-span-2">
+                          <label className="label">
+                            <span className="label-text font-semibold">Avatar</span>
+                          </label>
+                          <input
+                            type="url"
+                            className="input input-bordered w-full"
+                            placeholder="https://example.com/avatar.jpg or /api/media/users/avatars/..."
+                            value={editForm.avatar_url || ''}
+                            onChange={(e) => setEditForm({ ...editForm, avatar_url: e.target.value, avatar_object_key: '' })}
+                            disabled={saving || imageUploading}
+                          />
+                          <label className="label">
+                          <span className="label-text-alt opacity-70 max-w-xs">Or upload avatar to Oracle Object Storage</span>
                         </label>
                         <input
                           type="file"
-                          className="file-input file-input-bordered"
+                          className="file-input file-input-bordered w-full"
                           accept="image/*"
                           disabled={saving || imageUploading}
                           onChange={(e) => {
@@ -867,12 +873,13 @@ export default function AdminProfilesPage() {
                           <span className="label-text-alt">{editForm.bio.length}/200</span>
                         </label>
                         <textarea
-                          className="textarea textarea-bordered h-24"
+                          className="textarea textarea-bordered h-24 w-full"
                           value={editForm.bio}
                           onChange={(e) => setEditForm({ ...editForm, bio: e.target.value.slice(0, 200) })}
                           disabled={saving}
                           maxLength={200}
                         />
+                      </div>
                       </div>
 
                       {(editForm.role === 'talent' || editForm.role === 'staff' || editForm.role === 'artist') && (
@@ -893,21 +900,23 @@ export default function AdminProfilesPage() {
                         </div>
                       )}
 
-                      <div className="form-control">
-                        <label className="label">
-                          <span className="label-text font-semibold">Role</span>
-                        </label>
-                        <select
-                          className="select select-bordered"
-                          value={editForm.role}
-                          onChange={(e) => setEditForm({ ...editForm, role: e.target.value as UserRole })}
-                          disabled={saving}
-                        >
-                          <option value="admin">Admin</option>
-                          <option value="talent">Talent</option>
-                          <option value="staff">Staff</option>
-                          <option value="artist">Artist</option>
-                        </select>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="form-control">
+                          <label className="label">
+                            <span className="label-text font-semibold">Role</span>
+                          </label>
+                          <select
+                            className="select select-bordered w-full"
+                            value={editForm.role}
+                            onChange={(e) => setEditForm({ ...editForm, role: e.target.value as UserRole })}
+                            disabled={saving}
+                          >
+                            <option value="admin">Admin</option>
+                            <option value="talent">Talent</option>
+                            <option value="staff">Staff</option>
+                            <option value="artist">Artist</option>
+                          </select>
+                        </div>
                       </div>
 
                       {/* Talent: Tags */}
@@ -1144,6 +1153,51 @@ export default function AdminProfilesPage() {
                                 onChange={(e) => setEditForm({ ...editForm, tiktokUrl: e.target.value })}
                                 disabled={saving}
                               />
+                            </div>
+
+                            <div className="form-control">
+                              <label className="label">
+                                <span className="label-text font-semibold">📷 Instagram URL</span>
+                              </label>
+                              <input
+                                type="url"
+                                className="input input-bordered"
+                                placeholder="https://instagram.com/yourname"
+                                value={editForm.instagramUrl || ''}
+                                onChange={(e) => setEditForm({ ...editForm, instagramUrl: e.target.value })}
+                                disabled={saving}
+                              />
+                            </div>
+
+                            <div className="form-control md:col-span-2">
+                              <label className="label">
+                                <span className="label-text font-semibold">❌ X URL</span>
+                              </label>
+                              <input
+                                type="url"
+                                className="input input-bordered"
+                                placeholder="https://x.com/yourname"
+                                value={editForm.xUrl || ''}
+                                onChange={(e) => setEditForm({ ...editForm, xUrl: e.target.value })}
+                                disabled={saving}
+                              />
+                            </div>
+
+                            <div className="form-control">
+                              <label className="label">
+                                <span className="label-text font-semibold">💖 Support Link</span>
+                              </label>
+                              <input
+                                type="url"
+                                className="input input-bordered"
+                                placeholder="https://ko-fi.com/yourname or https://kofi.com/..."
+                                value={editForm.supportUrl || ''}
+                                onChange={(e) => setEditForm({ ...editForm, supportUrl: e.target.value })}
+                                disabled={saving}
+                              />
+                              <label className="label">
+                                <span className="label-text text-xs opacity-70">Optional: Ko-fi / OnlyFans / Support link</span>
+                              </label>
                             </div>
                           </div>
                         )}

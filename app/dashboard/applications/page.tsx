@@ -244,7 +244,9 @@ export default function ApplicationsPage() {
                           <div className="flex justify-between items-start">
                             <div>
                               <p className="font-semibold">{app.name}</p>
-                              <p className="text-sm opacity-70">{app.email}</p>
+                              {activeTab === "career" && (
+                                <p className="text-sm opacity-70">{app.email}</p>
+                              )}
                               {activeTab === "career" && (
                                 <p className="text-xs opacity-60 mt-1">
                                   Position: {(app as CareerApplication).position}
@@ -286,13 +288,13 @@ export default function ApplicationsPage() {
                     <div className="divider my-2"></div>
 
                     <div className="space-y-3 text-sm">
-                      <div>
-                        <p className="opacity-70">Email</p>
-                        <p className="font-semibold break-all">{selectedApp.email}</p>
-                      </div>
-
                       {activeTab === "career" ? (
                         <>
+                          <div>
+                            <p className="opacity-70">Email</p>
+                            <p className="font-semibold break-all">{(selectedApp as CareerApplication).email}</p>
+                          </div>
+
                           <div>
                             <p className="opacity-70">Position</p>
                             <p className="font-semibold">{(selectedApp as CareerApplication).position}</p>

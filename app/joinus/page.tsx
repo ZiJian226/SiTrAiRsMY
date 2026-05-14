@@ -230,51 +230,42 @@ export default function JoinUsPage() {
                         <span>{error}</span>
                       </div>
                     )}
-                    <form onSubmit={handleSubmit} className="space-y-5 max-w-10xl mx-auto">
+                    <form onSubmit={handleSubmit} className="two-column-form-layout max-w-10xl mx-auto">
                       <div className="form-control">
-                        <div className="flex flex-col sm:flex-row items-center justify-between gap-10">
-                          <label className="label"><span className="label-text font-semibold">Full Name *</span></label>
-                          <input type="text" name="name" placeholder="Your name" className="input input-bordered max-w-md w-full" value={formData.name} onChange={handleChange} required disabled={loading} />
-                        </div>
+                        <label className="label"><span className="label-text font-semibold">Full Name *</span></label>
+                        <input type="text" name="name" placeholder="Your name" className="input input-bordered max-w-md w-full" value={formData.name} onChange={handleChange} required disabled={loading} />
                       </div>
+
                       <div className="form-control">
-                        <div className="flex flex-col sm:flex-row items-center justify-between gap-10">
-                          <label className="label"><span className="label-text font-semibold">Email Address *</span></label>
-                          <input type="email" name="email" placeholder="your.email@example.com" className="input input-bordered max-w-md w-full" value={formData.email} onChange={handleChange} required disabled={loading} />
-                        </div>
+                        <label className="label"><span className="label-text font-semibold">Email Address *</span></label>
+                        <input type="email" name="email" placeholder="your.email@example.com" className="input input-bordered max-w-md w-full" value={formData.email} onChange={handleChange} required disabled={loading} />
                       </div>
+
                       <div className="form-control">
-                        <div className="flex flex-col sm:flex-row items-center justify-between gap-10">
-                          <label className="label"><span className="label-text font-semibold">Position Applying For *</span></label>
-                          <select name="position" className="select select-bordered max-w-md w-full" value={formData.position} onChange={handleChange} required disabled={loading}>
-                            <option value="">Select a position</option>
-                            {staffPositions.map((pos) => (
-                              <option key={pos.title} value={pos.title}>{pos.title}</option>
-                            ))}
-                            <option value="other">Other</option>
-                          </select>
-                        </div>
+                        <label className="label"><span className="label-text font-semibold">Position Applying For *</span></label>
+                        <select name="position" className="select select-bordered max-w-md w-full" value={formData.position} onChange={handleChange} required disabled={loading}>
+                          <option value="">Select a position</option>
+                          {staffPositions.map((pos) => (
+                            <option key={pos.title} value={pos.title}>{pos.title}</option>
+                          ))}
+                          <option value="other">Other</option>
+                        </select>
                       </div>
+
                       <div className="form-control">
-                        <div className="flex justify-end pr-35">
-                          <label className="label"><span className="label-text-alt opacity-70">Optional but recommended</span></label>
-                        </div>
-                        <div className="flex flex-col sm:flex-row items-center justify-between gap-10">
-                          <label className="label"><span className="label-text font-semibold">LinkedIn / Resume / Portfolio</span></label>
-                          <input type="text" name="portfolio" placeholder="LinkedIn profile, resume link, or portfolio URL" className="input input-bordered max-w-md w-full" value={formData.portfolio} onChange={handleChange} disabled={loading} />
-                        </div>
+                        <label className="label"><span className="label-text-alt opacity-70">Optional but recommended</span></label>
+                        <input type="text" name="portfolio" placeholder="LinkedIn profile, resume link, or portfolio URL" className="input input-bordered max-w-md w-full" value={formData.portfolio} onChange={handleChange} disabled={loading} />
                       </div>
+
                       <div className="form-control">
-                        <div className="flex flex-col sm:flex-row items-center justify-between gap-10">
-                          <label className="label"><span className="label-text font-semibold">Why do you want to join StarMy? *</span></label>
-                          <textarea name="description" placeholder="Share your experience, skills, and why you'd be a great fit for StarMy..." className="textarea textarea-bordered h-30 max-w-md w-full" value={formData.description} onChange={handleChange} required disabled={loading} />
-                        </div>
+                        <label className="label"><span className="label-text font-semibold">Why do you want to join StarMy? *</span></label>
+                        <textarea name="description" placeholder="Share your experience, skills, and why you'd be a great fit for StarMy..." className="textarea textarea-bordered h-30 max-w-md w-full" value={formData.description} onChange={handleChange} required disabled={loading} />
                       </div>
+
                       <div className="form-control">
-                        <div className="flex flex-col sm:flex-row items-center justify-between gap-10">
-                          <p className="text-sm opacity-70 text-center sm:text-left">
-                            By submitting this form, you agree to our <Link href="/terms" className="link link-primary">Terms of Service</Link> and <Link href="/privacy" className="link link-primary">Privacy Policy</Link>.
-                          </p>
+                        <label className="label" />
+                        <div className="w-full flex items-center justify-end gap-4">
+                          <p className="text-sm opacity-70 text-left">By submitting this form, you agree to our <Link href="/terms" className="link link-primary">Terms of Service</Link> and <Link href="/privacy" className="link link-primary">Privacy Policy</Link>.</p>
                           <button type="submit" className="btn btn-primary btn-lg whitespace-nowrap" disabled={loading}>
                             {loading ? (
                               <>

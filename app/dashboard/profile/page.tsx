@@ -26,11 +26,14 @@ export default function ProfileEditorPage() {
   const [youtubeUrl, setYoutubeUrl] = useState('')
   const [twitchUrl, setTwitchUrl] = useState('')
   const [tiktokUrl, setTiktokUrl] = useState('')
+  const [instagramUrl, setInstagramUrl] = useState('')
+  const [xUrl, setXUrl] = useState('')
   const [featuredVideoUrl, setFeaturedVideoUrl] = useState('')
   const [vtuberModelUrl, setVtuberModelUrl] = useState('')
   const [fullBodyModelUrl, setFullBodyModelUrl] = useState('')
   const [portraitPictureInput, setPortraitPictureInput] = useState('')
   const [portraitPictures, setPortraitPictures] = useState<ProfileImage[]>([])
+  const [supportUrl, setSupportUrl] = useState('')
   const [dateOfBirth, setDateOfBirth] = useState('')
   const [debutDate, setDebutDate] = useState('')
   const [height, setHeight] = useState('')
@@ -53,7 +56,6 @@ export default function ProfileEditorPage() {
   const [contactEmail, setContactEmail] = useState('')
   const [websiteUrl, setWebsiteUrl] = useState('')
   const [twitterUrl, setTwitterUrl] = useState('')
-  const [instagramUrl, setInstagramUrl] = useState('')
   
   // Visibility toggles
   const [showCharacterInfo, setShowCharacterInfo] = useState(true)
@@ -128,6 +130,12 @@ export default function ProfileEditorPage() {
           twitchUrl?: string | null
           tiktok?: string | null
           tiktokUrl?: string | null
+          instagram?: string | null
+          instagramUrl?: string | null
+          x?: string | null
+          xUrl?: string | null
+          twitter?: string | null
+          twitterUrl?: string | null
         }
         specialty?: string[]
         portfolio_art_images?: ProfileImage[]
@@ -171,6 +179,8 @@ export default function ProfileEditorPage() {
         setYoutubeUrl(socialLinks.youtube || socialLinks.youtubeUrl || '')
         setTwitchUrl(socialLinks.twitch || socialLinks.twitchUrl || '')
         setTiktokUrl(socialLinks.tiktok || socialLinks.tiktokUrl || '')
+        setInstagramUrl(socialLinks.instagram || socialLinks.instagramUrl || '')
+        setXUrl(socialLinks.x || socialLinks.xUrl || socialLinks.twitter || socialLinks.twitterUrl || '')
         setFeaturedVideoUrl(data.featured_video_url || '')
         setLikes(data.likes || [])
         setDislikes(data.dislikes || [])
@@ -183,6 +193,7 @@ export default function ProfileEditorPage() {
             : []
         setPortraitPictures(nextPortraitPictures)
         setFullBodyModelUrl(nextPortraitPictures[0]?.url || data.portrait_picture_url || '')
+        setSupportUrl((data as any).support_url || '')
       }
     } catch (err) {
       console.error('Failed to load profile:', err)
@@ -379,11 +390,18 @@ export default function ProfileEditorPage() {
             portrait_picture_url: portraitPictures[0]?.url || fullBodyModelUrl || null,
             portrait_picture_object_key: portraitPictures[0]?.object_key || null,
             portrait_pictures: portraitPictures,
+            support_url: supportUrl || null,
             featured_video_url: featuredVideoUrl || null,
             social_links: {
               youtube: youtubeUrl || null,
               twitch: twitchUrl || null,
               tiktok: tiktokUrl || null,
+              instagram: instagramUrl || null,
+              instagramUrl: instagramUrl || null,
+              x: xUrl || null,
+              xUrl: xUrl || null,
+              twitter: xUrl || null,
+              twitterUrl: xUrl || null,
             },
           }
 
@@ -765,6 +783,51 @@ export default function ProfileEditorPage() {
                               disabled={saving}
                             />
                           </div>
+
+                          <div className="form-control">
+                            <label className="label">
+                              <span className="label-text font-semibold">📷 Instagram URL</span>
+                            </label>
+                            <input
+                              type="url"
+                              className="input input-bordered"
+                              placeholder="https://instagram.com/yourname"
+                              value={instagramUrl}
+                              onChange={(e) => setInstagramUrl(e.target.value)}
+                              disabled={saving}
+                            />
+                          </div>
+
+                          <div className="form-control md:col-span-2">
+                            <label className="label">
+                              <span className="label-text font-semibold">❌ X URL</span>
+                            </label>
+                            <input
+                              type="url"
+                              className="input input-bordered"
+                              placeholder="https://x.com/yourname"
+                              value={xUrl}
+                              onChange={(e) => setXUrl(e.target.value)}
+                              disabled={saving}
+                            />
+                          </div>
+
+                            <div className="form-control">
+                              <label className="label">
+                                <span className="label-text font-semibold">💖 Support Link</span>
+                              </label>
+                              <input
+                                type="url"
+                                className="input input-bordered"
+                                placeholder="https://ko-fi.com/yourname or https://onlyfans.com/..."
+                                value={supportUrl}
+                                onChange={(e) => setSupportUrl(e.target.value)}
+                                disabled={saving}
+                              />
+                              <label className="label">
+                                <span className="label-text text-xs opacity-70">Optional: Ko-fi / Support link</span>
+                              </label>
+                            </div>
 
                           <div className="form-control md:col-span-2">
                             <label className="label">

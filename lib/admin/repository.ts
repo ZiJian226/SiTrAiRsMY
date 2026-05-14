@@ -111,6 +111,9 @@ type AdminProfileRow = {
   profile_picture_object_key: string | null;
   portrait_picture_url: string | null;
   portrait_picture_object_key: string | null;
+  support_url: string | null;
+  instagram_url: string | null;
+  x_url: string | null;
   featured_video_url: string | null;
   talent_featured: boolean | null;
   artist_featured: boolean | null;
@@ -906,6 +909,7 @@ export async function getAdminProfiles(): Promise<AdminProfile[]> {
   const supportsVtuberModel = await hasColumn('talent_profiles', 'vtuber_model_url');
   const supportsProfilePicture = await hasColumn('talent_profiles', 'profile_picture_url');
   const supportsPortraitPicture = await hasColumn('talent_profiles', 'portrait_picture_url');
+  const supportsSupportUrl = await hasColumn('talent_profiles', 'support_url');
   const supportsPortraitPictures = await hasColumn('talent_profiles', 'portrait_pictures');
   const supportsFeaturedVideo = await hasColumn('talent_profiles', 'featured_video_url');
   const supportsTalentFeatured = await hasColumn('talent_profiles', 'featured');
@@ -940,6 +944,7 @@ export async function getAdminProfiles(): Promise<AdminProfile[]> {
       ${supportsProfilePicture ? 'tp.profile_picture_url' : 'NULL::text AS profile_picture_url'},
       ${supportsProfilePicture ? 'tp.profile_picture_object_key' : 'NULL::text AS profile_picture_object_key'},
       ${supportsPortraitPicture ? 'tp.portrait_picture_url' : 'NULL::text AS portrait_picture_url'},
+      ${supportsSupportUrl ? 'tp.support_url' : 'NULL::text AS support_url'},
       ${supportsPortraitPicture ? 'tp.portrait_picture_object_key' : 'NULL::text AS portrait_picture_object_key'},
       ${supportsPortraitPictures ? 'tp.portrait_pictures' : "'[]'::jsonb AS portrait_pictures"},
       ${supportsFeaturedVideo ? 'tp.featured_video_url' : 'NULL::text AS featured_video_url'},
@@ -1051,6 +1056,20 @@ export async function getAdminProfiles(): Promise<AdminProfile[]> {
       : typeof artistSocial.twitter === 'string'
       ? artistSocial.twitter
       : undefined;
+    const talentInstagramUrl = typeof social.instagram === 'string'
+      ? social.instagram
+      : typeof social.instagramUrl === 'string'
+      ? social.instagramUrl
+      : undefined;
+    const talentXUrl = typeof social.x === 'string'
+      ? social.x
+      : typeof social.twitter === 'string'
+      ? social.twitter
+      : typeof social.xUrl === 'string'
+      ? social.xUrl
+      : typeof social.twitterUrl === 'string'
+      ? social.twitterUrl
+      : undefined;
     const portraitPictures = normalizeProfileImages(row.portrait_pictures);
     const resolvedPortraitPictures = portraitPictures.length > 0
       ? portraitPictures
@@ -1096,14 +1115,16 @@ export async function getAdminProfiles(): Promise<AdminProfile[]> {
       youtubeUrl: typeof social.youtubeUrl === 'string' ? social.youtubeUrl : typeof social.youtube === 'string' ? social.youtube : undefined,
       twitchUrl: typeof social.twitchUrl === 'string' ? social.twitchUrl : typeof social.twitch === 'string' ? social.twitch : undefined,
       tiktokUrl: typeof social.tiktokUrl === 'string' ? social.tiktokUrl : typeof social.tiktok === 'string' ? social.tiktok : undefined,
+      instagramUrl: row.role === 'artist' ? (typeof artistSocial.instagram === 'string' ? artistSocial.instagram : undefined) : talentInstagramUrl,
       specialty: Array.isArray(row.specialty) ? row.specialty : [],
       commissionsOpen: Boolean(row.commissions_open),
       priceRange: safeString(row.price_range) || undefined,
       contactEmail: safeString(row.contact_email) || undefined,
       websiteUrl: typeof artistSocial.website === 'string' ? artistSocial.website : undefined,
-      twitterUrl: xUrl,
-      instagramUrl: typeof artistSocial.instagram === 'string' ? artistSocial.instagram : undefined,
+      twitterUrl: row.role === 'artist' ? xUrl : talentXUrl,
+      xUrl: row.role === 'artist' ? xUrl : talentXUrl,
       portfolioArtImages: artistPortfolioArtImages.length > 0 ? artistPortfolioArtImages : tablePortfolioArtImages,
+      supportUrl: safeString(row.support_url) || undefined,
     };
   });
 }
@@ -1146,6 +1167,8 @@ export async function updateAdminProfile(
     websiteUrl?: string;
     twitterUrl?: string;
     instagramUrl?: string;
+    xUrl?: string;
+    supportUrl?: string;
   },
 ): Promise<AdminProfile | null> {
   const profileResult = await dbQuery(
@@ -1201,7 +1224,14 @@ export async function updateAdminProfile(
         twitchUrl: input.twitchUrl || null,
         tiktok: input.tiktokUrl || null,
         tiktokUrl: input.tiktokUrl || null,
+        instagram: input.instagramUrl || null,
+        instagramUrl: input.instagramUrl || null,
+        x: input.xUrl || null,
+        xUrl: input.xUrl || null,
+        twitter: input.xUrl || null,
+        twitterUrl: input.xUrl || null,
       },
+      support_url: input.supportUrl || null,
     });
   }
 
@@ -1255,6 +1285,8 @@ export async function updateAdminProfile(
     websiteUrl: input.websiteUrl,
     twitterUrl: input.twitterUrl,
     instagramUrl: input.instagramUrl,
+    xUrl: input.xUrl,
+    supportUrl: input.supportUrl,
     youtubeUrl: input.youtubeUrl,
     twitchUrl: input.twitchUrl,
     tiktokUrl: input.tiktokUrl,

@@ -21,6 +21,9 @@ export interface VTuber {
   profilePictureUrl?: string;
   portraitPictureUrl?: string;
   portraitPictures?: PortraitPicture[];
+  supportUrl?: string;
+  instagramUrl?: string;
+  xUrl?: string;
   characterInfo?: {
     dateOfBirth?: string;
     debutDate?: string;
@@ -42,6 +45,7 @@ export interface StreamSchedule {
 
 export interface Artist {
   id: string;
+  artistProfileId?: string;
   name: string;
   description: string;
   avatar: string;

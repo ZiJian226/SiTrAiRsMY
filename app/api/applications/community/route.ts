@@ -1,3 +1,4 @@
+import { NextResponse } from 'next/server';
 import { createCommunityApplication } from '@/lib/applications/repository';
 
 export async function POST(request: Request) {
@@ -5,8 +6,8 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { name, discordName, supportingInfo, isMalaysian, email, country } = body;
 
-    if (!name || !discordName || !supportingInfo) {
-      return Response.json({ error: 'Missing required fields' }, { status: 400 });
+    if (!name || !email || !discordName || !supportingInfo) {
+      return NextResponse.json({ error: 'name, email, discordName, and supportingInfo are required' }, { status: 400 })
     }
 
     if (!isMalaysian) {
@@ -15,10 +16,10 @@ export async function POST(request: Request) {
 
     const application = await createCommunityApplication(
       name,
+      email,
       discordName,
       supportingInfo,
-      true,
-      email || null,
+      isMalaysian,
       country || 'Malaysia'
     );
 
@@ -27,9 +28,10 @@ export async function POST(request: Request) {
       data: application,
     });
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Failed to submit application';
     console.error('Error submitting community application:', error);
     return Response.json(
-      { error: 'Failed to submit application' },
+      { error: errorMessage },
       { status: 500 }
     );
   }

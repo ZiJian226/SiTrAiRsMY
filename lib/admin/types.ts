@@ -32,6 +32,7 @@ export interface AdminProfile extends AdminUser {
   youtubeUrl?: string;
   twitchUrl?: string;
   tiktokUrl?: string;
+  supportUrl?: string;
   specialty?: string[];
   portfolio?: string[];
   portfolioArt?: string[];
@@ -42,6 +43,7 @@ export interface AdminProfile extends AdminUser {
   websiteUrl?: string;
   twitterUrl?: string;
   instagramUrl?: string;
+  xUrl?: string;
 }
 
 export interface AdminEvent {

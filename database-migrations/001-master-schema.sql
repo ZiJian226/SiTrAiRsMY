@@ -52,6 +52,7 @@ ALTER TABLE IF EXISTS talent_profiles ADD COLUMN IF NOT EXISTS portfolio_links T
 ALTER TABLE IF EXISTS talent_profiles ADD COLUMN IF NOT EXISTS bio TEXT;
 ALTER TABLE IF EXISTS talent_profiles ADD COLUMN IF NOT EXISTS debut_date DATE;
 ALTER TABLE IF EXISTS talent_profiles ADD COLUMN IF NOT EXISTS portrait_pictures JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE IF EXISTS talent_profiles ADD COLUMN IF NOT EXISTS support_url TEXT;
 
 -- Backfill portrait_pictures array from legacy column
 DO $$

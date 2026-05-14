@@ -16,6 +16,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       youtubeUrl?: string;
       twitchUrl?: string;
       tiktokUrl?: string;
+      instagramUrl?: string;
+      xUrl?: string;
       vtuberModelUrl?: string;
       profilePictureUrl?: string;
       profilePictureObjectKey?: string;
@@ -41,7 +43,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       contactEmail?: string;
       websiteUrl?: string;
       twitterUrl?: string;
-      instagramUrl?: string;
+      supportUrl?: string;
     };
 
     if (!body.full_name || !body.role) {
@@ -58,6 +60,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       youtubeUrl: body.youtubeUrl,
       twitchUrl: body.twitchUrl,
       tiktokUrl: body.tiktokUrl,
+      instagramUrl: body.instagramUrl,
+      xUrl: body.xUrl,
       vtuberModelUrl: body.vtuberModelUrl,
       profilePictureUrl: body.profilePictureUrl,
       profilePictureObjectKey: body.profilePictureObjectKey,
@@ -76,7 +80,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       contactEmail: body.contactEmail,
       websiteUrl: body.websiteUrl,
       twitterUrl: body.twitterUrl,
-      instagramUrl: body.instagramUrl,
+      supportUrl: body.supportUrl,
     });
 
     if (!updated) {

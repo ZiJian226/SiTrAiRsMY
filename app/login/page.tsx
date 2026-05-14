@@ -53,13 +53,13 @@ export default function SignInPage() {
                 )}
 
                 <form onSubmit={handleSignIn} className="space-y-4">
-                  <div className="form-control">
+                  <div className="form-control flex flex-col gap-2">
                     <label className="label">
                       <span className="label-text font-semibold">Email</span>
                     </label>
                     <input
                       type="email"
-                      className="input input-bordered"
+                      className="input input-bordered w-full"
                       placeholder="your.email@example.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
@@ -68,13 +68,13 @@ export default function SignInPage() {
                     />
                   </div>
 
-                  <div className="form-control">
+                  <div className="form-control flex flex-col gap-2">
                     <label className="label">
                       <span className="label-text font-semibold">Password</span>
                     </label>
                     <input
                       type="password"
-                      className="input input-bordered"
+                      className="input input-bordered w-full"
                       placeholder="••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
@@ -83,20 +83,25 @@ export default function SignInPage() {
                     />
                   </div>
 
-                  <button
-                    type="submit"
-                    className="btn btn-primary w-full mt-6"
-                    disabled={loading}
-                  >
-                    {loading ? (
-                      <>
-                        <span className="loading loading-spinner loading-sm"></span>
-                        Signing in...
-                      </>
-                    ) : (
-                      'Sign In'
-                    )}
-                  </button>
+                  <div className="form-control">
+                    <label className="label" />
+                    <div className="w-full">
+                      <button
+                        type="submit"
+                        className="btn btn-primary w-full"
+                        disabled={loading}
+                      >
+                        {loading ? (
+                          <>
+                            <span className="loading loading-spinner loading-sm"></span>
+                            Signing in...
+                          </>
+                        ) : (
+                          'Sign In'
+                        )}
+                      </button>
+                    </div>
+                  </div>
                 </form>
               </div>
             </div>

@@ -412,14 +412,14 @@ export default function AdminEventsPage() {
               {editingEvent ? 'Edit Event' : 'Create New Event'}
             </h3>
             
-            <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="space-y-4 two-column-form-layout">
+            <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="two-column-form-layout">
               <div className="form-control">
                 <label className="label">
                   <span className="label-text font-semibold">Event Title</span>
                 </label>
                 <input
                   type="text"
-                  className="input input-bordered"
+                  className="input input-bordered w-full"
                   placeholder="Enter event title"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
@@ -432,7 +432,7 @@ export default function AdminEventsPage() {
                   <span className="label-text font-semibold">Description</span>
                 </label>
                 <textarea
-                  className="textarea textarea-bordered h-24"
+                  className="textarea textarea-bordered h-24 w-full col-span-2"
                   placeholder="Describe the event..."
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -476,7 +476,7 @@ export default function AdminEventsPage() {
                 </label>
                 <input
                   type="text"
-                  className="input input-bordered"
+                  className="input input-bordered w-full"
                   placeholder="e.g., YouTube Live, Discord, etc."
                   value={formData.location}
                   onChange={(e) => setFormData({ ...formData, location: e.target.value })}
@@ -490,18 +490,18 @@ export default function AdminEventsPage() {
                 </label>
                 <input
                   type="text"
-                  className="input input-bordered"
+                  className="input input-bordered w-full"
                   placeholder="https://example.com/event-image.jpg or /api/media/events/..."
                   value={formData.image_url}
                   onChange={(e) => setFormData({ ...formData, image_url: e.target.value, image_object_key: '' })}
                   disabled={imageUploading}
                 />
                 <label className="label">
-                  <span className="label-text-alt opacity-70">Or upload event image to Oracle Object Storage</span>
+                  <span className="label-text-alt opacity-70 block w-full max-w-full whitespace-normal break-words leading-snug">Or upload event image to Oracle Object Storage</span>
                 </label>
                 <input
                   type="file"
-                  className="file-input file-input-bordered"
+                  className="file-input file-input-bordered w-full"
                   accept="image/*"
                   disabled={imageUploading}
                   onChange={(e) => {

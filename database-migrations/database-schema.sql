@@ -59,6 +59,7 @@ CREATE TABLE talent_profiles (
   portrait_picture_url TEXT,
   portrait_picture_object_key TEXT,
   portrait_pictures JSONB DEFAULT '[]'::jsonb,
+  support_url TEXT,
   featured_video_url TEXT,
   social_links JSONB DEFAULT '{}',
   tags TEXT[] DEFAULT '{}',

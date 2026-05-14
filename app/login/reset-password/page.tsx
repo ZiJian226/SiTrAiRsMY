@@ -153,14 +153,14 @@ export default function ResetPasswordPage() {
                       </div>
                     )}
 
-                    <div className="form-control">
+                    <div className="form-control flex flex-col gap-2">
                       <label className="label">
                         <span className="label-text font-semibold">New Password</span>
                       </label>
                       <div className="join">
                         <input
                           type={showPassword ? 'text' : 'password'}
-                          className="input input-bordered join-item flex-1"
+                          className="input input-bordered join-item flex-1 w-full"
                           placeholder="Enter new password"
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
@@ -181,13 +181,13 @@ export default function ResetPasswordPage() {
                       </label>
                     </div>
 
-                    <div className="form-control">
+                    <div className="form-control flex flex-col gap-2">
                       <label className="label">
                         <span className="label-text font-semibold">Confirm Password</span>
                       </label>
                       <input
                         type="password"
-                        className="input input-bordered"
+                        className="input input-bordered w-full"
                         placeholder="Confirm new password"
                         value={passwordConfirm}
                         onChange={(e) => setPasswordConfirm(e.target.value)}

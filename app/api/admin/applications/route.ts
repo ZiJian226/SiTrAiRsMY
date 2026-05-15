@@ -1,13 +1,24 @@
 import { getAdminApplications, updateApplication } from '@/lib/admin/repository';
 import { NextRequest } from 'next/server';
 import { requireAdminUser } from '@/lib/auth/authorization';
+import { getAuthenticatedUser } from '@/lib/auth/apiAuth';
 import { dbQuery } from '@/lib/database';
 import { getAuditRequestContext, logUserAuditEvent } from '@/lib/auditLog';
 
 export async function GET(request: Request) {
   try {
-    const guard = await requireAdminUser(request as NextRequest);
-    if ('response' in guard) return guard.response;
+    const user = await getAuthenticatedUser(request as NextRequest);
+    if (!user) {
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const roleResult = await dbQuery('SELECT role FROM profiles WHERE user_id = $1 LIMIT 1', [user.id]);
+    const role = roleResult.rows[0]?.role as string | undefined;
+
+    // Allow both admin and staff to view applications
+    if (role !== 'admin' && role !== 'staff') {
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    }
 
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type') as 'career' | 'community' | null;
@@ -29,8 +40,19 @@ export async function GET(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
-    const guard = await requireAdminUser(request as NextRequest);
-    if ('response' in guard) return guard.response;
+    const user = await getAuthenticatedUser(request as NextRequest);
+    if (!user) {
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const roleResult = await dbQuery('SELECT role FROM profiles WHERE user_id = $1 LIMIT 1', [user.id]);
+    const role = roleResult.rows[0]?.role as string | undefined;
+
+    // Allow both admin and staff to update applications
+    if (role !== 'admin' && role !== 'staff') {
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    }
+    
     const auditContext = getAuditRequestContext((request as NextRequest).headers);
     const body = await request.json();
     const { id, type, status, adminNotes } = body;
@@ -56,8 +78,8 @@ export async function PATCH(request: Request) {
     }
 
     await logUserAuditEvent({
-      actorUserId: guard.user.id,
-      actorRole: 'admin',
+      actorUserId: user.id,
+      actorRole: role,
       action: 'application.status_update',
       category: 'application',
       eventType: 'status-change',

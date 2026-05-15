@@ -159,7 +159,8 @@ export async function getTalentProfileByUserId(userId: string): Promise<TalentPr
   const supportsPortraitPictures = await hasColumn('talent_profiles', 'portrait_pictures')
   const supportsFeaturedVideo = await hasColumn('talent_profiles', 'featured_video_url')
   const supportsFeatured = await hasColumn('talent_profiles', 'featured')
-    const supportsProfileCardUrl = await hasColumn('talent_profiles', 'profile_card_url')
+  const supportsProfileCardUrl = await hasColumn('talent_profiles', 'profile_card_url')
+  const supportsFeaturedOrder = await hasColumn('talent_profiles', 'featured_order')
   const result = await dbQuery(
     `SELECT 
       id, user_id, stage_name, character_description,
@@ -177,6 +178,7 @@ export async function getTalentProfileByUserId(userId: string): Promise<TalentPr
       ${supportsPortraitPictures ? 'portrait_pictures' : "'[]'::jsonb AS portrait_pictures"},
       ${supportsFeaturedVideo ? 'featured_video_url' : 'NULL::text AS featured_video_url'},
       ${supportsFeatured ? 'featured' : 'false AS featured'},
+      ${supportsFeaturedOrder ? 'featured_order' : 'NULL::integer AS featured_order'},
       social_links, is_published, created_at, updated_at
      FROM talent_profiles 
      WHERE user_id = $1`,
@@ -204,12 +206,20 @@ export async function updateTalentProfile(
   userId: string,
   data: Partial<TalentProfile>
 ): Promise<TalentProfile> {
+  // Get user's email/name for fallback stage_name
+  const userResult = await dbQuery(
+    `SELECT email, full_name FROM profiles WHERE user_id = $1 LIMIT 1`,
+    [userId],
+  )
+  const userRow = userResult.rows[0] as { email: string; full_name: string | null } | undefined
+  const defaultStageName = userRow?.full_name || userRow?.email || 'User'
+
   // Ensure a talent_profiles row exists for this user so UPDATE statements succeed
   await dbQuery(
-    `INSERT INTO talent_profiles (user_id)
-     VALUES ($1)
+    `INSERT INTO talent_profiles (user_id, stage_name)
+     VALUES ($1, $2)
      ON CONFLICT (user_id) DO NOTHING`,
-    [userId],
+    [userId, defaultStageName],
   )
   const supportsBioColumn = await hasColumn('talent_profiles', 'bio')
   const supportsDebutDateColumn = await hasColumn('talent_profiles', 'debut_date')
@@ -232,7 +242,8 @@ export async function updateTalentProfile(
 
   if (data.stage_name !== undefined) {
     updates.push(`stage_name = $${paramCount++}`)
-    values.push(data.stage_name)
+    // Ensure stage_name is never empty - database requires NOT NULL
+    values.push(data.stage_name && data.stage_name.trim() ? data.stage_name : '')
   }
   if (data.character_description !== undefined) {
     updates.push(`character_description = $${paramCount++}`)
@@ -335,6 +346,9 @@ export async function updateTalentProfile(
     values.push(data.is_published)
   }
 
+  // Always update updated_at timestamp
+  updates.push(`updated_at = NOW()`)
+
   values.push(userId)
 
   const result = await dbQuery(
@@ -356,6 +370,7 @@ export async function updateTalentProfile(
       ${supportsPortraitPictures ? 'portrait_pictures' : "'[]'::jsonb AS portrait_pictures"},
        ${supportsFeaturedVideo ? 'featured_video_url' : 'NULL::text AS featured_video_url'},
        ${supportsFeatured ? 'featured' : 'false AS featured'},
+       featured_order,
        social_links, is_published, created_at, updated_at`,
     values
   )
@@ -379,13 +394,14 @@ export async function getArtistProfileByUserId(userId: string): Promise<ArtistPr
   const supportsPortfolioArtColumn = await hasColumn('artist_profiles', 'portfolio_art')
   const supportsPortfolioArtImagesColumn = await hasColumn('artist_profiles', 'portfolio_art_images')
   const supportsFeaturedColumn = await hasColumn('artist_profiles', 'featured')
+  const supportsFeaturedOrderColumn = await hasColumn('artist_profiles', 'featured_order')
   const result = await dbQuery(
     `SELECT 
       id, user_id, specialty, portfolio_links,
       ${supportsPortfolioArtColumn ? 'portfolio_art' : 'ARRAY[]::text[] AS portfolio_art'},
       ${supportsPortfolioArtImagesColumn ? 'portfolio_art_images' : "'[]'::jsonb AS portfolio_art_images"},
       commissions_open,
-      price_range, contact_email, social_media_links, ${supportsFeaturedColumn ? 'featured' : 'false AS featured'}, is_published, 
+      price_range, contact_email, social_media_links, ${supportsFeaturedColumn ? 'featured' : 'false AS featured'}, ${supportsFeaturedOrderColumn ? 'featured_order' : 'NULL::integer AS featured_order'}, is_published, 
       created_at, updated_at
      FROM artist_profiles 
      WHERE user_id = $1`,
@@ -399,6 +415,7 @@ export async function createArtistProfile(userId: string): Promise<ArtistProfile
   const supportsPortfolioArtColumn = await hasColumn('artist_profiles', 'portfolio_art')
   const supportsPortfolioArtImagesColumn = await hasColumn('artist_profiles', 'portfolio_art_images')
   const supportsFeaturedColumn = await hasColumn('artist_profiles', 'featured')
+  const supportsFeaturedOrderColumn = await hasColumn('artist_profiles', 'featured_order')
   const result = await dbQuery(
     supportsPortfolioArtColumn
       ? (supportsFeaturedColumn
@@ -406,26 +423,26 @@ export async function createArtistProfile(userId: string): Promise<ArtistProfile
              VALUES ($1, '{}', '{}', '{}', '{"twitter": null, "instagram": null, "website": null}', false)
              RETURNING id, user_id, specialty, portfolio_links, portfolio_art, commissions_open,
                ${supportsPortfolioArtImagesColumn ? 'portfolio_art_images' : "'[]'::jsonb AS portfolio_art_images"},
-               price_range, contact_email, social_media_links, featured, is_published,
+               price_range, contact_email, social_media_links, featured, ${supportsFeaturedOrderColumn ? 'featured_order' : 'NULL::integer AS featured_order'}, is_published,
                created_at, updated_at`
           : `INSERT INTO artist_profiles (user_id, specialty, portfolio_links, portfolio_art, social_media_links)
              VALUES ($1, '{}', '{}', '{}', '{"twitter": null, "instagram": null, "website": null}')
              RETURNING id, user_id, specialty, portfolio_links, portfolio_art, commissions_open,
                ${supportsPortfolioArtImagesColumn ? 'portfolio_art_images' : "'[]'::jsonb AS portfolio_art_images"},
-               price_range, contact_email, social_media_links, false AS featured, is_published,
+               price_range, contact_email, social_media_links, false AS featured, ${supportsFeaturedOrderColumn ? 'featured_order' : 'NULL::integer AS featured_order'}, is_published,
                created_at, updated_at`)
       : (supportsFeaturedColumn
           ? `INSERT INTO artist_profiles (user_id, specialty, portfolio_links, social_media_links, featured)
              VALUES ($1, '{}', '{}', '{"twitter": null, "instagram": null, "website": null}', false)
              RETURNING id, user_id, specialty, portfolio_links, ARRAY[]::text[] AS portfolio_art, commissions_open,
                ${supportsPortfolioArtImagesColumn ? 'portfolio_art_images' : "'[]'::jsonb AS portfolio_art_images"},
-               price_range, contact_email, social_media_links, featured, is_published,
+               price_range, contact_email, social_media_links, featured, ${supportsFeaturedOrderColumn ? 'featured_order' : 'NULL::integer AS featured_order'}, is_published,
                created_at, updated_at`
           : `INSERT INTO artist_profiles (user_id, specialty, portfolio_links, social_media_links)
              VALUES ($1, '{}', '{}', '{"twitter": null, "instagram": null, "website": null}')
              RETURNING id, user_id, specialty, portfolio_links, ARRAY[]::text[] AS portfolio_art, commissions_open,
                ${supportsPortfolioArtImagesColumn ? 'portfolio_art_images' : "'[]'::jsonb AS portfolio_art_images"},
-               price_range, contact_email, social_media_links, false AS featured, is_published,
+               price_range, contact_email, social_media_links, false AS featured, ${supportsFeaturedOrderColumn ? 'featured_order' : 'NULL::integer AS featured_order'}, is_published,
                created_at, updated_at`),
     [userId]
   )
@@ -511,13 +528,8 @@ export async function updateArtistProfile(
     values.push(data.is_published)
   }
 
-  if (updates.length === 0) {
-    const existing = await getArtistProfileByUserId(userId)
-    if (!existing) {
-      throw new Error('Failed to update artist profile')
-    }
-    return existing
-  }
+  // Always update updated_at timestamp
+  updates.push(`updated_at = NOW()`)
 
   values.push(userId)
 
@@ -529,7 +541,7 @@ export async function updateArtistProfile(
        ${supportsPortfolioArtColumn ? 'portfolio_art' : 'ARRAY[]::text[] AS portfolio_art'},
        ${supportsPortfolioArtImagesColumn ? 'portfolio_art_images' : "'[]'::jsonb AS portfolio_art_images"},
        commissions_open,
-       price_range, contact_email, social_media_links, ${supportsFeaturedColumn ? 'featured' : 'false AS featured'}, is_published, 
+       price_range, contact_email, social_media_links, ${supportsFeaturedColumn ? 'featured' : 'false AS featured'}, featured_order, is_published, 
        created_at, updated_at`,
     values
   )

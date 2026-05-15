@@ -117,7 +117,9 @@ type AdminProfileRow = {
   x_url: string | null;
   featured_video_url: string | null;
   talent_featured: boolean | null;
+  talent_featured_order: number | null;
   artist_featured: boolean | null;
+  artist_featured_order: number | null;
   social_links: unknown;
   portrait_pictures: unknown;
   artist_profile_id: string | null;
@@ -915,7 +917,9 @@ export async function getAdminProfiles(): Promise<AdminProfile[]> {
   const supportsPortraitPictures = await hasColumn('talent_profiles', 'portrait_pictures');
   const supportsFeaturedVideo = await hasColumn('talent_profiles', 'featured_video_url');
   const supportsTalentFeatured = await hasColumn('talent_profiles', 'featured');
+  const supportsTalentFeaturedOrder = await hasColumn('talent_profiles', 'featured_order');
   const supportsArtistFeatured = await hasColumn('artist_profiles', 'featured');
+  const supportsArtistFeaturedOrder = await hasColumn('artist_profiles', 'featured_order');
   const supportsArtistPortfolioArt = await hasColumn('artist_profiles', 'portfolio_art');
   const supportsArtistPortfolioArtImages = await hasColumn('artist_profiles', 'portfolio_art_images');
 
@@ -952,6 +956,7 @@ export async function getAdminProfiles(): Promise<AdminProfile[]> {
       ${supportsPortraitPictures ? 'tp.portrait_pictures' : "'[]'::jsonb AS portrait_pictures"},
       ${supportsFeaturedVideo ? 'tp.featured_video_url' : 'NULL::text AS featured_video_url'},
       ${supportsTalentFeatured ? 'tp.featured' : 'false AS talent_featured'},
+      ${supportsTalentFeaturedOrder ? 'tp.featured_order' : 'NULL::integer AS talent_featured_order'},
       tp.social_links,
       ap.id AS artist_profile_id,
       ap.specialty,
@@ -962,7 +967,8 @@ export async function getAdminProfiles(): Promise<AdminProfile[]> {
       ap.price_range,
       ap.contact_email,
       ap.social_media_links,
-      ${supportsArtistFeatured ? 'ap.featured' : 'false AS artist_featured'}
+      ${supportsArtistFeatured ? 'ap.featured' : 'false AS artist_featured'},
+      ${supportsArtistFeaturedOrder ? 'ap.featured_order' : 'NULL::integer AS artist_featured_order'}
     FROM profiles p
     LEFT JOIN talent_profiles tp ON tp.user_id = p.user_id
     LEFT JOIN artist_profiles ap ON ap.user_id = p.user_id
@@ -997,6 +1003,7 @@ export async function getAdminProfiles(): Promise<AdminProfile[]> {
       ${supportsPortraitPictures ? 'tp.portrait_pictures' : "'[]'::jsonb AS portrait_pictures"},
       ${supportsFeaturedVideo ? 'tp.featured_video_url' : 'NULL::text AS featured_video_url'},
       ${supportsTalentFeatured ? 'tp.featured' : 'false AS talent_featured'},
+      ${supportsTalentFeaturedOrder ? 'tp.featured_order' : 'NULL::integer AS talent_featured_order'},
       tp.social_links,
       ap.id AS artist_profile_id,
       ap.specialty,
@@ -1007,7 +1014,8 @@ export async function getAdminProfiles(): Promise<AdminProfile[]> {
       ap.price_range,
       ap.contact_email,
       ap.social_media_links,
-      ${supportsArtistFeatured ? 'ap.featured' : 'false AS artist_featured'}
+      ${supportsArtistFeatured ? 'ap.featured' : 'false AS artist_featured'},
+      ${supportsArtistFeaturedOrder ? 'ap.featured_order' : 'NULL::integer AS artist_featured_order'}
     FROM profiles p
     LEFT JOIN talent_profiles tp ON tp.user_id = p.user_id
     LEFT JOIN artist_profiles ap ON ap.user_id = p.user_id
@@ -1114,6 +1122,7 @@ export async function getAdminProfiles(): Promise<AdminProfile[]> {
       profileCardUrl: safeString(row.profile_card_url) || undefined,
       featuredVideoUrl: safeString(row.featured_video_url) || undefined,
       featured: row.role === 'artist' ? Boolean(row.artist_featured) : Boolean(row.talent_featured),
+      featuredOrder: row.role === 'artist' ? (row.artist_featured_order || undefined) : (row.talent_featured_order || undefined),
       portfolio: Array.isArray(row.artist_portfolio_links) ? row.artist_portfolio_links : Array.isArray(row.portfolio_links) ? row.portfolio_links : [],
       portfolioArt: Array.isArray(row.portfolio_art) ? row.portfolio_art : [],
       youtubeUrl: typeof social.youtubeUrl === 'string' ? social.youtubeUrl : typeof social.youtube === 'string' ? social.youtube : undefined,

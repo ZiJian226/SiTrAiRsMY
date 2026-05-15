@@ -53,10 +53,10 @@ async function getArtistProfileById(artistProfileId: string) {
 async function getArtistProfileForUser(userId: string) {
   const result = await dbQuery(
     `
-    SELECT id, user_id, full_name
-    FROM profiles
-    WHERE user_id = $1
-      AND role = 'artist'
+    SELECT ap.id, ap.user_id, p.full_name
+    FROM artist_profiles ap
+    JOIN profiles p ON ap.user_id = p.user_id
+    WHERE ap.user_id = $1
     LIMIT 1
     `,
     [userId],
@@ -200,10 +200,9 @@ export async function getCommissionRequestByIdForArtist(userId: string, requestI
       cr.created_at,
       cr.updated_at
     FROM commission_requests cr
-    INNER JOIN profiles p ON p.id = cr.artist_profile_id
+    INNER JOIN artist_profiles ap ON ap.id = cr.artist_profile_id
     WHERE cr.id = $1
-      AND p.user_id = $2
-      AND p.role = 'artist'
+      AND ap.user_id = $2
     LIMIT 1
     `,
     [requestId, userId],
@@ -224,11 +223,10 @@ export async function updateCommissionRequestStatusForArtist(
         accepted_at = CASE WHEN $3 = 'accepted' THEN NOW() ELSE accepted_at END,
         rejected_at = CASE WHEN $3 = 'rejected' THEN NOW() ELSE rejected_at END,
         updated_at = NOW()
-    FROM profiles p
+    FROM artist_profiles ap
     WHERE cr.id = $1
-      AND cr.artist_profile_id = p.id
-      AND p.user_id = $2
-      AND p.role = 'artist'
+      AND cr.artist_profile_id = ap.id
+      AND ap.user_id = $2
       AND cr.status = 'pending'
     RETURNING cr.id, cr.artist_profile_id, cr.client_name, cr.client_email, cr.description, cr.budget, cr.deadline, cr.status, cr.accepted_at, cr.rejected_at, cr.created_at, cr.updated_at
     `,

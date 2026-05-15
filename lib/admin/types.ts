@@ -13,6 +13,7 @@ export interface AdminUser {
 
 export interface AdminProfile extends AdminUser {
   featured?: boolean;
+  featuredOrder?: number;
   characterInfo?: {
     dateOfBirth?: string;
     debutDate?: string;

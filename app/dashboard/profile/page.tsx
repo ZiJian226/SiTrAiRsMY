@@ -139,12 +139,15 @@ export default function ProfileEditorPage() {
   async function loadProfileData() {
     try {
       const response = await fetch('/api/dashboard/profile', {
+        cache: 'no-store',
         headers: {
           'x-user-id': user!.id
         }
       })
 
       if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        console.error('Profile fetch failed:', response.status, errorData)
         setFullName(profile?.full_name || '')
         setAvatarUrl(profile?.avatar_url || '')
         setBio(profile?.bio || '')
@@ -198,6 +201,8 @@ export default function ProfileEditorPage() {
           instagram?: string | null
         }
       }
+
+      console.log('Loaded profile data:', { role: profile?.role, data })
 
       setAvatarUrl(data.avatar_url || profile?.avatar_url || '')
 

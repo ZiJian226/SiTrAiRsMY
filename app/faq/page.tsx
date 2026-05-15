@@ -10,12 +10,8 @@ const faqs = [
     category: "General",
     questions: [
       {
-        q: "What is StarMy?",
-        a: "StarMy is Malaysia's premier platform connecting VTubers, artists, and fans. We provide a space for content creators to showcase their work, fans to discover new creators, and facilitate collaborations within the community.",
-      },
-      {
-        q: "Is StarMy free to use?",
-        a: "Yes! Creating an account and browsing content on StarMy is completely free. Some premium features may be introduced in the future with optional paid upgrades.",
+        q: "What is StarMyriad?",
+        a: "StarMyriad is Malaysia's premier platform connecting VTubers, artists, and fans. We provide a space for content creators to showcase their work, fans to discover new creators, and facilitate collaborations within the community.",
       },
       {
         q: "How do I join StarMy?",
@@ -28,7 +24,7 @@ const faqs = [
     questions: [
       {
         q: "How can I list my VTuber profile?",
-        a: "Contact our team through the Career page to submit your VTuber profile. We'll review your application and add you to our platform. Make sure to include your streaming schedule, social media links, and a brief description.",
+        a: "Contact our team through the JoinUs page to submit your VTuber profile. We'll review your application and add you to our platform. Make sure to include your streaming schedule, social media links, and a brief description.",
       },
       {
         q: "Can I update my streaming schedule?",
@@ -36,7 +32,7 @@ const faqs = [
       },
       {
         q: "Do you take a commission from donations or subscriptions?",
-        a: "No. StarMy does not take any portion of donations, subscriptions, or revenue from your external platforms. We only provide visibility and connection opportunities.",
+        a: "No. StarMyriad does not take any portion of donations, subscriptions, or revenue from your external platforms. We only provide visibility and connection opportunities.",
       },
     ],
   },
@@ -49,14 +45,14 @@ const faqs = [
       },
       {
         q: "How does the commission system work?",
-        a: "StarMy facilitates the connection between clients and artists. When someone requests a commission through your profile, you'll receive their details and can communicate directly to finalize the project details and payment.",
+        a: "StarMyriad facilitates the connection between clients and artists. When someone requests a commission through your profile, you'll receive their details and can communicate directly to finalize the project details and payment.",
       },
       {
         q: "What commission types are supported?",
         a: "Artists can offer various commission types including character design, VTuber models, Live2D rigging, illustrations, emotes, overlays, and more. You set your own prices and terms.",
       },
       {
-        q: "Does StarMy handle payments?",
+        q: "Does StarMyriad handle payments?",
         a: "Currently, payment arrangements are made directly between artists and clients. We recommend using secure payment platforms and having clear written agreements.",
       },
     ],
@@ -74,7 +70,7 @@ const faqs = [
       },
       {
         q: "What if there's a dispute with a commission?",
-        a: "While StarMy facilitates connections, commission agreements are between you and the artist. We recommend clear communication, written agreements, and milestone-based payments. If issues arise, try to resolve them directly first.",
+        a: "While StarMyriad facilitates connections, commission agreements are between you and the artist. We recommend clear communication, written agreements, and milestone-based payments. If issues arise, try to resolve them directly first.",
       },
     ],
   },
@@ -83,15 +79,15 @@ const faqs = [
     questions: [
       {
         q: "What browsers are supported?",
-        a: "StarMy works best on modern browsers including Chrome, Firefox, Safari, and Edge. Make sure your browser is up to date for the best experience.",
+        a: "StarMyriad works best on modern browsers including Chrome, Firefox, Safari, and Edge. Make sure your browser is up to date for the best experience.",
       },
       {
-        q: "Is StarMy mobile-friendly?",
+        q: "Is StarMyriad mobile-friendly?",
         a: "Yes! Our platform is fully responsive and works great on mobile devices, tablets, and desktops.",
       },
       {
         q: "I found a bug. How do I report it?",
-        a: "We appreciate bug reports! Please email support@starmy.my with details about the issue, including your device, browser, and steps to reproduce the problem.",
+        a: "We appreciate bug reports! Please email starmyriadmyofficial@gmail.com with details about the issue, including your device, browser, and steps to reproduce the problem.",
       },
     ],
   },
@@ -104,11 +100,11 @@ const faqs = [
       },
       {
         q: "Can I delete my account?",
-        a: "Yes, you can request account deletion by contacting support@starmy.my. We'll remove your personal information according to our data retention policies.",
+        a: "Yes, you can request account deletion by contacting starmyriadmyofficial@gmail.com. We'll remove your personal information according to our data retention policies.",
       },
       {
         q: "How do I report inappropriate content?",
-        a: "If you see content that violates our Terms of Service, please report it to moderation@starmy.my with a link and description of the issue.",
+        a: "If you see content that violates our Terms of Service, please report it to starmyriadmyofficial@gmail.com with a link and description of the issue.",
       },
     ],
   },
@@ -126,7 +122,7 @@ export default function FAQPage() {
             Frequently Asked Questions
           </h1>
           <p className="text-center text-lg mb-12 max-w-2xl mx-auto opacity-70">
-            Find answers to common questions about StarMy. Can't find what you're looking for? Contact our support team!
+            Find answers to common questions about StarMyriad. Can't find what you're looking for? Contact our support team!
           </p>
 
           <div className="max-w-4xl mx-auto space-y-8">

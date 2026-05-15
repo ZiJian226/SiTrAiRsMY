@@ -1,11 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getAuthenticatedUser } from '@/lib/auth/apiAuth';
+import { dbQuery } from '@/lib/database';
 import { deleteAdminProfile, updateAdminProfile } from '@/lib/admin/repository';
+import { getAuditRequestContext, logUserAuditEvent } from '@/lib/auditLog';
 
 export const runtime = 'nodejs';
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const user = await getAuthenticatedUser(request);
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const roleResult = await dbQuery('SELECT role FROM profiles WHERE user_id = $1 LIMIT 1', [user.id]);
+    if (roleResult.rows[0]?.role !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     const { id } = await params;
+  const auditContext = getAuditRequestContext(request.headers);
     const body = (await request.json()) as {
       full_name?: string;
       role?: 'admin' | 'talent' | 'staff' | 'artist';
@@ -44,6 +58,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       websiteUrl?: string;
       twitterUrl?: string;
       supportUrl?: string;
+      profileCardUrl?: string;
     };
 
     if (!body.full_name || !body.role) {
@@ -81,11 +96,29 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       websiteUrl: body.websiteUrl,
       twitterUrl: body.twitterUrl,
       supportUrl: body.supportUrl,
+      profileCardUrl: body.profileCardUrl,
     });
 
     if (!updated) {
       return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
     }
+
+    await logUserAuditEvent({
+      actorUserId: user.id,
+      actorRole: 'admin',
+      action: 'profile.admin_update',
+      category: 'profile',
+      eventType: 'update',
+      resourceType: 'profile',
+      resourceId: updated.id,
+      entityType: 'profile',
+      entityId: updated.id,
+      targetUserId: updated.user_id,
+      metadata: {
+        updatedFields: Object.keys(body).filter((key) => body[key as keyof typeof body] !== undefined),
+      },
+      ...auditContext,
+    });
 
     return NextResponse.json(updated);
   } catch (error) {
@@ -96,11 +129,44 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
 export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const user = await getAuthenticatedUser(_);
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const roleResult = await dbQuery('SELECT role FROM profiles WHERE user_id = $1 LIMIT 1', [user.id]);
+    if (roleResult.rows[0]?.role !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     const { id } = await params;
+    const auditContext = getAuditRequestContext(_.headers);
+    const currentResult = await dbQuery(
+      `SELECT id, user_id, email, full_name, role FROM profiles WHERE id = $1 LIMIT 1`,
+      [id],
+    );
+    const currentRow = currentResult.rows[0] as { id: string; user_id: string; email: string; full_name: string | null; role: string } | undefined;
     const deleted = await deleteAdminProfile(id);
 
     if (!deleted) {
       return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
+    }
+
+    if (currentRow) {
+      await logUserAuditEvent({
+        actorUserId: user.id,
+        actorRole: 'admin',
+        action: 'profile.admin_delete',
+        category: 'profile',
+        eventType: 'delete',
+        resourceType: 'profile',
+        resourceId: currentRow.id,
+        entityType: 'profile',
+        entityId: currentRow.id,
+        targetUserId: currentRow.user_id,
+        metadata: currentRow,
+        ...auditContext,
+      });
     }
 
     return NextResponse.json({ success: true });

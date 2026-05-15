@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/lib/auth/apiAuth'
 import { dbQuery } from '@/lib/database'
 import { logUserAuditEvent } from '@/lib/auditLog'
+import { getAuditRequestContext } from '@/lib/auditLog'
 import {
   createArtistProfile,
   getArtistProfileByUserId,
@@ -65,6 +66,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json()
+    const auditContext = getAuditRequestContext(request.headers)
 
     const profileResult = await dbQuery('SELECT role FROM profiles WHERE user_id = $1 LIMIT 1', [user.id])
     const role = profileResult.rows[0]?.role as 'talent' | 'staff' | 'artist' | 'admin' | undefined
@@ -107,14 +109,15 @@ export async function PUT(request: NextRequest) {
         actorUserId: user.id,
         actorRole: role,
         action: 'profile.update',
+        category: 'profile',
+        eventType: 'update',
         resourceType: 'artist_profile',
         resourceId: artistProfile.id,
         targetUserId: user.id,
         metadata: {
           updatedFields: Object.keys(body || {}),
         },
-        ipAddress: request.headers.get('x-forwarded-for') || null,
-        userAgent: request.headers.get('user-agent') || null,
+        ...auditContext,
       })
 
       return NextResponse.json(artistProfile)
@@ -126,14 +129,15 @@ export async function PUT(request: NextRequest) {
       actorUserId: user.id,
       actorRole: role,
       action: 'profile.update',
+      category: 'profile',
+      eventType: 'update',
       resourceType: 'talent_profile',
       resourceId: talentProfile.id,
       targetUserId: user.id,
       metadata: {
         updatedFields: Object.keys(body || {}),
       },
-      ipAddress: request.headers.get('x-forwarded-for') || null,
-      userAgent: request.headers.get('user-agent') || null,
+      ...auditContext,
     })
 
     return NextResponse.json(talentProfile)

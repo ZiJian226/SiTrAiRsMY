@@ -34,6 +34,7 @@ interface Profile {
   xUrl?: string
   featuredVideoUrl?: string
   featured?: boolean
+  featuredOrder?: number
   profilePictureUrl?: string
   profilePictureObjectKey?: string
   portraitPictureUrl?: string
@@ -49,6 +50,7 @@ interface Profile {
   websiteUrl?: string
   twitterUrl?: string
   supportUrl?: string
+  profileCardUrl?: string
   // Visibility toggles
   showCharacterInfo?: boolean
   showSocialLinks?: boolean
@@ -92,6 +94,7 @@ export default function AdminProfilesPage() {
   const [portfolioInput, setPortfolioInput] = useState('')
   const [portraitPictureInput, setPortraitPictureInput] = useState('')
   const [portraitPictures, setPortraitPictures] = useState<ProfileImage[]>([])
+  const [portraitSizeHint, setPortraitSizeHint] = useState<{ width: number; height: number; recommendedWidth: number; recommendedHeight: number } | null>(null)
   const [portfolioArtImages, setPortfolioArtImages] = useState<ProfileImage[]>([])
   const [portfolioArtUploading, setPortfolioArtUploading] = useState(false)
 
@@ -110,6 +113,52 @@ export default function AdminProfilesPage() {
 
     void refreshProfiles()
   }, [user, profile])
+
+  useEffect(() => {
+    const sourceUrl = portraitPictureInput.trim() || portraitPictures[0]?.url
+
+    if (!sourceUrl) {
+      setPortraitSizeHint(null)
+      return
+    }
+
+    let cancelled = false
+    const image = new window.Image()
+
+    image.onload = () => {
+      if (cancelled) return
+
+      const width = image.naturalWidth
+      const height = image.naturalHeight
+
+      if (!width || !height) {
+        setPortraitSizeHint(null)
+        return
+      }
+
+      const recommendedHeight = 1800
+      const recommendedWidth = Math.max(1, Math.round((width / height) * recommendedHeight))
+
+      setPortraitSizeHint({
+        width,
+        height,
+        recommendedWidth,
+        recommendedHeight,
+      })
+    }
+
+    image.onerror = () => {
+      if (!cancelled) {
+        setPortraitSizeHint(null)
+      }
+    }
+
+    image.src = sourceUrl
+
+    return () => {
+      cancelled = true
+    }
+  }, [portraitPictureInput, portraitPictures])
 
   // Helpers for converting free-form dates to HTML date input values (YYYY-MM-DD)
   function toDateInputValue(value?: string) {
@@ -215,6 +264,7 @@ export default function AdminProfilesPage() {
       portraitPictureUrl: nextPortraitPictures[0]?.url || profileForEdit.portraitPictureUrl || '',
       portraitPictureObjectKey: nextPortraitPictures[0]?.object_key || profileForEdit.portraitPictureObjectKey || '',
       supportUrl: profileForEdit.supportUrl || profileForEdit.websiteUrl || '',
+      profileCardUrl: profileForEdit.profileCardUrl || '',
       instagramUrl: profileForEdit.instagramUrl || '',
       xUrl: profileForEdit.xUrl || profileForEdit.twitterUrl || '',
     })
@@ -798,6 +848,17 @@ export default function AdminProfilesPage() {
                                 <span className="label-text font-semibold">Portrait Pictures</span>
                                 <span className="label-text-alt text-xs">One image shows at a time on the public card</span>
                               </label>
+                              {portraitSizeHint ? (
+                                <div className="alert alert-info py-2 px-3 mb-2 text-sm">
+                                  <span>
+                                    Current image: {portraitSizeHint.width}×{portraitSizeHint.height}px. Recommended export size: {portraitSizeHint.recommendedWidth}×{portraitSizeHint.recommendedHeight}px.
+                                  </span>
+                                </div>
+                              ) : (
+                                <p className="text-xs opacity-70 mb-2">
+                                  Add or paste a portrait image URL to see a recommended export size.
+                                </p>
+                              )}
                               <div className="join w-full">
                                 <input
                                   type="url"
@@ -897,6 +958,23 @@ export default function AdminProfilesPage() {
                               <span className="label-text-alt block opacity-70">Shows this profile in the homepage showcase</span>
                             </div>
                           </label>
+                        </div>
+                      )}
+
+                      {(editForm.role === 'talent' || editForm.role === 'staff' || editForm.role === 'artist') && editForm.featured && (
+                        <div className="form-control w-48">
+                          <label className="label">
+                            <span className="label-text font-semibold">Featured Order</span>
+                            <span className="label-text-alt text-xs opacity-70">Lower numbers appear first</span>
+                          </label>
+                          <input
+                            type="number"
+                            className="input input-bordered w-full"
+                            value={(editForm as any).featuredOrder ?? ''}
+                            onChange={(e) => setEditForm({ ...editForm, featuredOrder: e.target.value === '' ? undefined : Number(e.target.value) })}
+                            disabled={saving}
+                            min={0}
+                          />
                         </div>
                       )}
 
@@ -1181,6 +1259,23 @@ export default function AdminProfilesPage() {
                                 onChange={(e) => setEditForm({ ...editForm, xUrl: e.target.value })}
                                 disabled={saving}
                               />
+                            </div>
+
+                            <div className="form-control">
+                              <label className="label">
+                                <span className="label-text font-semibold">🔗 Profile Card URL</span>
+                              </label>
+                              <input
+                                type="url"
+                                className="input input-bordered"
+                                placeholder="https://linktr.ee/yourname or https://guns.lol/yourname"
+                                value={editForm.profileCardUrl || ''}
+                                onChange={(e) => setEditForm({ ...editForm, profileCardUrl: e.target.value })}
+                                disabled={saving}
+                              />
+                              <label className="label">
+                                <span className="label-text text-xs opacity-70">Optional: link hub / social business card</span>
+                              </label>
                             </div>
 
                             <div className="form-control">

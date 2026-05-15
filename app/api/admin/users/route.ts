@@ -2,11 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminUser, getAdminUsers } from '@/lib/admin/repository';
 import { sendEmail, generateWelcomeEmail } from '@/lib/email/emailService';
 import { createPasswordResetToken } from '@/lib/auth/passwordReset';
+import { logUserAuditEvent, getAuditRequestContext } from '@/lib/auditLog';
+import { requireAdminUser } from '@/lib/auth/authorization';
 
 export const runtime = 'nodejs';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const guard = await requireAdminUser(request);
+    if ('response' in guard) return guard.response;
+
     const users = await getAdminUsers();
     return NextResponse.json(users, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
@@ -17,6 +22,10 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    const guard = await requireAdminUser(request);
+    if ('response' in guard) return guard.response;
+    const auditContext = getAuditRequestContext(request.headers);
+
     const body = (await request.json()) as {
       email?: string;
       full_name?: string;
@@ -31,6 +40,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'email and role are required' }, { status: 400 });
     }
 
+    const actorRole = 'admin';
     const created = await createAdminUser({
       email: body.email,
       full_name: body.full_name,
@@ -39,6 +49,24 @@ export async function POST(request: NextRequest) {
       avatar_object_key: body.avatar_object_key,
       bio: body.bio,
       password: body.password,
+    });
+
+    await logUserAuditEvent({
+      actorUserId: guard.user.id,
+      actorRole,
+      action: 'admin.user.create',
+      category: 'admin',
+      eventType: 'create',
+      resourceType: 'user',
+      resourceId: created.user_id,
+      entityType: 'user',
+      entityId: created.user_id,
+      targetUserId: created.user_id,
+      metadata: {
+        email: created.email,
+        role: created.role,
+      },
+      ...auditContext,
     });
 
     let warning: string | undefined;

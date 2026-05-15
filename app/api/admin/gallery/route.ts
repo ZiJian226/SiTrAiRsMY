@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminGalleryItem, getAdminGalleryItems } from '@/lib/admin/repository';
+import { requireAdminUser } from '@/lib/auth/authorization';
+import { getAuditRequestContext, logUserAuditEvent } from '@/lib/auditLog';
 
 export const runtime = 'nodejs';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const guard = await requireAdminUser(request);
+    if ('response' in guard) return guard.response;
+
     const items = await getAdminGalleryItems();
     return NextResponse.json(items, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
@@ -15,6 +20,9 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    const guard = await requireAdminUser(request);
+    if ('response' in guard) return guard.response;
+    const auditContext = getAuditRequestContext(request.headers);
     const body = (await request.json()) as {
       title?: string;
       image_url?: string;
@@ -57,6 +65,23 @@ export async function POST(request: NextRequest) {
         is_primary: Boolean(item.is_primary),
         sort_order: Number.isFinite(item.sort_order) ? Number(item.sort_order) : index,
       })),
+    });
+
+    await logUserAuditEvent({
+      actorUserId: guard.user.id,
+      actorRole: 'admin',
+      action: 'content.gallery.create',
+      category: 'content',
+      eventType: 'create',
+      resourceType: 'gallery_item',
+      resourceId: created.id,
+      entityType: 'gallery_item',
+      entityId: created.id,
+      metadata: {
+        title: created.title,
+        category: created.category,
+      },
+      ...auditContext,
     });
 
     return NextResponse.json(created, { status: 201 });

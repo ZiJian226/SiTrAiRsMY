@@ -23,8 +23,8 @@ export class ApiAuthService implements AuthService {
     }
   }
 
-  async signOut() {
-    await fetch('/api/auth/logout', {
+  async signOut(reason: 'manual' | 'timeout' = 'manual') {
+    await fetch(`/api/auth/logout?reason=${encodeURIComponent(reason)}`, {
       method: 'POST',
     }).catch(() => undefined);
   }

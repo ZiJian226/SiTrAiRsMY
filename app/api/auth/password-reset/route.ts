@@ -1,45 +1,52 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getAuthenticatedUser } from '@/lib/auth/apiAuth'
 import { dbQuery } from '@/lib/database'
 import { createPasswordResetToken } from '@/lib/auth/passwordReset'
 import { sendEmail, generatePasswordResetEmail } from '@/lib/email/emailService'
+import { getAuditRequestContext, logUserAuditEvent } from '@/lib/auditLog'
 
 export const runtime = 'nodejs'
 
 /**
  * Request password reset for a user
- * Can be called by:
- * 1. User themselves (with x-user-id header)
- * 2. Admin (with admin-email query param or body email)
+ * Can be called by the authenticated user for their own account,
+ * or by an authenticated admin for another user.
  */
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json().catch(() => ({}))) as {
       email?: string
     }
-    const userId = request.headers.get('x-user-id')
-    const adminEmail = request.headers.get('x-admin-email')
+    const actor = await getAuthenticatedUser(request)
+    const auditContext = getAuditRequestContext(request.headers)
+
+    if (!actor) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const actorRoleResult = await dbQuery('SELECT role FROM profiles WHERE user_id = $1 LIMIT 1', [actor.id])
+    const actorRole = actorRoleResult.rows[0]?.role as 'talent' | 'staff' | 'artist' | 'admin' | undefined
 
     // Get user to send email to
     let userEmail: string
     let userFromDb: { id: string; email: string; full_name: string | null } | null = null
 
-    if (userId) {
-      // User requesting their own password reset
+    if (!body.email || body.email.trim().length === 0) {
+      // Authenticated user requesting their own password reset
       const result = await dbQuery(
         `SELECT u.id, u.email, p.full_name FROM users u 
          LEFT JOIN profiles p ON p.user_id = u.id
          WHERE u.id = $1`,
-        [userId]
+        [actor.id]
       )
       if (result.rows.length === 0) {
         return NextResponse.json({ error: 'User not found' }, { status: 404 })
       }
       userFromDb = result.rows[0]
         userEmail = userFromDb!.email
-    } else if (body.email) {
-      // Admin requesting reset for another user
-      if (!adminEmail) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    } else {
+      if (actorRole !== 'admin') {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
       }
 
       const result = await dbQuery(
@@ -53,8 +60,6 @@ export async function POST(request: NextRequest) {
       }
       userFromDb = result.rows[0]
         userEmail = userFromDb!.email
-    } else {
-      return NextResponse.json({ error: 'Email or user ID required' }, { status: 400 })
     }
 
     // Create password reset token
@@ -79,6 +84,24 @@ export async function POST(request: NextRequest) {
     if (!emailSent) {
       return NextResponse.json({ error: 'Failed to send email' }, { status: 500 })
     }
+
+    await logUserAuditEvent({
+      actorUserId: actor.id,
+      actorRole,
+      action: 'auth.password_reset.request',
+      category: actorRole === 'admin' ? 'admin' : 'auth',
+      eventType: 'request',
+      resourceType: 'password_reset',
+      resourceId: userFromDb!.id,
+      entityType: 'user',
+      entityId: userFromDb!.id,
+      targetUserId: userFromDb!.id,
+      metadata: {
+        requestedEmail: userEmail,
+        requestedBySelf: !body.email || body.email.trim().length === 0,
+      },
+      ...auditContext,
+    })
 
     return NextResponse.json({
       success: true,

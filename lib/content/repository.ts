@@ -2,13 +2,6 @@ import 'server-only';
 
 import { dbQuery } from '@/lib/database';
 import { resolveRenderableImageUrl } from '@/lib/objectStorage';
-import {
-  fallbackArtists,
-  fallbackEvents,
-  fallbackGalleryItems,
-  fallbackStoreItems,
-  fallbackTalents,
-} from './fallback';
 import type { PortraitPicture } from '@/lib/types';
 import type { ArtistProfile, EventArticle, GalleryEntry, StoreItem, Talent } from './types';
 
@@ -164,6 +157,7 @@ async function getProfilesByRole(role: 'talent' | 'staff'): Promise<Talent[]> {
   const supportsVtuberModel = supportsTalentProfiles && (await hasColumn('talent_profiles', 'vtuber_model_url'));
   const supportsProfilePicture = supportsTalentProfiles && (await hasColumn('talent_profiles', 'profile_picture_url'));
   const supportsPortraitPicture = supportsTalentProfiles && (await hasColumn('talent_profiles', 'portrait_picture_url'));
+  const supportsProfileCardUrl = supportsTalentProfiles && (await hasColumn('talent_profiles', 'profile_card_url'));
   const supportsSupportUrl = supportsTalentProfiles && (await hasColumn('talent_profiles', 'support_url'));
   const supportsPortraitPictures = supportsTalentProfiles && (await hasColumn('talent_profiles', 'portrait_pictures'));
   const supportsTalentFeatured = supportsTalentProfiles && (await hasColumn('talent_profiles', 'featured'));
@@ -190,6 +184,7 @@ async function getProfilesByRole(role: 'talent' | 'staff'): Promise<Talent[]> {
     vtuber_model_url: string | null;
     profile_picture_url: string | null;
     portrait_picture_url: string | null;
+    profile_card_url?: string | null;
     support_url?: string | null;
     portrait_pictures: unknown;
     featured: boolean | null;
@@ -217,6 +212,7 @@ async function getProfilesByRole(role: 'talent' | 'staff'): Promise<Talent[]> {
       ${supportsVtuberModel ? 'tp.vtuber_model_url' : 'NULL::text AS vtuber_model_url'},
       ${supportsProfilePicture ? 'tp.profile_picture_url' : 'NULL::text AS profile_picture_url'},
       ${supportsPortraitPicture ? 'tp.portrait_picture_url' : 'NULL::text AS portrait_picture_url'},
+      ${supportsProfileCardUrl ? 'tp.profile_card_url' : 'NULL::text AS profile_card_url'},
       ${supportsSupportUrl ? 'tp.support_url' : 'NULL::text AS support_url'},
       ${supportsPortraitPictures ? 'tp.portrait_pictures' : 'NULL::jsonb AS portrait_pictures'},
       ${supportsTalentFeatured ? 'tp.featured' : 'false AS featured'},
@@ -265,7 +261,7 @@ async function getProfilesByRole(role: 'talent' | 'staff'): Promise<Talent[]> {
   );
 
   if (!rows || rows.length === 0) {
-    return role === 'talent' ? fallbackTalents : [];
+    return [];
   }
 
   return rows.map((row) => {
@@ -310,6 +306,7 @@ async function getProfilesByRole(role: 'talent' | 'staff'): Promise<Talent[]> {
       vtuberModelUrl: row.vtuber_model_url || undefined,
       profilePictureUrl: row.profile_picture_url || undefined,
       portraitPictureUrl: row.portrait_picture_url || undefined,
+      profileCardUrl: row.profile_card_url || undefined,
       supportUrl: row.support_url || undefined,
       portraitPictures: portraitPictures.length > 0 ? portraitPictures : undefined,
     };
@@ -406,7 +403,7 @@ export async function getArtists(): Promise<ArtistProfile[]> {
   );
 
   if (!rows || rows.length === 0) {
-    return fallbackArtists;
+    return [];
   }
 
   const tablePortfolioArtImages = new Map<string, PortraitPicture[]>();
@@ -511,7 +508,7 @@ export async function getEvents(): Promise<EventArticle[]> {
   );
 
   if (!rows || rows.length === 0) {
-    return fallbackEvents;
+    return [];
   }
 
   return rows.map(row => ({
@@ -556,7 +553,7 @@ export async function getStoreItems(): Promise<StoreItem[]> {
   );
 
   if (!rows || rows.length === 0) {
-    return fallbackStoreItems;
+    return [];
   }
 
   return rows.map(row => ({
@@ -600,7 +597,7 @@ export async function getGalleryItems(): Promise<GalleryEntry[]> {
   );
 
   if (!rows || rows.length === 0) {
-    return fallbackGalleryItems;
+    return [];
   }
 
   return Promise.all(rows.map(async row => {

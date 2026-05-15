@@ -28,7 +28,7 @@ export interface SignInResult {
 
 export interface AuthService {
   signIn(email: string, password: string): Promise<SignInResult>;
-  signOut(): Promise<void>;
+  signOut(reason?: 'manual' | 'timeout'): Promise<void>;
 }
 
 export interface AuthSessionStorage {

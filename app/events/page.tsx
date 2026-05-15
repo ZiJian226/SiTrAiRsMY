@@ -7,7 +7,6 @@ import Container from "@/components/Container";
 import Footer from "@/components/Footer";
 import PageBackground from "@/components/PageBackground";
 import LandscapeModal from "@/components/LandscapeModal";
-import { fallbackEvents } from "@/lib/content/fallback";
 import { useCachedApiResource } from "@/lib/hooks";
 import type { EventArticle } from "@/lib/content/types";
 
@@ -17,9 +16,9 @@ export default function EventsPage() {
   const categories = ["All", "Announcement", "Spotlight", "Guide", "Events", "News"];
 
   const { data: newsEvents, loading } = useCachedApiResource<EventArticle[]>({
-    cacheKey: 'starmy:content:events:v3',
+    cacheKey: 'starmy:content:events:v4',
     url: '/api/content/events',
-    fallbackData: fallbackEvents,
+    fallbackData: [],
     maxAgeMs: 60_000,
     staleWhileRevalidateMs: 3_600_000,
   });
@@ -39,7 +38,7 @@ export default function EventsPage() {
             Events & News
           </h1>
           <p className="text-center text-lg mb-12 max-w-2xl mx-auto opacity-70">
-            Stay updated with the latest events, announcements, and stories from the StarMy community.
+            Stay updated with the latest events, announcements, and stories from the StarMyriad community.
           </p>
 
           {/* Category Filter */}

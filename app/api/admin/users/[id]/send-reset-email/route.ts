@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { dbQuery } from '@/lib/database';
 import { createPasswordResetToken } from '@/lib/auth/passwordReset';
 import { sendEmail, generatePasswordResetRequestEmail } from '@/lib/email/emailService';
+import { requireAdminUser } from '@/lib/auth/authorization';
+import { getAuditRequestContext, logUserAuditEvent } from '@/lib/auditLog';
 
 export const runtime = 'nodejs';
 
@@ -9,10 +11,17 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  console.log('[RESET-EMAIL-API] POST handler called!')
   try {
+    const guard = await requireAdminUser(request);
+    if ('response' in guard) return guard.response;
+    const auditContext = getAuditRequestContext(request.headers);
+
+    const actorRoleResult = await dbQuery('SELECT role FROM profiles WHERE user_id = $1 LIMIT 1', [guard.user.id]);
+    if (actorRoleResult.rows[0]?.role !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     const { id } = await params;
-    console.log('[RESET-EMAIL-API] Request received for user:', id)
 
     const result = await dbQuery(
       `
@@ -26,7 +35,6 @@ export async function POST(
     );
 
     if (result.rowCount === 0) {
-      console.log('[RESET-EMAIL-API] User not found:', id)
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
@@ -35,17 +43,13 @@ export async function POST(
       email: string;
       full_name: string | null;
     };
-    console.log('[RESET-EMAIL-API] User found:', user.email)
 
     const baseUrl = request.headers.get('origin') || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-    console.log('[RESET-EMAIL-API] Base URL:', baseUrl)
-    
+
     const resetToken = await createPasswordResetToken(user.id);
-    console.log('[RESET-EMAIL-API] Reset token created')
-    
+
     const resetUrl = `${baseUrl}/login/reset-password?token=${resetToken}`;
     const emailContent = generatePasswordResetRequestEmail(user.full_name || user.email, resetUrl);
-    console.log('[RESET-EMAIL-API] Email content generated')
 
     const emailSent = await sendEmail(
       {
@@ -58,14 +62,28 @@ export async function POST(
     );
 
     if (!emailSent) {
-      console.log('[RESET-EMAIL-API] Email send returned false')
       return NextResponse.json({ error: 'Failed to send email' }, { status: 500 });
     }
 
-    console.log('[RESET-EMAIL-API] Success, email sent to:', user.email)
+    await logUserAuditEvent({
+      actorUserId: guard.user.id,
+      actorRole: 'admin',
+      action: 'admin.user.send_reset_email',
+      category: 'admin',
+      eventType: 'create',
+      resourceType: 'password_reset_request',
+      resourceId: user.id,
+      entityType: 'user',
+      entityId: user.id,
+      targetUserId: user.id,
+      metadata: {
+        email: user.email,
+      },
+      ...auditContext,
+    });
+
     return NextResponse.json({ success: true, message: `Reset email sent to ${user.email}` });
   } catch (error) {
-    console.error('[RESET-EMAIL-API] Caught exception:', error);
     return NextResponse.json({ error: 'Failed to send reset email' }, { status: 500 });
   }
 }

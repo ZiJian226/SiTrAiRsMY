@@ -8,6 +8,7 @@ export interface CareerApplication {
   email: string;
   position: string;
   portfolio_url: string | null;
+  tiktok_username: string | null;
   motivation: string;
   status: 'pending' | 'reviewing' | 'accepted' | 'rejected';
   admin_notes: string | null;
@@ -37,14 +38,15 @@ export async function createCareerApplication(
   email: string,
   position: string,
   motivation: string,
-  portfolioUrl?: string | null
+  portfolioUrl?: string | null,
+  tiktokUsername?: string | null
 ): Promise<CareerApplication> {
   try {
     const result = await dbQuery(
-      `INSERT INTO career_applications (name, email, position, portfolio_url, motivation, status)
-       VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO career_applications (name, email, position, portfolio_url, tiktok_username, motivation, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING *`,
-      [name, email, position, portfolioUrl || null, motivation, 'pending']
+      [name, email, position, portfolioUrl || null, tiktokUsername || null, motivation, 'pending']
     );
 
     if (!result.rows || result.rows.length === 0) {

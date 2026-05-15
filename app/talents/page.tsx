@@ -6,7 +6,6 @@ import Navbar from "@/components/Navbar";
 import Container from "@/components/Container";
 import Footer from "@/components/Footer";
 import PageBackground from "@/components/PageBackground";
-import { fallbackTalents } from "@/lib/content/fallback";
 import { useCachedApiResource } from "@/lib/hooks";
 import type { Talent } from "@/lib/content/types";
 
@@ -15,9 +14,9 @@ export default function TalentsPage() {
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
 
   const { data: talents, loading } = useCachedApiResource<Talent[]>({
-    cacheKey: 'starmy:content:talents:v4',
+    cacheKey: 'starmy:content:talents:v5',
     url: '/api/content/talents',
-    fallbackData: fallbackTalents,
+    fallbackData: [],
     maxAgeMs: 60_000,
     staleWhileRevalidateMs: 3_600_000,
   });

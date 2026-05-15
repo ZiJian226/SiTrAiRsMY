@@ -3,7 +3,7 @@ import { createCareerApplication } from '@/lib/applications/repository';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { name, email, position, motivation, portfolioUrl } = body;
+    const { name, email, position, motivation, portfolioUrl, tiktokUsername } = body;
 
     if (!name || !email || !position || !motivation) {
       return Response.json(
@@ -17,7 +17,8 @@ export async function POST(request: Request) {
       email,
       position,
       motivation,
-      portfolioUrl
+      portfolioUrl,
+      tiktokUsername
     );
 
     return Response.json({

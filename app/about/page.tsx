@@ -16,7 +16,7 @@ export default function AboutPage() {
           <div className="hero-content text-center">
             <div className="max-w-3xl">
               <h1 className="text-5xl font-bold mb-6 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                About StarMy
+                About StarMyriad
               </h1>
               <p className="text-xl">
                 Building Malaysia's most vibrant VTuber and artist community, one connection at a time.
@@ -87,7 +87,7 @@ export default function AboutPage() {
                 </p>
                 <p>
                   What started as a passion project has grown into a thriving community hub. We've witnessed countless
-                  success stories—artists finding their dream clients, VTubers building dedicated fanbases, and
+                  success stories where artists finding their dream clients, VTubers building dedicated fanbases, and
                   collaborations that have created amazing content.
                 </p>
                 <p>

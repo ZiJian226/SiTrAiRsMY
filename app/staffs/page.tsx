@@ -14,7 +14,7 @@ export default function StaffsPage() {
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
 
   const { data: talents, loading } = useCachedApiResource<Talent[]>({
-    cacheKey: 'starmy:content:staffs:v1',
+    cacheKey: 'starmy:content:staffs:v2',
     url: '/api/content/staffs',
     fallbackData: [],
     maxAgeMs: 60_000,
@@ -42,7 +42,7 @@ export default function StaffsPage() {
           Our Staffs
         </h1>
         <p className="text-center text-lg mb-12 max-w-2xl mx-auto">
-          Meet the people who help StarMy run behind the scenes.
+          Meet the people who help StarMyriad run behind the scenes.
         </p>
 
         {/* Search and Filter Section */}

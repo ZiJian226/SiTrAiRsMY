@@ -32,6 +32,7 @@ export interface AdminProfile extends AdminUser {
   youtubeUrl?: string;
   twitchUrl?: string;
   tiktokUrl?: string;
+  profileCardUrl?: string;
   supportUrl?: string;
   specialty?: string[];
   portfolio?: string[];

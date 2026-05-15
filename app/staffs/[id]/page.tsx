@@ -162,10 +162,47 @@ export default async function StaffProfilePage({ params }: { params: Promise<{ i
   const portraitOrProfileImage = portraitPictures[0]?.url || vtuber.profilePictureUrl || vtuber.avatar;
   const profilePictureImage = vtuber.profilePictureUrl || vtuber.avatar;
   const socialButtons = [
-    vtuber.supportUrl ? { label: 'Support', href: vtuber.supportUrl, className: 'btn-primary' } : null,
-    vtuber.instagramUrl ? { label: 'Instagram', href: vtuber.instagramUrl, className: 'btn-secondary' } : null,
-    vtuber.xUrl ? { label: 'X', href: vtuber.xUrl, className: 'btn-outline' } : null,
-  ].filter(Boolean) as Array<{ label: string; href: string; className: string }>;
+    vtuber.profileCardUrl ? {
+      label: 'Profile Card',
+      href: vtuber.profileCardUrl,
+      className: 'border-emerald-500 bg-emerald-500 text-white hover:bg-emerald-600 hover:border-emerald-600',
+      icon: (
+        <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
+          <path fill="currentColor" d="M10.6 13.4a1 1 0 0 1 0-1.4l2.8-2.8a1 1 0 1 1 1.4 1.4L12 13.4a1 1 0 0 1-1.4 0Zm-3.5 3.5a4 4 0 0 1 0-5.7l2-2a1 1 0 1 1 1.4 1.4l-2 2a2 2 0 1 0 2.8 2.8l2-2a1 1 0 1 1 1.4 1.4l-2 2a4 4 0 0 1-5.7 0Z" />
+        </svg>
+      ),
+    } : null,
+    vtuber.supportUrl ? {
+      label: 'Support',
+      href: vtuber.supportUrl,
+      className: 'border-rose-500 bg-rose-500 text-white hover:bg-rose-600 hover:border-rose-600',
+      icon: (
+        <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
+          <path fill="currentColor" d="M12 21s-7.5-4.6-9.6-9C.7 8.3 2.8 4.5 7 4.2c2-.1 3.6 1 5 2.8 1.4-1.8 3-2.9 5-2.8 4.2.3 6.3 4.1 4.6 7.8C19.5 16.4 12 21 12 21Z" />
+        </svg>
+      ),
+    } : null,
+    vtuber.instagramUrl ? {
+      label: 'Instagram',
+      href: vtuber.instagramUrl,
+      className: 'border-0 text-white bg-gradient-to-r from-[#F58529] via-[#DD2A7B] to-[#8134AF] hover:brightness-110',
+      icon: (
+        <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
+          <path fill="currentColor" d="M7 2h10a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5H7a5 5 0 0 1-5-5V7a5 5 0 0 1 5-5Zm0 2a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V7a3 3 0 0 0-3-3H7Zm5 3.5A4.5 4.5 0 1 1 7.5 12 4.5 4.5 0 0 1 12 7.5Zm0 2A2.5 2.5 0 1 0 14.5 12 2.5 2.5 0 0 0 12 9.5Zm5-4.2a1.3 1.3 0 1 1-1.3 1.3 1.3 1.3 0 0 1 1.3-1.3Z" />
+        </svg>
+      ),
+    } : null,
+    vtuber.xUrl ? {
+      label: 'X',
+      href: vtuber.xUrl,
+      className: 'border-black bg-black text-white hover:bg-neutral-800 hover:border-neutral-800',
+      icon: (
+        <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
+          <path fill="currentColor" d="M4 4h4.2l4.3 5.7L17.4 4H20l-6.2 8 6.4 8H16l-4.4-5.8L7.4 20H4l6.5-8L4 4Zm4.4 1.5H6.6L17.4 18.5h1.8L8.4 5.5Z" />
+        </svg>
+      ),
+    } : null,
+  ].filter(Boolean) as Array<{ label: string; href: string; className: string; icon: React.ReactNode }>;
   const talentTags = toStringArray(vtuber.tags);
   const talentPortfolio = toStringArray(vtuber.portfolio);
   const talentCharacterInfo = vtuber.characterInfo && typeof vtuber.characterInfo === 'object' ? vtuber.characterInfo : undefined;
@@ -310,8 +347,9 @@ export default async function StaffProfilePage({ params }: { params: Promise<{ i
                     {socialButtons.length > 0 && (
                       <div className="mt-3 flex flex-wrap gap-2">
                         {socialButtons.map((button) => (
-                          <a key={button.label} href={button.href} target="_blank" rel="noopener noreferrer" className={`btn btn-sm ${button.className}`}>
-                            {button.label === 'Support' ? '💖 Support' : button.label}
+                          <a key={button.label} href={button.href} target="_blank" rel="noopener noreferrer" className={`btn btn-sm gap-2 ${button.className}`}>
+                            {button.icon}
+                            <span>{button.label}</span>
                           </a>
                         ))}
                       </div>

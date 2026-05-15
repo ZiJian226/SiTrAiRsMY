@@ -52,6 +52,7 @@ ALTER TABLE IF EXISTS talent_profiles ADD COLUMN IF NOT EXISTS portfolio_links T
 ALTER TABLE IF EXISTS talent_profiles ADD COLUMN IF NOT EXISTS bio TEXT;
 ALTER TABLE IF EXISTS talent_profiles ADD COLUMN IF NOT EXISTS debut_date DATE;
 ALTER TABLE IF EXISTS talent_profiles ADD COLUMN IF NOT EXISTS portrait_pictures JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE IF EXISTS talent_profiles ADD COLUMN IF NOT EXISTS profile_card_url TEXT;
 ALTER TABLE IF EXISTS talent_profiles ADD COLUMN IF NOT EXISTS support_url TEXT;
 
 -- Backfill portrait_pictures array from legacy column
@@ -187,10 +188,19 @@ CREATE TABLE IF NOT EXISTS user_audit_logs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   actor_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
   actor_role TEXT,
+  category TEXT NOT NULL DEFAULT 'content',
   action TEXT NOT NULL,
+  event_type TEXT NOT NULL DEFAULT 'activity',
   resource_type TEXT NOT NULL,
   resource_id TEXT,
+  entity_type TEXT,
+  entity_id TEXT,
+  page_key TEXT,
   target_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  session_id UUID REFERENCES auth_sessions(id) ON DELETE SET NULL,
+  status_before TEXT,
+  status_after TEXT,
+  location_country TEXT,
   metadata JSONB DEFAULT '{}'::jsonb,
   ip_address TEXT,
   user_agent TEXT,
@@ -200,6 +210,7 @@ CREATE TABLE IF NOT EXISTS user_audit_logs (
 CREATE INDEX IF NOT EXISTS idx_user_audit_logs_actor_user_id ON user_audit_logs(actor_user_id);
 CREATE INDEX IF NOT EXISTS idx_user_audit_logs_target_user_id ON user_audit_logs(target_user_id);
 CREATE INDEX IF NOT EXISTS idx_user_audit_logs_action ON user_audit_logs(action);
+CREATE INDEX IF NOT EXISTS idx_user_audit_logs_category ON user_audit_logs(category);
 CREATE INDEX IF NOT EXISTS idx_user_audit_logs_created_at ON user_audit_logs(created_at DESC);
 
 -- ============================================
@@ -271,6 +282,8 @@ CREATE TRIGGER update_commission_requests_updated_at BEFORE UPDATE ON commission
 -- ============================================
 -- SPECIAL COLUMN CLEANUP
 -- ============================================
+ALTER TABLE IF EXISTS career_applications ADD COLUMN IF NOT EXISTS tiktok_username TEXT;
+
 -- Drop legacy column that was replaced with portrait_pictures array
 ALTER TABLE IF EXISTS talent_profiles DROP COLUMN IF EXISTS lore;
 

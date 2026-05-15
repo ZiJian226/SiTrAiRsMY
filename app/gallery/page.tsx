@@ -7,7 +7,6 @@ import Footer from "@/components/Footer";
 import PageBackground from "@/components/PageBackground";
 import GalleryMediaShowcase from "@/components/GalleryMediaShowcase";
 import LandscapeModal from "@/components/LandscapeModal";
-import { fallbackGalleryItems } from "@/lib/content/fallback";
 import type { GalleryEntry } from "@/lib/content/types";
 import { useCachedApiResource } from "@/lib/hooks";
 
@@ -16,9 +15,9 @@ export default function GalleryPage() {
   const [selectedItem, setSelectedItem] = useState<GalleryEntry | null>(null);
 
   const { data: galleryItems, loading } = useCachedApiResource<GalleryEntry[]>({
-    cacheKey: 'starmy:content:gallery:v3',
+    cacheKey: 'starmy:content:gallery:v4',
     url: '/api/content/gallery',
-    fallbackData: fallbackGalleryItems,
+    fallbackData: [],
     maxAgeMs: 60_000,
     staleWhileRevalidateMs: 3_600_000,
   });

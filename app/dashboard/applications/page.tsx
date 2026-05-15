@@ -15,6 +15,7 @@ interface CareerApplication {
   email: string;
   position: string;
   portfolio_url: string | null;
+  tiktok_username: string | null;
   motivation: string;
   status: "pending" | "reviewing" | "accepted" | "rejected";
   admin_notes: string | null;
@@ -298,6 +299,11 @@ export default function ApplicationsPage() {
                           <div>
                             <p className="opacity-70">Position</p>
                             <p className="font-semibold">{(selectedApp as CareerApplication).position}</p>
+                          </div>
+
+                          <div>
+                            <p className="opacity-70">TikTok Username</p>
+                            <p className="font-semibold break-all">{(selectedApp as CareerApplication).tiktok_username || "—"}</p>
                           </div>
 
                           {(selectedApp as CareerApplication).portfolio_url && (

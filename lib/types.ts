@@ -21,6 +21,7 @@ export interface VTuber {
   profilePictureUrl?: string;
   portraitPictureUrl?: string;
   portraitPictures?: PortraitPicture[];
+  profileCardUrl?: string;
   supportUrl?: string;
   instagramUrl?: string;
   xUrl?: string;

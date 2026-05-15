@@ -15,6 +15,7 @@ export default function JoinUsPage() {
     name: "",
     email: "",
     portfolio: "",
+    tiktokUsername: "",
     description: "",
     position: "",
   });
@@ -34,6 +35,7 @@ export default function JoinUsPage() {
           position: formData.position,
           motivation: formData.description,
           portfolioUrl: formData.portfolio || null,
+          tiktokUsername: formData.tiktokUsername || null,
         }),
       });
 
@@ -45,7 +47,7 @@ export default function JoinUsPage() {
       setSubmitted(true);
       setTimeout(() => {
         setSubmitted(false);
-        setFormData({ name: "", email: "", portfolio: "", description: "", position: "" });
+        setFormData({ name: "", email: "", portfolio: "", tiktokUsername: "", description: "", position: "" });
       }, 3000);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -56,6 +58,10 @@ export default function JoinUsPage() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSelectPosition = (position: string) => {
+    window.open("https://docs.google.com/forms/d/e/1FAIpQLScUV4FqPl2mQhgi8P8-nGWl_RAEqbHviVWrC92AGrm-aU1u_g/viewform?usp=header", "_blank", "noopener,noreferrer");
   };
 
   // Staff positions for vtuber agency
@@ -137,7 +143,7 @@ export default function JoinUsPage() {
                 <div className="text-5xl mb-4">🎤</div>
                 <h3 className="card-title text-primary text-2xl">Join as Talent</h3>
                 <p className="opacity-80 mb-4">Are you a VTuber or content creator? Share your passion and join our talent roster!</p>
-                <button className="btn btn-primary btn-disabled">Coming Soon</button>
+                  <button type="button" onClick={() => handleSelectPosition("Talent")} className="btn btn-primary">Apply as Talent</button>
               </div>
             </div>
 
@@ -146,7 +152,7 @@ export default function JoinUsPage() {
                 <div className="text-5xl mb-4">🎨</div>
                 <h3 className="card-title text-secondary text-2xl">Join as Artist</h3>
                 <p className="opacity-80 mb-4">Show off your art! We collaborate with talented illustrators and character designers.</p>
-                <button className="btn btn-secondary btn-disabled">Coming Soon</button>
+                  <button type="button" onClick={() => handleSelectPosition("Artist")} className="btn btn-secondary">Apply as Artist</button>
               </div>
             </div>
           </div>
@@ -181,7 +187,7 @@ export default function JoinUsPage() {
 
           {/* Staff Positions Section */}
           <div className="mb-12">
-            <h2 className="text-4xl font-bold text-center mb-4 text-primary">Open Positions</h2>
+            <h2 className="text-4xl font-bold text-center mb-4 text-primary">Open Positions (Volunteer)</h2>
             <p className="text-center text-lg opacity-80 mb-3">We're growing and looking for team members across various departments.</p>
             <p className="text-center text-sm opacity-70 mb-8">Entry applications are for below-manager roles. Manager tracks are internal promotions after proven performance.</p>
             
@@ -209,7 +215,7 @@ export default function JoinUsPage() {
           </div>
 
           {/* Application Form */}
-          <div id="application-form" className="max-w-4xl mx-auto">
+          <div id="application-form" className="max-w-3xl mx-auto">
             <h2 className="text-4xl font-bold text-center mb-8 text-secondary">Staff Application Form</h2>
             <div className="card bg-base-200 shadow-xl">
               <div className="card-body">
@@ -258,15 +264,21 @@ export default function JoinUsPage() {
                       </div>
 
                       <div className="form-control">
+                        <label className="label"><span className="label-text-alt opacity-70">Optional</span></label>
+                        <input type="text" name="tiktokUsername" placeholder="@yourtiktokusername" className="input input-bordered max-w-md w-full" value={formData.tiktokUsername} onChange={handleChange} disabled={loading} />
+                      </div>
+
+                      <div className="form-control">
                         <label className="label"><span className="label-text font-semibold">Why do you want to join StarMy? *</span></label>
                         <textarea name="description" placeholder="Share your experience, skills, and why you'd be a great fit for StarMy..." className="textarea textarea-bordered h-30 max-w-md w-full" value={formData.description} onChange={handleChange} required disabled={loading} />
                       </div>
 
                       <div className="form-control">
-                        <label className="label" />
-                        <div className="w-full flex items-center justify-end gap-4">
-                          <p className="text-sm opacity-70 text-left">By submitting this form, you agree to our <Link href="/terms" className="link link-primary">Terms of Service</Link> and <Link href="/privacy" className="link link-primary">Privacy Policy</Link>.</p>
-                          <button type="submit" className="btn btn-primary btn-lg whitespace-nowrap" disabled={loading}>
+                        <label className="label">
+                          <p className="text-sm opacity-70 whitespace-normal">By submitting this form, you agree to our <Link href="/terms" className="link link-primary">Terms of Service</Link> and <Link href="/privacy" className="link link-primary">Privacy Policy</Link>.</p>
+                        </label>
+                        <div className="flex flex-col gap-3 max-w-md">
+                          <button type="submit" className="btn btn-primary btn-lg whitespace-normal" disabled={loading}>
                             {loading ? (
                               <>
                                 <span className="loading loading-spinner loading-sm"></span>
@@ -276,6 +288,9 @@ export default function JoinUsPage() {
                               'Submit Application'
                             )}
                           </button>
+                          <a href="https://www.tiktok.com/messages?u=7502661742087619592" target="_blank" rel="noopener noreferrer" className="btn btn-outline btn-lg btn-info whitespace-normal">
+                            Message us on TikTok instead
+                          </a>
                         </div>
                       </div>
                     </form>

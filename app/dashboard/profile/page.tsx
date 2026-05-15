@@ -33,6 +33,8 @@ export default function ProfileEditorPage() {
   const [fullBodyModelUrl, setFullBodyModelUrl] = useState('')
   const [portraitPictureInput, setPortraitPictureInput] = useState('')
   const [portraitPictures, setPortraitPictures] = useState<ProfileImage[]>([])
+  const [portraitSizeHint, setPortraitSizeHint] = useState<{ width: number; height: number; recommendedWidth: number; recommendedHeight: number } | null>(null)
+  const [profileCardUrl, setProfileCardUrl] = useState('')
   const [supportUrl, setSupportUrl] = useState('')
   const [dateOfBirth, setDateOfBirth] = useState('')
   const [debutDate, setDebutDate] = useState('')
@@ -80,6 +82,52 @@ export default function ProfileEditorPage() {
     }
   }, [user, profile, saving])
 
+  useEffect(() => {
+    const sourceUrl = portraitPictureInput.trim() || portraitPictures[0]?.url || fullBodyModelUrl.trim()
+
+    if (!sourceUrl) {
+      setPortraitSizeHint(null)
+      return
+    }
+
+    let cancelled = false
+    const image = new window.Image()
+
+    image.onload = () => {
+      if (cancelled) return
+
+      const width = image.naturalWidth
+      const height = image.naturalHeight
+
+      if (!width || !height) {
+        setPortraitSizeHint(null)
+        return
+      }
+
+      const recommendedHeight = 1800
+      const recommendedWidth = Math.max(1, Math.round((width / height) * recommendedHeight))
+
+      setPortraitSizeHint({
+        width,
+        height,
+        recommendedWidth,
+        recommendedHeight,
+      })
+    }
+
+    image.onerror = () => {
+      if (!cancelled) {
+        setPortraitSizeHint(null)
+      }
+    }
+
+    image.src = sourceUrl
+
+    return () => {
+      cancelled = true
+    }
+  }, [portraitPictureInput, portraitPictures, fullBodyModelUrl])
+
   // Convert incoming date-like strings to HTML date input value (YYYY-MM-DD)
   function toDateInputValue(value?: string) {
     if (!value) return ''
@@ -123,6 +171,7 @@ export default function ProfileEditorPage() {
         portrait_picture_url?: string | null
         portrait_pictures?: ProfileImage[]
         featured_video_url?: string | null
+        profile_card_url?: string | null
         social_links?: {
           youtube?: string | null
           youtubeUrl?: string | null
@@ -193,6 +242,7 @@ export default function ProfileEditorPage() {
             : []
         setPortraitPictures(nextPortraitPictures)
         setFullBodyModelUrl(nextPortraitPictures[0]?.url || data.portrait_picture_url || '')
+        setProfileCardUrl((data as any).profile_card_url || '')
         setSupportUrl((data as any).support_url || '')
       }
     } catch (err) {
@@ -390,6 +440,7 @@ export default function ProfileEditorPage() {
             portrait_picture_url: portraitPictures[0]?.url || fullBodyModelUrl || null,
             portrait_picture_object_key: portraitPictures[0]?.object_key || null,
             portrait_pictures: portraitPictures,
+            profile_card_url: profileCardUrl || null,
             support_url: supportUrl || null,
             featured_video_url: featuredVideoUrl || null,
             social_links: {
@@ -814,20 +865,37 @@ export default function ProfileEditorPage() {
 
                             <div className="form-control">
                               <label className="label">
-                                <span className="label-text font-semibold">💖 Support Link</span>
+                                <span className="label-text font-semibold">🔗 Profile Card URL</span>
                               </label>
                               <input
                                 type="url"
                                 className="input input-bordered"
-                                placeholder="https://ko-fi.com/yourname or https://onlyfans.com/..."
-                                value={supportUrl}
-                                onChange={(e) => setSupportUrl(e.target.value)}
+                                placeholder="https://linktr.ee/yourname or https://guns.lol/yourname"
+                                value={profileCardUrl}
+                                onChange={(e) => setProfileCardUrl(e.target.value)}
                                 disabled={saving}
                               />
                               <label className="label">
-                                <span className="label-text text-xs opacity-70">Optional: Ko-fi / Support link</span>
+                                <span className="label-text text-xs opacity-70">Optional: link hub / social business card</span>
                               </label>
                             </div>
+
+                              <div className="form-control">
+                                <label className="label">
+                                  <span className="label-text font-semibold">💖 Support Link</span>
+                                </label>
+                                <input
+                                  type="url"
+                                  className="input input-bordered"
+                                  placeholder="https://ko-fi.com/yourname or https://onlyfans.com/..."
+                                  value={supportUrl}
+                                  onChange={(e) => setSupportUrl(e.target.value)}
+                                  disabled={saving}
+                                />
+                                <label className="label">
+                                  <span className="label-text text-xs opacity-70">Optional: Ko-fi / Support link</span>
+                                </label>
+                              </div>
 
                           <div className="form-control md:col-span-2">
                             <label className="label">
@@ -994,6 +1062,17 @@ export default function ProfileEditorPage() {
                           <span className="label-text font-semibold">Portrait Pictures</span>
                           <span className="label-text-alt text-xs">One image shows at a time on the public card</span>
                         </label>
+                        {portraitSizeHint ? (
+                          <div className="alert alert-info py-2 px-3 mb-2 text-sm">
+                            <span>
+                              Current image: {portraitSizeHint.width}×{portraitSizeHint.height}px. Recommended export size: {portraitSizeHint.recommendedWidth}×{portraitSizeHint.recommendedHeight}px.
+                            </span>
+                          </div>
+                        ) : (
+                          <p className="text-xs opacity-70 mb-2">
+                            Add or paste a portrait image URL to see a recommended export size.
+                          </p>
+                        )}
                         <div className="flex flex-col gap-2">
                           {portraitPictures.length > 0 && (
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">

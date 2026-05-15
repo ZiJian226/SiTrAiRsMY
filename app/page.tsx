@@ -66,28 +66,23 @@ export default function Home() {
   });
 
   const featuredNews = newsEvents
-    .filter(event => event.featured)
-    .slice(0, 2);
+    .filter(event => event.featured);
 
   const featuredGallery = galleryItems
-    .filter(item => item.featured)
-    .slice(0, 3);
+    .filter(item => item.featured);
 
   const featuredTalents = talents
-    .filter(talent => talent.featured)
-    .slice(0, 6);
+    .filter(talent => talent.featured);
 
   const featuredStaffs = staffs
-    .filter(staff => staff.featured)
-    .slice(0, 6);
+    .filter(staff => staff.featured);
 
   const featuredArtists = (artists as any[])
-    .filter((artist: any) => artist.featured)
-    .slice(0, 6) as ArtistProfile[];
+    .filter((artist: any) => artist.featured) as ArtistProfile[];
 
-  const talentShowcase = featuredTalents.length > 0 ? featuredTalents : talents.slice(0, 6);
-  const staffShowcase = featuredStaffs.length > 0 ? featuredStaffs : staffs.slice(0, 6);
-  const artistShowcase = featuredArtists.length > 0 ? featuredArtists : artists.slice(0, 6);
+  const talentShowcase = featuredTalents.length > 0 ? featuredTalents : talents;
+  const staffShowcase = featuredStaffs.length > 0 ? featuredStaffs : staffs;
+  const artistShowcase = featuredArtists.length > 0 ? featuredArtists : artists;
 
   const openModal = (imageUrl: string, title?: string, description?: string, mediaItems?: GalleryEntry['media']) => {
     setModalData({ imageUrl, title, description, mediaItems });
@@ -197,7 +192,7 @@ export default function Home() {
           {featuredGallery.length === 0 && (
             <p className="text-center opacity-70 mb-8">No featured gallery items have been pinned yet.</p>
           )}
-          <PagedCarousel pageSize={5}>
+          <PagedCarousel pageSizeDesktop={5} pageSizeMobile={3}>
             {featuredGallery.map((item) => (
               <div
                 key={item.id}
@@ -238,7 +233,7 @@ export default function Home() {
           </div>
           <Container className="relative z-10">
             <h2 className="text-4xl font-bold text-center mb-12">Our Talents</h2>
-            <PagedCarousel pageSize={5}>
+            <PagedCarousel pageSizeDesktop={5} pageSizeMobile={3}>
               {talentShowcase.map((talent) => (
                 <Link
                   key={talent.id}
@@ -282,7 +277,7 @@ export default function Home() {
           </div>
           <Container className="relative z-10">
             <h2 className="text-4xl font-bold text-center mb-12">Our Artists</h2>
-            <PagedCarousel pageSize={5}>
+            <PagedCarousel pageSizeDesktop={5} pageSizeMobile={3}>
               {artistShowcase.map((artist) => (
                 <Link
                   key={artist.id}
@@ -338,7 +333,7 @@ export default function Home() {
           </div>
           <Container className="relative z-10">
             <h2 className="text-4xl font-bold text-center mb-12">Our Staffs</h2>
-            <PagedCarousel pageSize={5}>
+            <PagedCarousel pageSizeDesktop={5} pageSizeMobile={3}>
               {staffShowcase.map((staff) => (
                 <Link
                   key={staff.id}

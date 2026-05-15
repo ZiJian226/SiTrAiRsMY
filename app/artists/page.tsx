@@ -7,7 +7,6 @@ import Container from "@/components/Container";
 import Footer from "@/components/Footer";
 import PageBackground from "@/components/PageBackground";
 import ArtistCardShowcase from "@/components/ArtistCardShowcase";
-import { fallbackArtists } from "@/lib/content/fallback";
 import { useCachedApiResource } from "@/lib/hooks";
 import type { ArtistProfile } from "@/lib/content/types";
 
@@ -17,9 +16,9 @@ export default function ArtistsPage() {
   const [openOnly, setOpenOnly] = useState(false);
 
   const { data: artists, loading } = useCachedApiResource<ArtistProfile[]>({
-    cacheKey: 'starmy:content:artists:v4',
+    cacheKey: 'starmy:content:artists:v5',
     url: '/api/content/artists',
-    fallbackData: fallbackArtists,
+    fallbackData: [],
     maxAgeMs: 60_000,
     staleWhileRevalidateMs: 3_600_000,
   });

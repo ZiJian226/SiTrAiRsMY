@@ -111,6 +111,7 @@ type AdminProfileRow = {
   profile_picture_object_key: string | null;
   portrait_picture_url: string | null;
   portrait_picture_object_key: string | null;
+  profile_card_url: string | null;
   support_url: string | null;
   instagram_url: string | null;
   x_url: string | null;
@@ -909,6 +910,7 @@ export async function getAdminProfiles(): Promise<AdminProfile[]> {
   const supportsVtuberModel = await hasColumn('talent_profiles', 'vtuber_model_url');
   const supportsProfilePicture = await hasColumn('talent_profiles', 'profile_picture_url');
   const supportsPortraitPicture = await hasColumn('talent_profiles', 'portrait_picture_url');
+  const supportsProfileCardUrl = await hasColumn('talent_profiles', 'profile_card_url');
   const supportsSupportUrl = await hasColumn('talent_profiles', 'support_url');
   const supportsPortraitPictures = await hasColumn('talent_profiles', 'portrait_pictures');
   const supportsFeaturedVideo = await hasColumn('talent_profiles', 'featured_video_url');
@@ -944,6 +946,7 @@ export async function getAdminProfiles(): Promise<AdminProfile[]> {
       ${supportsProfilePicture ? 'tp.profile_picture_url' : 'NULL::text AS profile_picture_url'},
       ${supportsProfilePicture ? 'tp.profile_picture_object_key' : 'NULL::text AS profile_picture_object_key'},
       ${supportsPortraitPicture ? 'tp.portrait_picture_url' : 'NULL::text AS portrait_picture_url'},
+      ${supportsProfileCardUrl ? 'tp.profile_card_url' : 'NULL::text AS profile_card_url'},
       ${supportsSupportUrl ? 'tp.support_url' : 'NULL::text AS support_url'},
       ${supportsPortraitPicture ? 'tp.portrait_picture_object_key' : 'NULL::text AS portrait_picture_object_key'},
       ${supportsPortraitPictures ? 'tp.portrait_pictures' : "'[]'::jsonb AS portrait_pictures"},
@@ -1108,6 +1111,7 @@ export async function getAdminProfiles(): Promise<AdminProfile[]> {
       portraitPictureUrl: safeString(row.portrait_picture_url) || undefined,
       portraitPictureObjectKey: row.portrait_picture_object_key || undefined,
       portraitPictures: resolvedPortraitPictures,
+      profileCardUrl: safeString(row.profile_card_url) || undefined,
       featuredVideoUrl: safeString(row.featured_video_url) || undefined,
       featured: row.role === 'artist' ? Boolean(row.artist_featured) : Boolean(row.talent_featured),
       portfolio: Array.isArray(row.artist_portfolio_links) ? row.artist_portfolio_links : Array.isArray(row.portfolio_links) ? row.portfolio_links : [],
@@ -1169,6 +1173,9 @@ export async function updateAdminProfile(
     instagramUrl?: string;
     xUrl?: string;
     supportUrl?: string;
+    profileCardUrl?: string;
+    /** Optional ordering integer to control featured ordering on homepage */
+    featuredOrder?: number;
   },
 ): Promise<AdminProfile | null> {
   const profileResult = await dbQuery(
@@ -1215,6 +1222,7 @@ export async function updateAdminProfile(
       portrait_picture_url: primaryPortrait?.url || input.portraitPictureUrl || null,
       portrait_picture_object_key: primaryPortrait?.object_key || input.portraitPictureObjectKey || null,
       portrait_pictures: portraitPictures,
+      profile_card_url: input.profileCardUrl || null,
       featured_video_url: input.featuredVideoUrl || null,
       featured: input.featured,
       social_links: {
@@ -1232,6 +1240,8 @@ export async function updateAdminProfile(
         twitterUrl: input.xUrl || null,
       },
       support_url: input.supportUrl || null,
+      // allow admin to set an explicit featured ordering
+      featuredOrder: typeof input.featuredOrder === 'number' ? input.featuredOrder : undefined,
     });
   }
 
@@ -1242,6 +1252,8 @@ export async function updateAdminProfile(
       portfolio_art: input.portfolioArt || [],
       portfolio_art_images: normalizeProfileImages(input.portfolioArtImages),
       commissions_open: Boolean(input.commissionsOpen),
+      // allow admin to set an explicit featured ordering for artists
+      featuredOrder: typeof input.featuredOrder === 'number' ? input.featuredOrder : undefined,
       price_range: input.priceRange || null,
       contact_email: input.contactEmail || null,
       featured: input.featured,
@@ -1287,6 +1299,7 @@ export async function updateAdminProfile(
     instagramUrl: input.instagramUrl,
     xUrl: input.xUrl,
     supportUrl: input.supportUrl,
+    profileCardUrl: input.profileCardUrl,
     youtubeUrl: input.youtubeUrl,
     twitchUrl: input.twitchUrl,
     tiktokUrl: input.tiktokUrl,

@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { deleteAdminGalleryItem, updateAdminGalleryItem } from '@/lib/admin/repository';
+import { requireAdminUser } from '@/lib/auth/authorization';
+import { getAuditRequestContext, logUserAuditEvent } from '@/lib/auditLog';
+import { dbQuery } from '@/lib/database';
 
 export const runtime = 'nodejs';
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const guard = await requireAdminUser(request);
+    if ('response' in guard) return guard.response;
+    const auditContext = getAuditRequestContext(request.headers);
     const { id } = await params;
     const body = (await request.json()) as {
       title?: string;
@@ -28,6 +34,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     if (!body.title && !body.image_url && !body.image_object_key && !body.description && !body.category && !body.artist_name && typeof body.is_published !== 'boolean' && typeof body.featured !== 'boolean' && !Array.isArray(body.media)) {
       return NextResponse.json({ error: 'No fields provided to update' }, { status: 400 });
     }
+
+    const currentResult = await dbQuery(`SELECT id, title, category, artist_name FROM gallery_items WHERE id = $1 LIMIT 1`, [id]);
+    const currentRow = currentResult.rows[0] as { id: string; title: string; category: string | null; artist_name: string | null } | undefined;
 
     const updated = await updateAdminGalleryItem(id, {
       title: body.title,
@@ -54,6 +63,23 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       return NextResponse.json({ error: 'Gallery item not found' }, { status: 404 });
     }
 
+    await logUserAuditEvent({
+      actorUserId: guard.user.id,
+      actorRole: 'admin',
+      action: 'content.gallery.update',
+      category: 'content',
+      eventType: 'update',
+      resourceType: 'gallery_item',
+      resourceId: updated.id,
+      entityType: 'gallery_item',
+      entityId: updated.id,
+      metadata: {
+        updatedFields: Object.keys(body).filter((key) => body[key as keyof typeof body] !== undefined),
+        previous: currentRow || null,
+      },
+      ...auditContext,
+    });
+
     return NextResponse.json(updated);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to update gallery item';
@@ -63,11 +89,32 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
 export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const guard = await requireAdminUser(_);
+    if ('response' in guard) return guard.response;
+    const auditContext = getAuditRequestContext(_.headers);
     const { id } = await params;
+    const currentResult = await dbQuery(`SELECT id, title, category, artist_name FROM gallery_items WHERE id = $1 LIMIT 1`, [id]);
+    const currentRow = currentResult.rows[0] as { id: string; title: string; category: string | null; artist_name: string | null } | undefined;
     const deleted = await deleteAdminGalleryItem(id);
 
     if (!deleted) {
       return NextResponse.json({ error: 'Gallery item not found' }, { status: 404 });
+    }
+
+    if (currentRow) {
+      await logUserAuditEvent({
+        actorUserId: guard.user.id,
+        actorRole: 'admin',
+        action: 'content.gallery.delete',
+        category: 'content',
+        eventType: 'delete',
+        resourceType: 'gallery_item',
+        resourceId: currentRow.id,
+        entityType: 'gallery_item',
+        entityId: currentRow.id,
+        metadata: currentRow,
+        ...auditContext,
+      });
     }
 
     return NextResponse.json({ success: true });

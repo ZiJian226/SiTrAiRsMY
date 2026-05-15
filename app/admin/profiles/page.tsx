@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import Container from '@/components/Container'
 import Link from 'next/link'
 import type { UserRole } from '@/lib/auth/types'
@@ -95,6 +95,8 @@ export default function AdminProfilesPage() {
   const [portraitPictureInput, setPortraitPictureInput] = useState('')
   const [portraitPictures, setPortraitPictures] = useState<ProfileImage[]>([])
   const [portraitSizeHint, setPortraitSizeHint] = useState<{ width: number; height: number; recommendedWidth: number; recommendedHeight: number } | null>(null)
+  const [portraitImageSize, setPortraitImageSize] = useState<{ width: number; height: number } | null>(null)
+  const [portraitSectionElement, setPortraitSectionElement] = useState<HTMLDivElement | null>(null)
   const [portfolioArtImages, setPortfolioArtImages] = useState<ProfileImage[]>([])
   const [portfolioArtUploading, setPortfolioArtUploading] = useState(false)
 
@@ -118,6 +120,7 @@ export default function AdminProfilesPage() {
     const sourceUrl = portraitPictureInput.trim() || portraitPictures[0]?.url
 
     if (!sourceUrl) {
+      setPortraitImageSize(null)
       setPortraitSizeHint(null)
       return
     }
@@ -132,23 +135,20 @@ export default function AdminProfilesPage() {
       const height = image.naturalHeight
 
       if (!width || !height) {
+        setPortraitImageSize(null)
         setPortraitSizeHint(null)
         return
       }
 
-      const recommendedHeight = 1800
-      const recommendedWidth = Math.max(1, Math.round((width / height) * recommendedHeight))
-
-      setPortraitSizeHint({
+      setPortraitImageSize({
         width,
         height,
-        recommendedWidth,
-        recommendedHeight,
       })
     }
 
     image.onerror = () => {
       if (!cancelled) {
+        setPortraitImageSize(null)
         setPortraitSizeHint(null)
       }
     }
@@ -159,6 +159,63 @@ export default function AdminProfilesPage() {
       cancelled = true
     }
   }, [portraitPictureInput, portraitPictures])
+
+  useEffect(() => {
+    if (!portraitSectionElement || typeof ResizeObserver === 'undefined') {
+      return
+    }
+
+    const updateSectionSize = () => {
+      const rect = portraitSectionElement.getBoundingClientRect()
+
+      if (rect.width > 0 && rect.height > 0) {
+        const width = Math.round(rect.width)
+        const height = Math.round(rect.height)
+        setPortraitSizeHint((current) => {
+          if (current && current.recommendedWidth === width && current.recommendedHeight === height) {
+            return current
+          }
+
+          if (!portraitImageSize) {
+            return null
+          }
+
+          return {
+            width: portraitImageSize.width,
+            height: portraitImageSize.height,
+            recommendedWidth: width,
+            recommendedHeight: height,
+          }
+        })
+      }
+    }
+
+    updateSectionSize()
+
+    const observer = new ResizeObserver(updateSectionSize)
+    observer.observe(portraitSectionElement)
+
+    return () => {
+      observer.disconnect()
+    }
+  }, [portraitSectionElement, portraitImageSize])
+
+  useEffect(() => {
+    if (!portraitImageSize || !portraitSizeHint) {
+      return
+    }
+
+    setPortraitSizeHint({
+      width: portraitImageSize.width,
+      height: portraitImageSize.height,
+      recommendedWidth: portraitSizeHint.recommendedWidth,
+      recommendedHeight: portraitSizeHint.recommendedHeight,
+    })
+  }, [portraitImageSize, portraitSizeHint?.recommendedWidth, portraitSizeHint?.recommendedHeight])
+
+  const setPortraitSectionRef = useCallback((node: HTMLDivElement | null) => {
+    setPortraitSectionElement(node)
+  }, [])
 
   // Helpers for converting free-form dates to HTML date input values (YYYY-MM-DD)
   function toDateInputValue(value?: string) {
@@ -851,7 +908,7 @@ export default function AdminProfilesPage() {
                               {portraitSizeHint ? (
                                 <div className="alert alert-info py-2 px-3 mb-2 text-sm">
                                   <span>
-                                    Current image: {portraitSizeHint.width}×{portraitSizeHint.height}px. Recommended export size: {portraitSizeHint.recommendedWidth}×{portraitSizeHint.recommendedHeight}px.
+                                    Current image: {portraitSizeHint.width}×{portraitSizeHint.height}px. Live portrait card size: {portraitSizeHint.recommendedWidth}×{portraitSizeHint.recommendedHeight}px.
                                   </span>
                                 </div>
                               ) : (
@@ -1459,6 +1516,17 @@ export default function AdminProfilesPage() {
                               <label className="label">
                                 <span className="label-text font-semibold">Likes</span>
                               </label>
+                              <div className="w-full overflow-hidden" style={{ height: 0 }} aria-hidden="true">
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
+                                  <div className="lg:col-span-1">
+                                    <div className="card bg-base-200 shadow-xl lg:sticky lg:top-24 h-full">
+                                      <div className="card-body p-4 h-full flex flex-col">
+                                        <div ref={setPortraitSectionRef} className="rounded-xl overflow-hidden bg-base-300 border border-base-300 min-h-[520px] flex-1 flex items-center justify-center relative" />
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
                               <div className="join w-full">
                                 <input
                                   type="text"

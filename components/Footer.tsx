@@ -22,7 +22,7 @@ export default function Footer() {
               />
             </Link>
             <p className="mt-4 text-sm opacity-70 leading-relaxed">
-              Malaysia's vibrant VTuber and Artist community. Connect, discover, and create together.
+              Malaysia's vibrant VTuber and Artist agency community. Connect, discover, and create together.
             </p>
           </div>
 

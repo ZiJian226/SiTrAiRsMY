@@ -54,7 +54,7 @@ export default function Navbar() {
           </button>
           <Link
               href="/"
-              className="flex items-center lg:hidden transition-all duration-300 hover:drop-shadow-[0_0_8px_rgba(141,118,209,0.8)] hover:scale-110"
+              className="flex items-center lg:hidden transition-all duration-300 hover:drop-shadow-[0_0_8px_rgba(141,118,209,0.8)]"
               aria-label="StarMy Home"
             >
               <img
@@ -69,10 +69,10 @@ export default function Navbar() {
 
         {/* ===== DESKTOP: Horizontal menu (visible only on desktop) ===== */}
         <div className="navbar-center hidden lg:flex lg:absolute lg:left-1/2 lg:transform lg:-translate-x-1/2">
-          <ul className="menu menu-horizontal items-center md:gap-8 text-xl font-bold">
+          <ul className="menu menu-horizontal flex-nowrap whitespace-nowrap items-center gap-2 xl:gap-4 2xl:gap-6 text-lg 2xl:text-xl font-bold">
             <Link
               href="/"
-              className="flex items-center transition-all duration-300 hover:drop-shadow-[0_0_8px_rgba(141,118,209,0.8)] hover:scale-110"
+              className="flex items-center transition-all duration-300 hover:drop-shadow-[0_0_8px_rgba(141,118,209,0.8)]"
               aria-label="StarMy Home"
             >
               <img
@@ -84,37 +84,37 @@ export default function Navbar() {
               />
             </Link>
             <Link
-              className="hover:drop-shadow-[0_0_8px_rgba(141,118,209,0.8)] hover:scale-110 duration-300"
+              className="px-1 hover:drop-shadow-[0_0_8px_rgba(141,118,209,0.8)] hover:scale-110 duration-300"
               href="/talents"
             >
               Talents
             </Link>
             <Link
-              className="hover:drop-shadow-[0_0_8px_rgba(141,118,209,0.8)] hover:scale-110 duration-300"
+              className="px-1 hover:drop-shadow-[0_0_8px_rgba(141,118,209,0.8)] hover:scale-110 duration-300"
               href="/artists"
             >
               Artists
             </Link>
             <Link
-              className="hover:drop-shadow-[0_0_8px_rgba(141,118,209,0.8)] hover:scale-110 duration-300"
+              className="px-1 hover:drop-shadow-[0_0_8px_rgba(141,118,209,0.8)] hover:scale-110 duration-300"
               href="/staffs"
             >
               Staffs
             </Link>
             <Link
-              className="hover:drop-shadow-[0_0_8px_rgba(141,118,209,0.8)] hover:scale-110 duration-300"
+              className="px-1 hover:drop-shadow-[0_0_8px_rgba(141,118,209,0.8)] hover:scale-110 duration-300"
               href="/events"
             >
               Events
             </Link>
             <Link
-              className="hover:drop-shadow-[0_0_8px_rgba(141,118,209,0.8)] hover:scale-110 duration-300"
+              className="px-1 hover:drop-shadow-[0_0_8px_rgba(141,118,209,0.8)] hover:scale-110 duration-300"
               href="/gallery"
             >
               Gallery
             </Link>
             <Link
-              className="hover:drop-shadow-[0_0_8px_rgba(141,118,209,0.8)] hover:scale-110 duration-300"
+              className="px-1 hover:drop-shadow-[0_0_8px_rgba(141,118,209,0.8)] hover:scale-110 duration-300"
               href="/community"
             >
               Community

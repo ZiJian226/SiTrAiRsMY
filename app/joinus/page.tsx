@@ -1,16 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Container from "@/components/Container";
 import Footer from "@/components/Footer";
 import PageBackground from "@/components/PageBackground";
+import type { AgencyRequirement, AgencyBenefit } from "@/lib/types";
 
 export default function JoinUsPage() {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [requirements, setRequirements] = useState<AgencyRequirement[]>([]);
+  const [benefits, setBenefits] = useState<AgencyBenefit[]>([]);
+  const [requirementsLoading, setRequirementsLoading] = useState(true);
+  const [benefitsLoading, setBenefitsLoading] = useState(true);
+  const [expandedRequirement, setExpandedRequirement] = useState<string | null>(null);
+  
+  const [showRequirementsModal, setShowRequirementsModal] = useState(false);
+  const [showBenefitsModal, setShowBenefitsModal] = useState(false);
+  const [selectedRequirementRole, setSelectedRequirementRole] = useState<'general' | 'artist' | 'talent'>('general');
+  
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -19,6 +30,36 @@ export default function JoinUsPage() {
     description: "",
     position: "",
   });
+
+  // Fetch requirements and benefits on mount
+  useEffect(() => {
+    const fetchRequirements = async () => {
+      try {
+        const res = await fetch('/api/content/requirements');
+        const data = await res.json();
+        setRequirements(data.data || []);
+      } catch (error) {
+        console.error('Error fetching requirements:', error);
+      } finally {
+        setRequirementsLoading(false);
+      }
+    };
+
+    const fetchBenefits = async () => {
+      try {
+        const res = await fetch('/api/content/benefits');
+        const data = await res.json();
+        setBenefits(data.data || []);
+      } catch (error) {
+        console.error('Error fetching benefits:', error);
+      } finally {
+        setBenefitsLoading(false);
+      }
+    };
+
+    fetchRequirements();
+    fetchBenefits();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,7 +105,7 @@ export default function JoinUsPage() {
     window.open("https://docs.google.com/forms/d/e/1FAIpQLScUV4FqPl2mQhgi8P8-nGWl_RAEqbHviVWrC92AGrm-aU1u_g/viewform?usp=header", "_blank", "noopener,noreferrer");
   };
 
-  // Staff positions for vtuber agency
+  // Staff positions
   const staffPositions = [
     {
       title: "Community Moderator",
@@ -116,6 +157,12 @@ export default function JoinUsPage() {
     }
   ];
 
+  const groupedRequirements = {
+    general: requirements.filter(r => r.role === 'general'),
+    artist: requirements.filter(r => r.role === 'artist'),
+    talent: requirements.filter(r => r.role === 'talent'),
+  };
+
   return (
     <div className="min-h-screen bg-base-100 relative flex flex-col">
       <PageBackground rotate={true} blur={true} opacity={50} />
@@ -126,10 +173,10 @@ export default function JoinUsPage() {
           <div className="hero-content text-center">
             <div className="max-w-3xl">
               <h1 className="text-5xl font-bold mb-6 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                Join Our Team
+                Join Our Agency
               </h1>
               <p className="text-xl opacity-90">
-                Help us grow StarMy! We're looking for passionate individuals in various departments to support our amazing talents.
+                StarMyriad is a free, non-profit agency dedicated to growing the Malaysia VTuber community. Join as a Talent, Artist, or Volunteer Staff!
               </p>
             </div>
           </div>
@@ -143,7 +190,7 @@ export default function JoinUsPage() {
                 <div className="text-5xl mb-4">🎤</div>
                 <h3 className="card-title text-primary text-2xl">Join as Talent</h3>
                 <p className="opacity-80 mb-4">Are you a VTuber or content creator? Share your passion and join our talent roster!</p>
-                  <button type="button" onClick={() => handleSelectPosition("Talent")} className="btn btn-primary">Apply as Talent</button>
+                <button type="button" onClick={() => handleSelectPosition("Talent")} className="btn btn-primary">Apply as Talent</button>
               </div>
             </div>
 
@@ -152,44 +199,36 @@ export default function JoinUsPage() {
                 <div className="text-5xl mb-4">🎨</div>
                 <h3 className="card-title text-secondary text-2xl">Join as Artist</h3>
                 <p className="opacity-80 mb-4">Show off your art! We collaborate with talented illustrators and character designers.</p>
-                  <button type="button" onClick={() => handleSelectPosition("Artist")} className="btn btn-secondary">Apply as Artist</button>
+                <button type="button" onClick={() => handleSelectPosition("Artist")} className="btn btn-secondary">Apply as Artist</button>
               </div>
             </div>
           </div>
 
-          {/* Why Join Section */}
-          <div className="mb-12">
-            <h2 className="text-4xl font-bold text-center mb-10 text-primary">Why Join Our Team?</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="card bg-base-200 shadow-xl">
-                <div className="card-body items-center text-center">
-                  <div className="text-5xl mb-4">💡</div>
-                  <h3 className="card-title text-primary">Innovation</h3>
-                  <p className="opacity-80">Be part of building exciting features for Malaysia's premier VTuber platform.</p>
-                </div>
-              </div>
-              <div className="card bg-base-200 shadow-xl">
-                <div className="card-body items-center text-center">
-                  <div className="text-5xl mb-4">🤝</div>
-                  <h3 className="card-title text-secondary">Collaboration</h3>
-                  <p className="opacity-80">Work with talented creators and a dedicated team passionate about the community.</p>
-                </div>
-              </div>
-              <div className="card bg-base-200 shadow-xl">
-                <div className="card-body items-center text-center">
-                  <div className="text-5xl mb-4">🌱</div>
-                  <h3 className="card-title text-accent">Growth</h3>
-                  <p className="opacity-80">Develop your skills in a fast-paced environment with room for development.</p>
-                </div>
-              </div>
+          {/* Benefits & Requirements Buttons */}
+          {!benefitsLoading && benefits.length > 0 && !requirementsLoading && requirements.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12 max-w-2xl mx-auto">
+              <button 
+                onClick={() => setShowBenefitsModal(true)}
+                className="btn btn-lg btn-primary gap-2 text-lg"
+              >
+                <span className="text-2xl">✨</span>
+                Why Join?
+              </button>
+              <button 
+                onClick={() => setShowRequirementsModal(true)}
+                className="btn btn-lg btn-secondary gap-2 text-lg"
+              >
+                <span className="text-2xl">📋</span>
+                Requirements
+              </button>
             </div>
-          </div>
+          )}
 
           {/* Staff Positions Section */}
           <div className="mb-12">
-            <h2 className="text-4xl font-bold text-center mb-4 text-primary">Open Positions (Volunteer)</h2>
+            <h2 className="text-4xl font-bold text-center mb-4 text-primary">Open Volunteer Positions</h2>
             <p className="text-center text-lg opacity-80 mb-3">We're growing and looking for team members across various departments.</p>
-            <p className="text-center text-sm opacity-70 mb-8">Entry applications are for below-manager roles. Manager tracks are internal promotions after proven performance.</p>
+            <p className="text-center text-sm opacity-70 mb-8">StarMyriad is a free agency - all staff are volunteers. This is a great opportunity to contribute to the Malaysian VTuber community!</p>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {staffPositions.map((position, idx) => (
@@ -269,8 +308,8 @@ export default function JoinUsPage() {
                       </div>
 
                       <div className="form-control">
-                        <label className="label"><span className="label-text font-semibold">Why do you want to join StarMy? *</span></label>
-                        <textarea name="description" placeholder="Share your experience, skills, and why you'd be a great fit for StarMy..." className="textarea textarea-bordered h-30 max-w-md w-full" value={formData.description} onChange={handleChange} required disabled={loading} />
+                        <label className="label"><span className="label-text font-semibold">Why do you want to join StarMyriad? *</span></label>
+                        <textarea name="description" placeholder="Share your experience, skills, and why you'd be a great fit for StarMyriad..." className="textarea textarea-bordered h-30 max-w-md w-full" value={formData.description} onChange={handleChange} required disabled={loading} />
                       </div>
 
                       <div className="form-control">
@@ -300,6 +339,90 @@ export default function JoinUsPage() {
             </div>
           </div>
         </Container>
+
+        {/* Benefits Modal */}
+        {showBenefitsModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+            <div className="bg-base-100 rounded-xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto">
+              <div className="bg-gradient-to-r from-primary to-secondary p-6 text-white flex justify-between items-center gap-4">
+                <h2 className="text-3xl font-bold">Why Join StarMyriad?</h2>
+                <button onClick={() => setShowBenefitsModal(false)} className="btn btn-sm btn-circle btn-ghost text-white hover:bg-white/20">
+                  ✕
+                </button>
+              </div>
+              
+              <div className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {benefits.map((benefit) => (
+                    <div key={benefit.id} className="card bg-base-200 shadow-lg hover:shadow-xl transition-shadow">
+                      <div className="card-body">
+                        <div className="text-4xl mb-2">{benefit.emoji}</div>
+                        <h3 className="card-title text-lg text-primary">{benefit.title}</h3>
+                        <p className="text-sm opacity-80">{benefit.description}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Requirements Modal */}
+        {showRequirementsModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+            <div className="bg-base-100 rounded-xl shadow-2xl max-w-3xl w-full max-h-[85vh] overflow-y-auto">
+              <div className="bg-gradient-to-r from-secondary to-accent p-6 text-white flex justify-between items-center gap-4">
+                <h2 className="text-3xl font-bold">Requirements</h2>
+                <button onClick={() => setShowRequirementsModal(false)} className="btn btn-sm btn-circle btn-ghost text-white hover:bg-white/20">
+                  ✕
+                </button>
+              </div>
+              
+              <div className="p-6">
+                {/* Role Tabs */}
+                <div className="tabs tabs-boxed mb-6 flex flex-wrap gap-1">
+                  {(['general', 'artist', 'talent'] as const).map((role) => (
+                    <button 
+                      key={role}
+                      onClick={() => setSelectedRequirementRole(role)}
+                      className={`tab font-semibold ${selectedRequirementRole === role ? 'tab-active' : ''}`}
+                    >
+                      {role === 'general' && '🌟 General'}
+                      {role === 'artist' && '🎨 Artist'}
+                      {role === 'talent' && '🎥 Talent'}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Requirements List */}
+                <div className="space-y-2">
+                  {groupedRequirements[selectedRequirementRole].map((req) => (
+                    <div key={req.id} className="collapse collapse-arrow bg-base-200 border border-base-300 hover:bg-base-300 transition-colors">
+                      <input 
+                        type="checkbox" 
+                        checked={expandedRequirement === req.id}
+                        onChange={() => setExpandedRequirement(expandedRequirement === req.id ? null : req.id)}
+                      />
+                      <div className="collapse-title text-base font-semibold flex items-center gap-2">
+                        {req.emoji && <span className="text-xl">{req.emoji}</span>}
+                        {req.title}
+                      </div>
+                      <div className="collapse-content pt-4">
+                        <p className="opacity-80">{req.description}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="divider my-6"></div>
+                <p className="text-center text-sm opacity-70">
+                  ✨ These requirements ensure a professional, safe, and supportive environment for all StarMyriad talents.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         <Footer />
       </div>

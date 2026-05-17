@@ -168,6 +168,7 @@ async function getProfilesByRole(role: 'talent' | 'staff'): Promise<Talent[]> {
   const supportsTalentLikes = supportsTalentProfiles && (await hasColumn('talent_profiles', 'likes'));
   const supportsTalentDislikes = supportsTalentProfiles && (await hasColumn('talent_profiles', 'dislikes'));
   const supportsTalentPortfolio = supportsTalentProfiles && (await hasColumn('talent_profiles', 'portfolio_links'));
+  const supportsVtuberLore = supportsTalentProfiles && (await hasColumn('talent_profiles', 'vtuber_lore'));
   const supportsFeaturedVideo = supportsTalentProfiles && (await hasColumn('talent_profiles', 'featured_video_url'));
 
   const rows = await tryQuery<{
@@ -182,6 +183,7 @@ async function getProfilesByRole(role: 'talent' | 'staff'): Promise<Talent[]> {
     social_links: unknown;
     featured_video_url: string | null;
     vtuber_model_url: string | null;
+    vtuber_lore: string | null;
     profile_picture_url: string | null;
     portrait_picture_url: string | null;
     profile_card_url?: string | null;
@@ -223,6 +225,7 @@ async function getProfilesByRole(role: 'talent' | 'staff'): Promise<Talent[]> {
       ${supportsTalentLikes ? 'tp.likes' : 'ARRAY[]::text[] AS likes'},
       ${supportsTalentDislikes ? 'tp.dislikes' : 'ARRAY[]::text[] AS dislikes'},
       ${supportsTalentPortfolio ? 'tp.portfolio_links' : 'ARRAY[]::text[] AS portfolio_links'}
+      ,${supportsVtuberLore ? 'tp.vtuber_lore' : 'NULL::text AS vtuber_lore'}
     FROM profiles p
     LEFT JOIN talent_profiles tp ON tp.user_id = p.user_id
     WHERE p.role = '${role}'
@@ -242,6 +245,7 @@ async function getProfilesByRole(role: 'talent' | 'staff'): Promise<Talent[]> {
       NULL::jsonb AS social_links,
       NULL::text AS featured_video_url,
       NULL::text AS vtuber_model_url,
+      NULL::text AS vtuber_lore,
       NULL::text AS profile_picture_url,
       NULL::text AS portrait_picture_url,
       NULL::text AS support_url,
@@ -300,10 +304,12 @@ async function getProfilesByRole(role: 'talent' | 'staff'): Promise<Talent[]> {
         species: row.species || undefined,
         likes,
         dislikes,
+        vtuberLore: row.vtuber_lore || undefined,
       },
       schedule: normalizeSchedule(social.schedule),
       portfolio,
       vtuberModelUrl: row.vtuber_model_url || undefined,
+      vtuberLore: row.vtuber_lore || undefined,
       profilePictureUrl: row.profile_picture_url || undefined,
       portraitPictureUrl: row.portrait_picture_url || undefined,
       profileCardUrl: row.profile_card_url || undefined,

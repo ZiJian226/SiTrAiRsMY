@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createCommunityApplication } from '@/lib/applications/repository';
+import { createAgencyApplication } from '@/lib/applications/repository';
 
 export async function POST(request: Request) {
   try {
@@ -11,10 +11,10 @@ export async function POST(request: Request) {
     }
 
     if (!isMalaysian) {
-      return Response.json({ error: 'Community applications are restricted to Malaysian applicants' }, { status: 400 });
+      return Response.json({ error: 'Agency applications are restricted to Malaysian applicants' }, { status: 400 });
     }
 
-    const application = await createCommunityApplication(
+    const application = await createAgencyApplication(
       name,
       email,
       discordName,
@@ -29,7 +29,7 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to submit application';
-    console.error('Error submitting community application:', error);
+    console.error('Error submitting agency application:', error);
     return Response.json(
       { error: errorMessage },
       { status: 500 }

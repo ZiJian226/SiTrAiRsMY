@@ -32,6 +32,7 @@ interface Profile {
   tiktokUrl?: string
   instagramUrl?: string
   xUrl?: string
+  vtuberLore?: string
   featuredVideoUrl?: string
   featured?: boolean
   featuredOrder?: number
@@ -799,6 +800,12 @@ export default function AdminProfilesPage() {
                               </div>
                             </div>
                           )}
+                          {selectedProfile.vtuberLore && (
+                            <div className="mt-4">
+                              <span className="text-sm opacity-70">Vtuber Lore / Model Description:</span>
+                              <p className="mt-1 whitespace-pre-wrap">{selectedProfile.vtuberLore}</p>
+                            </div>
+                          )}
                         </div>
                       )}
                     </>
@@ -1510,6 +1517,19 @@ export default function AdminProfilesPage() {
                                   disabled={saving}
                                 />
                               </div>
+                            </div>
+
+                            <div className="form-control">
+                              <label className="label">
+                                <span className="label-text font-semibold">Vtuber Lore / Model Description</span>
+                              </label>
+                              <textarea
+                                className="textarea textarea-bordered h-28"
+                                placeholder="Share lore, backstory, or model concept"
+                                value={editForm.vtuberLore || ''}
+                                onChange={(e) => setEditForm({ ...editForm, vtuberLore: e.target.value })}
+                                disabled={saving}
+                              />
                             </div>
 
                             <div className="form-control">

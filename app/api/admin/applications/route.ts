@@ -21,7 +21,7 @@ export async function GET(request: Request) {
     }
 
     const { searchParams } = new URL(request.url);
-    const type = searchParams.get('type') as 'career' | 'community' | null;
+    const type = searchParams.get('type') as 'career' | 'agency' | null;
 
     const applications = await getAdminApplications(type || undefined);
 
@@ -64,7 +64,7 @@ export async function PATCH(request: Request) {
       );
     }
 
-    const table = type === 'career' ? 'career_applications' : 'community_applications';
+    const table = type === 'career' ? 'career_applications' : 'agency_applications';
     const currentResult = await dbQuery(`SELECT status FROM ${table} WHERE id = $1 LIMIT 1`, [id]);
     const statusBefore = currentResult.rows[0]?.status as string | undefined;
 
@@ -85,7 +85,7 @@ export async function PATCH(request: Request) {
       eventType: 'status-change',
       resourceType: table,
       resourceId: id,
-      entityType: type === 'career' ? 'career_application' : 'community_application',
+      entityType: type === 'career' ? 'career_application' : 'agency_application',
       entityId: id,
       statusBefore,
       statusAfter: status,

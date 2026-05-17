@@ -10,7 +10,7 @@ import PagedCarousel from "@/components/PagedCarousel";
 import GalleryMediaShowcase from "@/components/GalleryMediaShowcase";
 import LandscapeModal from "@/components/LandscapeModal";
 import EdgeStarAnimation from "@/components/EdgeStarAnimation";
-import { ASSETS } from "@/lib/assetPath";
+import HomeHeroBackground from "@/components/HomeHeroBackground";
 import { fallbackArtists, fallbackEvents, fallbackGalleryItems } from "@/lib/content/fallback";
 import { useCachedApiResource } from "@/lib/hooks";
 import type { ArtistProfile, EventArticle, GalleryEntry } from "@/lib/content/types";
@@ -90,26 +90,42 @@ export default function Home() {
   };
 
   useEffect(() => {
-    const handleScroll = () => {
-      const heroSection = document.getElementById("hero-section");
-      if (!heroSection) return;
+    const heroSection = document.getElementById("hero-section");
+    if (!heroSection) return;
 
-      const scrollPosition = window.scrollY;
-      const heroHeight = heroSection.offsetHeight;
+    let animationFrame: number | null = null;
 
-      // Calculate blur amount based on scroll (0 to 20px blur)
-      const blurAmount = Math.min((scrollPosition / heroHeight) * 20, 20);
+    const updateHeroEffect = () => {
+      animationFrame = null;
 
-      // Calculate opacity (fade from 1 to 0.3)
-      const opacity = Math.max(1 - (scrollPosition / heroHeight) * 0.7, 0.3);
+      const heroHeight = heroSection.offsetHeight || window.innerHeight;
+      const blurStart = Math.max(0, heroHeight - window.innerHeight * 0.55);
+      const blurRange = Math.max(window.innerHeight * 0.85, 520);
+      const progress = Math.min(Math.max((window.scrollY - blurStart) / blurRange, 0), 1);
 
-      // Apply filter and opacity
-      heroSection.style.filter = `blur(${blurAmount}px)`;
-      heroSection.style.opacity = opacity.toString();
+      heroSection.style.filter = `blur(${progress * 18}px)`;
+      heroSection.style.opacity = `${Math.max(1 - progress * 0.55, 0.38)}`;
     };
 
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    const scheduleUpdate = () => {
+      if (animationFrame !== null) return;
+      animationFrame = window.requestAnimationFrame(updateHeroEffect);
+    };
+
+    window.addEventListener('scroll', scheduleUpdate, { passive: true });
+    window.addEventListener('resize', scheduleUpdate, { passive: true });
+    document.addEventListener('visibilitychange', scheduleUpdate);
+
+    scheduleUpdate();
+
+    return () => {
+      window.removeEventListener('scroll', scheduleUpdate as EventListener);
+      window.removeEventListener('resize', scheduleUpdate as EventListener);
+      document.removeEventListener('visibilitychange', scheduleUpdate as EventListener);
+      if (animationFrame !== null) {
+        window.cancelAnimationFrame(animationFrame);
+      }
+    };
   }, []);
 
   return (
@@ -117,23 +133,14 @@ export default function Home() {
       <Navbar />
 
       {/* Hero Section with Scroll Blur Effect */}
+
+      {/* Hero Section with Scroll Blur Effect */}
       <div
         id="hero-section"
-        className="hero min-h-[600px] relative sticky top-0 transition-all duration-0 ease-in-out overflow-hidden"
-        style={{ zIndex: 1 }}
+        className="hero h-auto relative transition-all duration-0 ease-in-out overflow-hidden"
       >
-        {/* Background Image */}
-        <div className="absolute inset-0 z-0">
-          <img
-            src={ASSETS.images.background.starmy}
-            alt="StarMy Background"
-            className="w-full h-full object-cover"
-          />
-        </div>
-        {/* Overlay for better text readability */}
-        <div className="absolute inset-0 bg-base-100/30 z-10"></div>
+        <HomeHeroBackground />
       </div>
-
       {/* Welcome Section - Moved below hero image */}
       <div className="bg-base-100 py-16 relative" style={{ zIndex: 2 }}>
         <Container>

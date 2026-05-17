@@ -174,6 +174,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [authBusy, hydrated, profile, user])
 
+  useEffect(() => {
+    if (!hydrated || !user || !profile) {
+      return
+    }
+
+    const pingKeepAlive = () => {
+      void fetch('/api/auth/session/keepalive', {
+        method: 'POST',
+        cache: 'no-store',
+        credentials: 'same-origin',
+      }).catch(() => undefined)
+    }
+
+    pingKeepAlive()
+    const timer = window.setInterval(pingKeepAlive, 5 * 60 * 1000)
+
+    return () => {
+      window.clearInterval(timer)
+    }
+  }, [hydrated, profile, user])
+
   const signIn = async (email: string, password: string) => {
     setAuthBusy(true)
     try {

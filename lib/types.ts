@@ -25,6 +25,7 @@ export interface VTuber {
   supportUrl?: string;
   instagramUrl?: string;
   xUrl?: string;
+  vtuberLore?: string;
   characterInfo?: {
     dateOfBirth?: string;
     debutDate?: string;
@@ -32,6 +33,7 @@ export interface VTuber {
     species?: string;
     likes?: string[];
     dislikes?: string[];
+    vtuberLore?: string;
     [key: string]: unknown;
   };
 }
@@ -84,4 +86,74 @@ export interface NewsEvent {
   image: string;
   author: string;
   featured?: boolean;
+}
+
+export interface AgencyRequirement {
+  id: string;
+  role: 'general' | 'artist' | 'talent';
+  title: string;
+  description: string;
+  emoji?: string;
+  order: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AgencyBenefit {
+  id: string;
+  category: 'identity' | 'connection' | 'guidance' | 'freedom' | 'promotion' | 'opportunities' | 'safety' | 'experience';
+  title: string;
+  description: string;
+  emoji?: string;
+  order: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AgencyApplication {
+  id: string;
+  name: string;
+  email: string;
+  country?: string;
+  discord_name?: string;
+  is_malaysian?: boolean;
+  supporting_info?: string;
+  status: 'pending' | 'reviewing' | 'accepted' | 'rejected';
+  admin_notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// Legacy type alias for backward compatibility
+export type CommunityApplication = AgencyApplication;
+
+export type HomepageHeroMode = 'video' | 'slideshow';
+export type HomepageHeroMediaType = 'photo' | 'video';
+
+export interface HomepageHeroSettings {
+  config_key: string;
+  mode: HomepageHeroMode;
+  slideshow_interval_ms: number;
+  overlay_opacity: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface HomepageHeroMedia {
+  id: string;
+  label: string | null;
+  media_type: HomepageHeroMediaType;
+  media_url: string;
+  media_object_key: string | null;
+  sort_order: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface HomepageHeroConfig {
+  settings: HomepageHeroSettings | null;
+  media: HomepageHeroMedia[];
 }

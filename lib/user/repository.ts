@@ -21,6 +21,7 @@ export interface TalentProfile {
   date_of_birth: string | null
   height: string | null
   species: string | null
+  vtuber_lore: string | null
   likes: string[]
   dislikes: string[]
   tags: string[]
@@ -153,6 +154,7 @@ export async function getTalentProfileByUserId(userId: string): Promise<TalentPr
   const supportsBioColumn = await hasColumn('talent_profiles', 'bio')
   const supportsDebutDateColumn = await hasColumn('talent_profiles', 'debut_date')
   const supportsVtuberModelColumn = await hasColumn('talent_profiles', 'vtuber_model_url')
+  const supportsVtuberLoreColumn = await hasColumn('talent_profiles', 'vtuber_lore')
   const supportsProfilePicture = await hasColumn('talent_profiles', 'profile_picture_url')
   const supportsPortraitPicture = await hasColumn('talent_profiles', 'portrait_picture_url')
   const supportsSupportUrl = await hasColumn('talent_profiles', 'support_url')
@@ -168,6 +170,7 @@ export async function getTalentProfileByUserId(userId: string): Promise<TalentPr
       ${supportsBioColumn ? 'bio' : 'character_description AS bio'},
       avatar_url, avatar_object_key, date_of_birth, 
       height, species, likes, dislikes, tags, portfolio_links,
+      ${supportsVtuberLoreColumn ? 'vtuber_lore' : 'NULL::text AS vtuber_lore'},
       ${supportsVtuberModelColumn ? 'vtuber_model_url' : 'NULL::text AS vtuber_model_url'},
       ${supportsProfilePicture ? 'profile_picture_url' : 'NULL::text AS profile_picture_url'},
       ${supportsProfilePicture ? 'profile_picture_object_key' : 'NULL::text AS profile_picture_object_key'},
@@ -224,6 +227,8 @@ export async function updateTalentProfile(
   const supportsBioColumn = await hasColumn('talent_profiles', 'bio')
   const supportsDebutDateColumn = await hasColumn('talent_profiles', 'debut_date')
   const supportsVtuberModelColumn = await hasColumn('talent_profiles', 'vtuber_model_url')
+  await ensureColumn('talent_profiles', 'vtuber_lore TEXT', 'vtuber_lore')
+  const supportsVtuberLoreColumn = await hasColumn('talent_profiles', 'vtuber_lore')
   const supportsProfilePicture = await hasColumn('talent_profiles', 'profile_picture_url')
   const supportsPortraitPicture = await hasColumn('talent_profiles', 'portrait_picture_url')
   const supportsProfileCardUrl = await hasColumn('talent_profiles', 'profile_card_url')
@@ -276,6 +281,10 @@ export async function updateTalentProfile(
   if (data.species !== undefined) {
     updates.push(`species = $${paramCount++}`)
     values.push(data.species)
+  }
+  if (data.vtuber_lore !== undefined && supportsVtuberLoreColumn) {
+    updates.push(`vtuber_lore = $${paramCount++}`)
+    values.push(data.vtuber_lore)
   }
   if (data.likes !== undefined) {
     updates.push(`likes = $${paramCount++}`)
@@ -360,6 +369,7 @@ export async function updateTalentProfile(
        ${supportsBioColumn ? 'bio' : 'character_description AS bio'},
       avatar_url, avatar_object_key, date_of_birth, 
        height, species, likes, dislikes, tags, portfolio_links,
+        ${supportsVtuberLoreColumn ? 'vtuber_lore' : 'NULL::text AS vtuber_lore'},
        ${supportsVtuberModelColumn ? 'vtuber_model_url' : 'NULL::text AS vtuber_model_url'},
       ${supportsProfilePicture ? 'profile_picture_url' : 'NULL::text AS profile_picture_url'},
       ${supportsProfilePicture ? 'profile_picture_object_key' : 'NULL::text AS profile_picture_object_key'},

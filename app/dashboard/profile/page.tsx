@@ -42,6 +42,7 @@ export default function ProfileEditorPage() {
   const [debutDate, setDebutDate] = useState('')
   const [height, setHeight] = useState('')
   const [species, setSpecies] = useState('')
+  const [vtuberLore, setVtuberLore] = useState('')
   const [likes, setLikes] = useState<string[]>([])
   const [dislikes, setDislikes] = useState<string[]>([])
   const [likesInput, setLikesInput] = useState('')
@@ -221,6 +222,7 @@ export default function ProfileEditorPage() {
         debut_date?: string
         height?: string
         species?: string
+        vtuber_lore?: string | null
         tags?: string[]
         likes?: string[]
         dislikes?: string[]
@@ -286,6 +288,7 @@ export default function ProfileEditorPage() {
         setDebutDate(toDateInputValue(data.debut_date || ''))
         setHeight(data.height || '')
         setSpecies(data.species || '')
+        setVtuberLore(data.vtuber_lore || '')
         setTags(data.tags || [])
         setYoutubeUrl(socialLinks.youtube || socialLinks.youtubeUrl || '')
         setTwitchUrl(socialLinks.twitch || socialLinks.twitchUrl || '')
@@ -494,6 +497,7 @@ export default function ProfileEditorPage() {
             debut_date: debutDate || null,
             height: height || null,
             species: species || null,
+            vtuber_lore: vtuberLore || null,
             tags,
             likes,
             dislikes,
@@ -1211,6 +1215,19 @@ export default function ProfileEditorPage() {
                         </div>
                       </div>
                     </div>
+
+                      <div className="form-control">
+                        <label className="label">
+                          <span className="label-text font-semibold">Vtuber Lore / Model Description</span>
+                        </label>
+                        <textarea
+                          className="textarea textarea-bordered h-28"
+                          placeholder="Share your lore, backstory, or model concept"
+                          value={vtuberLore}
+                          onChange={(e) => setVtuberLore(e.target.value)}
+                          disabled={saving}
+                        />
+                      </div>
 
                     <div className="form-control">
                       <label className="label">

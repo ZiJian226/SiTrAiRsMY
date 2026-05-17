@@ -13,13 +13,13 @@ export default function PrivacyPage() {
         <Container className="py-12 flex-grow">
           <div className="max-w-4xl mx-auto">
             <h1 className="text-5xl font-bold mb-8 text-primary">Privacy Policy</h1>
-            <p className="text-sm opacity-70 mb-8">Last updated: December 6, 2025</p>
+            <p className="text-sm opacity-70 mb-8">Last updated: May 16, 2026</p>
 
             <div className="prose max-w-none space-y-8">
               <section className="card bg-base-200 p-6">
                 <h2 className="text-3xl font-bold mb-4 text-secondary">1. Introduction</h2>
                 <p className="opacity-80">
-                  Welcome to StarMy ("we," "our," or "us"). We are committed to protecting your personal information
+                  Welcome to StarMyriad. We are committed to protecting your personal information
                   and your right to privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard
                   your information when you visit our website and use our services.
                 </p>
@@ -131,7 +131,7 @@ export default function PrivacyPage() {
                   If you have any questions about this Privacy Policy, please contact us:
                 </p>
                 <ul className="space-y-2 opacity-80">
-                  <li><strong>Email:</strong> starmy@gmail.com</li>
+                  <li><strong>Email:</strong> starmyriadmyofficial@gmail.com</li>
                 </ul>
               </section>
             </div>

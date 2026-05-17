@@ -106,6 +106,7 @@ type AdminProfileRow = {
   dislikes: string[] | null;
   tags: string[] | null;
   portfolio_links: string[] | null;
+  vtuber_lore: string | null;
   vtuber_model_url: string | null;
   profile_picture_url: string | null;
   profile_picture_object_key: string | null;
@@ -909,6 +910,7 @@ export async function getAdminProfiles(): Promise<AdminProfile[]> {
   const supportsTalentLikes = await hasColumn('talent_profiles', 'likes');
   const supportsTalentDislikes = await hasColumn('talent_profiles', 'dislikes');
   const supportsTalentPortfolio = await hasColumn('talent_profiles', 'portfolio_links');
+  const supportsVtuberLore = await hasColumn('talent_profiles', 'vtuber_lore');
   const supportsVtuberModel = await hasColumn('talent_profiles', 'vtuber_model_url');
   const supportsProfilePicture = await hasColumn('talent_profiles', 'profile_picture_url');
   const supportsPortraitPicture = await hasColumn('talent_profiles', 'portrait_picture_url');
@@ -946,6 +948,7 @@ export async function getAdminProfiles(): Promise<AdminProfile[]> {
       ${supportsTalentDislikes ? 'tp.dislikes' : 'ARRAY[]::text[] AS dislikes'},
       tp.tags,
       ${supportsTalentPortfolio ? 'tp.portfolio_links' : 'ARRAY[]::text[] AS portfolio_links'},
+      ${supportsVtuberLore ? 'tp.vtuber_lore' : 'NULL::text AS vtuber_lore'},
       ${supportsVtuberModel ? 'tp.vtuber_model_url' : 'NULL::text AS vtuber_model_url'},
       ${supportsProfilePicture ? 'tp.profile_picture_url' : 'NULL::text AS profile_picture_url'},
       ${supportsProfilePicture ? 'tp.profile_picture_object_key' : 'NULL::text AS profile_picture_object_key'},
@@ -995,6 +998,7 @@ export async function getAdminProfiles(): Promise<AdminProfile[]> {
       ${supportsTalentDislikes ? 'tp.dislikes' : 'ARRAY[]::text[] AS dislikes'},
       tp.tags,
       ${supportsTalentPortfolio ? 'tp.portfolio_links' : 'ARRAY[]::text[] AS portfolio_links'},
+      ${supportsVtuberLore ? 'tp.vtuber_lore' : 'NULL::text AS vtuber_lore'},
       ${supportsVtuberModel ? 'tp.vtuber_model_url' : 'NULL::text AS vtuber_model_url'},
       ${supportsProfilePicture ? 'tp.profile_picture_url' : 'NULL::text AS profile_picture_url'},
       ${supportsProfilePicture ? 'tp.profile_picture_object_key' : 'NULL::text AS profile_picture_object_key'},
@@ -1113,6 +1117,7 @@ export async function getAdminProfiles(): Promise<AdminProfile[]> {
         dislikes: Array.isArray(row.dislikes) ? row.dislikes : [],
       },
       tags: Array.isArray(row.tags) ? (row.tags as string[]) : [],
+      vtuberLore: safeString(row.vtuber_lore) || undefined,
       vtuberModelUrl: safeString(row.vtuber_model_url) || undefined,
       profilePictureUrl: safeString(row.profile_picture_url) || undefined,
       profilePictureObjectKey: row.profile_picture_object_key || undefined,
@@ -1170,6 +1175,7 @@ export async function updateAdminProfile(
       likes?: string[];
       dislikes?: string[];
     };
+    vtuberLore?: string;
     specialty?: string[];
     portfolio?: string[];
     portfolioArt?: string[];
@@ -1225,6 +1231,7 @@ export async function updateAdminProfile(
       likes: input.characterInfo?.likes || [],
       dislikes: input.characterInfo?.dislikes || [],
       portfolio_links: input.portfolio || [],
+      vtuber_lore: input.vtuberLore || null,
       vtuber_model_url: input.vtuberModelUrl || null,
       profile_picture_url: input.profilePictureUrl || null,
       profile_picture_object_key: input.profilePictureObjectKey || null,
@@ -1288,6 +1295,7 @@ export async function updateAdminProfile(
     created_at: profileRow.created_at,
     updated_at: profileRow.updated_at,
     characterInfo: input.characterInfo,
+    vtuberLore: input.vtuberLore,
     tags: input.tags || [],
     vtuberModelUrl: input.vtuberModelUrl,
     profilePictureUrl: input.profilePictureUrl,
@@ -2174,7 +2182,7 @@ export async function getAdminStatistics(): Promise<AdminStatistics> {
 /**
  * Get all applications (career and community) with type filtering
  */
-export async function getAdminApplications(type?: 'career' | 'community') {
+export async function getAdminApplications(type?: 'career' | 'agency') {
   try {
     if (type === 'career') {
       const result = await dbQuery(
@@ -2186,12 +2194,12 @@ export async function getAdminApplications(type?: 'career' | 'community') {
       };
     }
 
-    if (type === 'community') {
+    if (type === 'agency') {
       const result = await dbQuery(
-        'SELECT * FROM community_applications ORDER BY created_at DESC'
+        'SELECT * FROM agency_applications ORDER BY created_at DESC'
       );
       return {
-        type: 'community',
+        type: 'agency',
         data: result.rows || [],
       };
     }
@@ -2199,13 +2207,13 @@ export async function getAdminApplications(type?: 'career' | 'community') {
     const careerResult = await dbQuery(
       'SELECT * FROM career_applications ORDER BY created_at DESC'
     );
-    const communityResult = await dbQuery(
-      'SELECT * FROM community_applications ORDER BY created_at DESC'
+    const agencyResult = await dbQuery(
+      'SELECT * FROM agency_applications ORDER BY created_at DESC'
     );
 
     return {
       career: careerResult.rows || [],
-      community: communityResult.rows || [],
+      agency: agencyResult.rows || [],
     };
   } catch (error) {
     console.error('Error fetching applications:', error);
@@ -2218,12 +2226,12 @@ export async function getAdminApplications(type?: 'career' | 'community') {
  */
 export async function updateApplication(
   id: string,
-  type: 'career' | 'community',
+  type: 'career' | 'agency',
   status: string,
   adminNotes?: string | null
 ) {
   try {
-    const table = type === 'career' ? 'career_applications' : 'community_applications';
+    const table = type === 'career' ? 'career_applications' : 'agency_applications';
     const result = await dbQuery(
       `UPDATE ${table} 
        SET status = $1, admin_notes = $2, updated_at = NOW()

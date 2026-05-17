@@ -24,6 +24,7 @@ export interface AdminProfile extends AdminUser {
   };
   tags?: string[];
   vtuberModelUrl?: string;
+  vtuberLore?: string;
   profilePictureUrl?: string;
   profilePictureObjectKey?: string;
   portraitPictureUrl?: string;

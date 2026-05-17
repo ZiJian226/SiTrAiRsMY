@@ -32,6 +32,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       tiktokUrl?: string;
       instagramUrl?: string;
       xUrl?: string;
+      vtuberLore?: string;
       vtuberModelUrl?: string;
       profilePictureUrl?: string;
       profilePictureObjectKey?: string;
@@ -77,6 +78,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       tiktokUrl: body.tiktokUrl,
       instagramUrl: body.instagramUrl,
       xUrl: body.xUrl,
+      vtuberLore: body.vtuberLore,
       vtuberModelUrl: body.vtuberModelUrl,
       profilePictureUrl: body.profilePictureUrl,
       profilePictureObjectKey: body.profilePictureObjectKey,

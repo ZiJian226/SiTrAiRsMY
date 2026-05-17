@@ -6,6 +6,7 @@ import Container from "@/components/Container";
 import Footer from "@/components/Footer";
 import PortraitCarousel from "./PortraitCarousel";
 import { VideoEmbedWithAudio } from "@/components/VideoEmbedWithAudio";
+import VtuberLoreSection from "@/components/VtuberLoreSection";
 import { getTalentById } from "@/lib/content/repository";
 
 export default async function TalentProfilePage({ params }: { params: Promise<{ id: string }> }) {
@@ -323,7 +324,7 @@ export default async function TalentProfilePage({ params }: { params: Promise<{ 
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
           {/* Left Column: Portrait Carousel */}
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-1 order-last lg:order-none">
             <PortraitCarousel 
               name={vtuber.name} 
               portraitPictures={portraitPictures}
@@ -332,7 +333,7 @@ export default async function TalentProfilePage({ params }: { params: Promise<{ 
           </div>
 
           {/* Right Column: All Existing Sections */}
-          <div className="lg:col-span-2 space-y-8">
+          <div className="lg:col-span-2 space-y-8 order-first lg:order-none">
             <div className="card bg-base-200 shadow-xl">
               <div className="card-body">
                 <div className="flex flex-col md:flex-row md:items-center gap-4 mb-3">
@@ -420,6 +421,10 @@ export default async function TalentProfilePage({ params }: { params: Promise<{ 
                 )}
               </div>
             </div>
+
+            {(vtuber.vtuberLore || talentCharacterInfo?.vtuberLore) && (
+              <VtuberLoreSection text={String(vtuber.vtuberLore || talentCharacterInfo?.vtuberLore || '')} />
+            )}
 
             {featuredVideoUrl && (
               <div className="card bg-base-200 shadow-xl">

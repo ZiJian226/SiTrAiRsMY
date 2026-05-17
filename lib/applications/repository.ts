@@ -16,7 +16,7 @@ export interface CareerApplication {
   updated_at: string;
 }
 
-export interface CommunityApplication {
+export interface AgencyApplication {
   id: string;
   name: string;
   email: string;
@@ -29,6 +29,9 @@ export interface CommunityApplication {
   created_at: string;
   updated_at: string;
 }
+
+// Legacy type alias for backward compatibility
+export type CommunityApplication = AgencyApplication;
 
 /**
  * Submit a career application
@@ -55,47 +58,48 @@ export async function createCareerApplication(
 
     return result.rows[0] as CareerApplication;
   } catch (error) {
-
     throw error;
   }
 }
 
 /**
- * Submit a community application
+ * Submit an agency application
  */
-export async function createCommunityApplication(
+export async function createAgencyApplication(
   name: string,
   email: string,
   discordName: string,
   supportingInfo: string,
   isMalaysian: boolean = true,
   country: string = 'Malaysia'
-): Promise<CommunityApplication> {
+): Promise<AgencyApplication> {
   try {
     if (!isMalaysian) {
-      throw new Error('Community applications are restricted to Malaysian applicants');
+      throw new Error('Agency applications are restricted to Malaysian applicants');
     }
 
     if (!discordName) {
       throw new Error('Discord name is required');
     }
     const result = await dbQuery(
-      `INSERT INTO community_applications (name, email, discord_name, is_malaysian, country, supporting_info, status)
+      `INSERT INTO agency_applications (name, email, discord_name, is_malaysian, country, supporting_info, status)
        VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING *`,
       [name, email, discordName, isMalaysian, country, supportingInfo, 'pending']
     );
 
     if (!result.rows || result.rows.length === 0) {
-      throw new Error('Failed to create community application');
+      throw new Error('Failed to create agency application');
     }
 
-    return result.rows[0] as CommunityApplication;
+    return result.rows[0] as AgencyApplication;
   } catch (error) {
-
     throw error;
   }
 }
+
+// Legacy function alias for backward compatibility
+export const createCommunityApplication = createAgencyApplication;
 
 /**
  * Get all career applications with optional filtering
@@ -117,19 +121,18 @@ export async function getCareerApplications(
     const result = await dbQuery(query, params);
     return (result.rows || []) as CareerApplication[];
   } catch (error) {
-
     throw error;
   }
 }
 
 /**
- * Get all community applications with optional filtering
+ * Get all agency applications with optional filtering
  */
-export async function getCommunityApplications(
+export async function getAgencyApplications(
   status?: string
-): Promise<CommunityApplication[]> {
+): Promise<AgencyApplication[]> {
   try {
-    let query = 'SELECT * FROM community_applications';
+    let query = 'SELECT * FROM agency_applications';
     const params: unknown[] = [];
 
     if (status) {
@@ -140,12 +143,14 @@ export async function getCommunityApplications(
     query += ' ORDER BY created_at DESC';
 
     const result = await dbQuery(query, params);
-    return (result.rows || []) as CommunityApplication[];
+    return (result.rows || []) as AgencyApplication[];
   } catch (error) {
-
     throw error;
   }
 }
+
+// Legacy function alias for backward compatibility
+export const getCommunityApplications = getAgencyApplications;
 
 /**
  * Get a single career application by ID
@@ -161,29 +166,30 @@ export async function getCareerApplicationById(
 
     return (result.rows?.[0] || null) as CareerApplication | null;
   } catch (error) {
-
     throw error;
   }
 }
 
 /**
- * Get a single community application by ID
+ * Get a single agency application by ID
  */
-export async function getCommunityApplicationById(
+export async function getAgencyApplicationById(
   id: string
-): Promise<CommunityApplication | null> {
+): Promise<AgencyApplication | null> {
   try {
     const result = await dbQuery(
-      'SELECT * FROM community_applications WHERE id = $1',
+      'SELECT * FROM agency_applications WHERE id = $1',
       [id]
     );
 
-    return (result.rows?.[0] || null) as CommunityApplication | null;
+    return (result.rows?.[0] || null) as AgencyApplication | null;
   } catch (error) {
-
     throw error;
   }
 }
+
+// Legacy function alias for backward compatibility
+export const getCommunityApplicationById = getAgencyApplicationById;
 
 /**
  * Update career application status and admin notes
@@ -204,34 +210,35 @@ export async function updateCareerApplication(
 
     return (result.rows?.[0] || null) as CareerApplication | null;
   } catch (error) {
-
     throw error;
   }
 }
 
 /**
- * Update community application status and admin notes
+ * Update agency application status and admin notes
  */
-export async function updateCommunityApplication(
+export async function updateAgencyApplication(
   id: string,
   status: string,
   adminNotes?: string | null
-): Promise<CommunityApplication | null> {
+): Promise<AgencyApplication | null> {
   try {
     const result = await dbQuery(
-      `UPDATE community_applications 
+      `UPDATE agency_applications 
        SET status = $1, admin_notes = $2, updated_at = NOW()
        WHERE id = $3
        RETURNING *`,
       [status, adminNotes || null, id]
     );
 
-    return (result.rows?.[0] || null) as CommunityApplication | null;
+    return (result.rows?.[0] || null) as AgencyApplication | null;
   } catch (error) {
-
     throw error;
   }
 }
+
+// Legacy function alias for backward compatibility
+export const updateCommunityApplication = updateAgencyApplication;
 
 /**
  * Get application statistics
@@ -239,8 +246,8 @@ export async function updateCommunityApplication(
 export async function getApplicationStats(): Promise<{
   careerTotal: number;
   careerPending: number;
-  communityTotal: number;
-  communityPending: number;
+  agencyTotal: number;
+  agencyPending: number;
 }> {
   try {
     const careerResult = await dbQuery(
@@ -250,21 +257,20 @@ export async function getApplicationStats(): Promise<{
        FROM career_applications`
     );
 
-    const communityResult = await dbQuery(
+    const agencyResult = await dbQuery(
       `SELECT 
         COUNT(*) as total,
         SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END)::INT as pending
-       FROM community_applications`
+       FROM agency_applications`
     );
 
     return {
       careerTotal: careerResult.rows?.[0]?.total || 0,
       careerPending: careerResult.rows?.[0]?.pending || 0,
-      communityTotal: communityResult.rows?.[0]?.total || 0,
-      communityPending: communityResult.rows?.[0]?.pending || 0,
+      agencyTotal: agencyResult.rows?.[0]?.total || 0,
+      agencyPending: agencyResult.rows?.[0]?.pending || 0,
     };
   } catch (error) {
-
     throw error;
   }
 }

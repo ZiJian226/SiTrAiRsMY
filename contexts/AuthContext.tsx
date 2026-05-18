@@ -34,6 +34,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [hydrated, setHydrated] = useState(false)
   const [authBusy, setAuthBusy] = useState(false)
   const [sessionWarningOpen, setSessionWarningOpen] = useState(false)
+  const [sessionEndedMessage, setSessionEndedMessage] = useState<string | null>(null)
   const [sessionGraceSecondsLeft, setSessionGraceSecondsLeft] = useState(AUTH_SESSION_INACTIVITY_GRACE_SECONDS)
   const loading = !hydrated || authBusy
 
@@ -103,6 +104,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       })
 
       if (!response.ok) {
+        // session revoked server-side; show message and force logout
+        setSessionEndedMessage('Your session has been terminated. Please sign in again.')
         await handleForceLogout()
         return
       }
@@ -110,7 +113,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSessionWarningOpen(false)
       scheduleInactivityTimers()
     } catch {
-      await handleForceLogout()
+        setSessionEndedMessage('Unable to reach authentication service. You have been signed out.')
+        await handleForceLogout()
     } finally {
       keepAliveRequestRef.current = false
     }
@@ -141,6 +145,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setProfile(session?.profile ?? null)
     setHydrated(true)
   }, [sessionStorageService])
+
+  // Handle tab close: terminate session on beforeunload/pagehide (NOT on blur/minimize)
+  useEffect(() => {
+    if (!hydrated) {
+      return
+    }
+
+    async function terminateSessionOnTabClose() {
+      try {
+        await fetch('/api/auth/session/terminate', { method: 'POST' })
+      } catch (error) {
+        // Silently fail - best effort cleanup
+        console.error('Failed to terminate session on tab close:', error)
+      }
+    }
+
+    // Use 'beforeunload' and 'pagehide' (not 'unload') for better reliability
+    // These events fire when the tab is actually closing, not on minimize/blur
+    window.addEventListener('beforeunload', terminateSessionOnTabClose)
+    window.addEventListener('pagehide', terminateSessionOnTabClose)
+
+    return () => {
+      window.removeEventListener('beforeunload', terminateSessionOnTabClose)
+      window.removeEventListener('pagehide', terminateSessionOnTabClose)
+    }
+  }, [hydrated])
 
   // Save session to sessionStorage whenever it changes
   useEffect(() => {
@@ -265,6 +295,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         <p className="font-semibold text-error">
           Time remaining: {Math.floor(sessionGraceSecondsLeft / 60)}:{String(sessionGraceSecondsLeft % 60).padStart(2, '0')}
         </p>
+      </Modal>
+      <Modal
+        isOpen={!!sessionEndedMessage}
+        onClose={() => setSessionEndedMessage(null)}
+        title="Signed out"
+        size="md"
+        actions={(
+          <div className="flex flex-col sm:flex-row gap-3 w-full justify-end">
+            <a href="/login" className="btn btn-primary">Sign in</a>
+          </div>
+        )}
+      >
+        <p>{sessionEndedMessage}</p>
       </Modal>
     </AuthContext.Provider>
   )

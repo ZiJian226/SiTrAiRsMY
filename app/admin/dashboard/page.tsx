@@ -73,7 +73,7 @@ export default function AdminDashboard() {
     { title: "Events", href: "/admin/events", icon: "📅", color: "btn-accent" },
     { title: "Gallery", href: "/admin/gallery", icon: "🖼️", color: "btn-info" },
     { title: "Merchandise", href: "/admin/merchandise", icon: "🛍️", color: "btn-success" },
-    { title: "Applications", href: "/admin/applications", icon: "📨", color: "btn-warning" },
+      { title: "Applications", href: "/dashboard/applications", icon: "📨", color: "btn-warning" },
     { title: "Audit Logs", href: "/admin/audit-logs", icon: "🧾", color: "btn-ghost" },
     { title: "Statistics", href: "/admin/statistics", icon: "📊", color: "btn-info" },
   ];

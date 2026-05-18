@@ -164,14 +164,33 @@ export default function AdminAuditLogsPage() {
             Track logins, session presence, profile changes, content edits, and application updates.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 items-center">
           <div className="badge badge-outline badge-lg">{categoryCountLabel}</div>
-          <div className="badge badge-secondary badge-outline badge-lg">
-            {data?.statusSummary.onlineCount ?? 0} online
-          </div>
-          <div className="badge badge-ghost badge-lg">
-            {data?.statusSummary.offlineCount ?? 0} offline
-          </div>
+          <div className="badge badge-secondary badge-outline badge-lg">{data?.statusSummary.onlineCount ?? 0} online</div>
+          <div className="badge badge-ghost badge-lg">{data?.statusSummary.offlineCount ?? 0} offline</div>
+          <button
+            type="button"
+            className="btn btn-sm btn-warning"
+            onClick={async () => {
+              if (!confirm('Run session cleanup now? This will revoke inactive sessions.')) return;
+              try {
+                const res = await fetch('/api/admin/sessions/cleanup', { method: 'POST' });
+                const payload = await res.json();
+                if (res.ok) {
+                  alert(`Cleanup complete. Revoked: ${payload.inactiveSessionsRevoked}, Deleted: ${payload.expiredSessionsDeleted}`);
+                  // Reload logs to reflect updated status
+                  void loadAuditLogs(activeTab, page);
+                } else {
+                  alert(`Cleanup failed: ${payload.error || 'unknown'}`);
+                }
+              } catch (err) {
+                console.error(err);
+                alert('Cleanup request failed');
+              }
+            }}
+          >
+            Run session cleanup
+          </button>
         </div>
       </div>
 

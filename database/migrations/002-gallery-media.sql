@@ -1,6 +1,5 @@
 -- ============================================
 -- GALLERY MEDIA BACKFILL MIGRATION
--- ============================================
 -- Adds gallery_media to existing databases and backfills a primary photo row
 -- for gallery items that only had the legacy single-image fields.
 

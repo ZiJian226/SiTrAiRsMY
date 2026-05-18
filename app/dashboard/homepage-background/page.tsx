@@ -489,9 +489,6 @@ export default function HomepageBackgroundPage() {
         <Link href="/dashboard" className="btn btn-ghost btn-sm">
           ← Back to Dashboard
         </Link>
-        <Link href="/admin" className="btn btn-ghost btn-sm">
-          Admin Panel
-        </Link>
       </div>
 
       <div className="alert alert-info mb-6">

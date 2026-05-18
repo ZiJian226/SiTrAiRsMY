@@ -7,7 +7,12 @@ const config = {
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      fontFamily: {
+        poppins: ["var(--font-poppins)", "system-ui", "-apple-system", "sans-serif"],
+        "space-grotesk": ["var(--font-space-grotesk)", "system-ui", "-apple-system", "sans-serif"],
+      },
+    },
   },
   plugins: [
     // eslint-disable-next-line @typescript-eslint/no-require-imports

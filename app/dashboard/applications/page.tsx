@@ -66,7 +66,8 @@ export default function ApplicationsPage() {
       try {
         setPageLoading(true);
         const careerRes = await fetch("/api/admin/applications?type=career");
-        const communityRes = await fetch("/api/admin/applications?type=community");
+        // backend expects 'agency' for community applications
+        const communityRes = await fetch("/api/admin/applications?type=agency");
 
         if (!careerRes.ok || !communityRes.ok) {
           throw new Error("Failed to fetch applications");
@@ -94,10 +95,12 @@ export default function ApplicationsPage() {
     notes: string
   ) => {
     try {
+      // API expects 'agency' instead of 'community'
+      const apiType = type === 'community' ? 'agency' : type;
       const response = await fetch("/api/admin/applications", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, type, status: newStatus, adminNotes: notes }),
+        body: JSON.stringify({ id, type: apiType, status: newStatus, adminNotes: notes }),
       });
 
       if (!response.ok) {

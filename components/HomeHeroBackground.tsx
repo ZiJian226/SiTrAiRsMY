@@ -4,6 +4,25 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ASSETS } from '@/lib/assetPath';
 import type { HomepageHeroConfig, HomepageHeroMedia } from '@/lib/types';
 
+function getBackgroundFitClasses(fitMode?: string): string {
+  switch (fitMode) {
+    case 'fill':
+      return 'object-fill';
+    case 'fit':
+      return 'object-contain';
+    case 'stretch':
+      return 'object-fill';
+    case 'center':
+      return 'object-contain object-center';
+    case 'span':
+      return 'object-cover object-center';
+    case 'tile':
+      return 'object-cover object-center';
+    default:
+      return 'object-contain';
+  }
+}
+
 export default function HomeHeroBackground() {
   const [config, setConfig] = useState<HomepageHeroConfig | null>(null);
   const [loading, setLoading] = useState(true);
@@ -60,8 +79,8 @@ export default function HomeHeroBackground() {
   }, [config]);
 
   const settings = config?.settings;
-  const mode = settings?.mode || (activeMedia.length > 1 ? 'slideshow' : 'video');
   const overlayOpacity = Math.min(100, Math.max(0, settings?.overlay_opacity ?? 30));
+  const backgroundColor = settings?.background_color?.trim() || 'oklch(var(--b1))';
 
   const slideshowMedia = useMemo<HomepageHeroMedia[]>(() => {
     if (activeMedia.length <= 1) {
@@ -80,27 +99,32 @@ export default function HomeHeroBackground() {
     });
 
     return () => window.cancelAnimationFrame(animationFrame);
-  }, [mode, activeMedia.length]);
+  }, [activeMedia.length]);
 
   useEffect(() => {
-    if (mode !== 'slideshow' || activeMedia.length <= 1) {
+    if (activeMedia.length <= 1) {
+      return undefined;
+    }
+
+    const currentItem = slideshowMedia[trackIndex];
+    if (!currentItem || currentItem.media_type === 'video') {
       return undefined;
     }
 
     const intervalMs = Math.max(1000, settings?.slideshow_interval_ms ?? 3000);
-    const timer = window.setInterval(() => {
+    const timer = window.setTimeout(() => {
       setTrackIndex((index) => index + 1);
     }, intervalMs);
 
-    return () => window.clearInterval(timer);
-  }, [mode, activeMedia.length, settings?.slideshow_interval_ms]);
+    return () => window.clearTimeout(timer);
+  }, [activeMedia.length, slideshowMedia, trackIndex, settings?.slideshow_interval_ms]);
 
   // Reset/repair track when the document regains visibility (fixes tab-switch burst)
   useEffect(() => {
     const onVisibility = () => {
       if (document.visibilityState !== 'visible') return;
 
-      if (mode !== 'slideshow' || activeMedia.length <= 1) return;
+      if (activeMedia.length <= 1) return;
 
       // Temporarily disable animation, ensure trackIndex is valid, then re-enable
       setShouldAnimate(false);
@@ -125,7 +149,7 @@ export default function HomeHeroBackground() {
 
     document.addEventListener('visibilitychange', onVisibility);
     return () => document.removeEventListener('visibilitychange', onVisibility);
-  }, [mode, activeMedia.length, slideshowMedia.length]);
+  }, [activeMedia.length, slideshowMedia.length]);
 
   const handleTrackTransitionEnd = (event: React.TransitionEvent<HTMLDivElement>) => {
     if (event.target !== event.currentTarget || event.propertyName !== 'transform') {
@@ -148,19 +172,27 @@ export default function HomeHeroBackground() {
     }
   };
 
+  const handleMediaEnded = () => {
+    if (activeMedia.length <= 1) {
+      return;
+    }
+
+    setTrackIndex((index) => index + 1);
+  };
+
   return (
-    <div className="w-full h-auto relative z-0">
-      <div className="w-full h-auto">
+    <div className="w-full h-full min-h-[100svh] relative z-0" style={{ backgroundColor }}>
+      <div className="w-full h-full min-h-[100svh]">
         {loading || activeMedia.length === 0 ? (
           <img
             src={ASSETS.images.background.starmy}
             alt="StarMy Background"
-            className="w-full h-auto"
+            className="w-full h-full object-contain block"
           />
         ) : (
-          <div className="relative w-full h-auto overflow-hidden">
+          <div className="relative w-full h-full overflow-hidden">
             <div
-              className={`flex ${shouldAnimate ? 'transition-transform duration-700 ease-in-out' : 'transition-none'}`}
+              className={`flex h-full ${shouldAnimate ? 'transition-transform duration-700 ease-in-out' : 'transition-none'}`}
               style={{
                 width: `${slideshowMedia.length * 100}%`,
                 transform: `translateX(-${trackIndex * (100 / slideshowMedia.length)}%)`,
@@ -170,23 +202,24 @@ export default function HomeHeroBackground() {
               {slideshowMedia.map((item) => (
                 <div
                   key={item.id}
-                  className="shrink-0"
+                  className="shrink-0 h-full"
                   style={{ width: `${100 / slideshowMedia.length}%` }}
                 >
-                  {mode === 'video' || item.media_type === 'video' ? (
+                  {item.media_type === 'video' ? (
                     <video
                       src={item.media_url}
                       autoPlay
                       muted
-                      loop
+                      loop={activeMedia.length <= 1}
                       playsInline
-                      className="block w-full h-auto"
+                      onEnded={handleMediaEnded}
+                      className={`block w-full h-full ${getBackgroundFitClasses(settings?.background_fit)}`}
                     />
                   ) : (
                     <img
                       src={item.media_url}
                       alt={item.label || 'StarMy background'}
-                      className="block w-full h-auto"
+                      className={`block w-full h-full ${getBackgroundFitClasses(settings?.background_fit)}`}
                     />
                   )}
                 </div>

@@ -1,15 +1,42 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { ASSETS } from "@/lib/assetPath";
 import { MusicToggle } from "./MusicToggle";
 
 export default function Navbar() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [blurProgress, setBlurProgress] = useState(0);
+  const pathname = usePathname();
+  const isHomepage = pathname === "/";
+  const navbarBgOpacity = isHomepage ? blurProgress : 1;
 
   const closeSidebar = () => setIsSidebarOpen(false);
   const toggleSidebar = () => setIsSidebarOpen((prev) => !prev);
+
+  // Listen to CSS variable for homepage blur progress (only on homepage)
+  useEffect(() => {
+    if (!isHomepage) {
+      setBlurProgress(0);
+      return;
+    }
+
+    const updateBlurProgress = () => {
+      const progress = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--hero-blur-progress') || '0');
+      setBlurProgress(progress);
+    };
+
+    const observer = new MutationObserver(updateBlurProgress);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['style'] });
+    window.addEventListener('scroll', updateBlurProgress, { passive: true });
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('scroll', updateBlurProgress as EventListener);
+    };
+  }, [isHomepage]);
 
   const navItems = [
     { label: "Talents", href: "/talents" },
@@ -28,9 +55,19 @@ export default function Navbar() {
 
   return (
     <>
-      <div className="navbar bg-base-100 shadow-lg sticky top-0 z-50 lg:min-h-25">
+      <div 
+        className="navbar shadow-lg sticky top-0 z-50 lg:min-h-25 transition-colors duration-300 relative overflow-visible"
+        style={{
+          backdropFilter: (isHomepage && blurProgress > 0) || !isHomepage ? 'blur(10px)' : 'none'
+        }}
+      >
+        <div
+          className="absolute inset-0 bg-base-100 pointer-events-none transition-opacity duration-300"
+          style={{ opacity: navbarBgOpacity }}
+          aria-hidden="true"
+        />
         {/* ===== MOBILE: Hamburger (visible only on mobile) ===== */}
-        <div className="navbar-start flex-1">
+        <div className="navbar-start flex-1 relative z-10">
           <div className="hidden lg:block w-auto" aria-hidden="true"></div>
           <button
             className="btn btn-ghost text-2xl lg:hidden"
@@ -68,7 +105,7 @@ export default function Navbar() {
         </div>
 
         {/* ===== DESKTOP: Horizontal menu (visible only on desktop) ===== */}
-        <div className="navbar-center hidden lg:flex lg:absolute lg:left-1/2 lg:transform lg:-translate-x-1/2">
+        <div className="navbar-center hidden lg:flex lg:absolute lg:left-1/2 lg:transform lg:-translate-x-1/2 relative z-10">
           <ul className="menu menu-horizontal flex-nowrap whitespace-nowrap items-center gap-2 xl:gap-4 2xl:gap-6 text-lg 2xl:text-xl font-bold">
             <Link
               href="/"
@@ -133,7 +170,7 @@ export default function Navbar() {
         </div>
 
         {/* ===== MusicToggle: visible on both mobile and desktop (right side) ===== */}
-        <div className="navbar-end lg:flex-1 lg:justify-end">
+        <div className="navbar-end lg:flex-none lg:ml-auto relative z-10 pointer-events-none">
           <MusicToggle />
         </div>
       </div>

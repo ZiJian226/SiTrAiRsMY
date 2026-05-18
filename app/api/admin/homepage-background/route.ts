@@ -9,6 +9,19 @@ import {
   type HomepageHeroMediaInput,
 } from '@/lib/admin/homepageBackgroundRepository';
 
+function normalizeHexColor(input: unknown): string | null {
+  if (typeof input !== 'string') {
+    return null;
+  }
+
+  const value = input.trim();
+  if (!/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(value)) {
+    return null;
+  }
+
+  return value;
+}
+
 async function requireAdminOrStaff(request: NextRequest) {
   const user = await getAuthenticatedUser(request);
   if (!user) {
@@ -55,6 +68,7 @@ export async function PUT(request: NextRequest) {
     const mode = body.mode === 'video' ? 'video' : 'slideshow';
     const slideshowIntervalMs = Number(body.slideshow_interval_ms ?? 3000);
     const overlayOpacity = Number(body.overlay_opacity ?? 30);
+    const backgroundColor = normalizeHexColor(body.background_color);
     const media = Array.isArray(body.media) ? body.media : [];
 
     const normalizedMedia = (media as Array<Record<string, unknown>>)
@@ -76,6 +90,7 @@ export async function PUT(request: NextRequest) {
         mode,
         slideshow_interval_ms: Number.isFinite(slideshowIntervalMs) && slideshowIntervalMs > 0 ? slideshowIntervalMs : 3000,
         overlay_opacity: Number.isFinite(overlayOpacity) ? Math.min(100, Math.max(0, overlayOpacity)) : 30,
+        background_color: backgroundColor,
       },
       normalizedMedia,
     );
@@ -95,6 +110,7 @@ export async function PUT(request: NextRequest) {
           mode,
           slideshow_interval_ms: config.settings?.slideshow_interval_ms,
           overlay_opacity: config.settings?.overlay_opacity,
+          background_color: config.settings?.background_color,
           media_count: config.media.length,
         },
         ...auditContext,

@@ -10,6 +10,8 @@ export interface HomepageHeroSettings {
   mode: HomepageHeroMode;
   slideshow_interval_ms: number;
   overlay_opacity: number;
+  background_color: string | null;
+  background_fit: string;
   created_at: string;
   updated_at: string;
 }
@@ -45,6 +47,8 @@ export interface HomepageHeroSettingsInput {
   mode: HomepageHeroMode;
   slideshow_interval_ms?: number;
   overlay_opacity?: number;
+  background_color?: string | null;
+  background_fit?: string;
 }
 
 type HomepageHeroSettingsRow = {
@@ -52,6 +56,8 @@ type HomepageHeroSettingsRow = {
   mode: string;
   slideshow_interval_ms: number;
   overlay_opacity: number;
+  background_color: string | null;
+  background_fit: string;
   created_at: string;
   updated_at: string;
 };
@@ -83,6 +89,7 @@ async function ensureHomepageHeroTables(): Promise<void> {
       mode TEXT NOT NULL DEFAULT 'slideshow' CHECK (mode IN ('video', 'slideshow')),
       slideshow_interval_ms INTEGER NOT NULL DEFAULT 3000,
       overlay_opacity INTEGER NOT NULL DEFAULT 30 CHECK (overlay_opacity >= 0 AND overlay_opacity <= 100),
+      background_color TEXT,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
@@ -105,6 +112,8 @@ async function ensureHomepageHeroTables(): Promise<void> {
   await dbQuery(`ALTER TABLE IF EXISTS homepage_hero_settings ADD COLUMN IF NOT EXISTS mode TEXT NOT NULL DEFAULT 'slideshow'`);
   await dbQuery(`ALTER TABLE IF EXISTS homepage_hero_settings ADD COLUMN IF NOT EXISTS slideshow_interval_ms INTEGER NOT NULL DEFAULT 3000`);
   await dbQuery(`ALTER TABLE IF EXISTS homepage_hero_settings ADD COLUMN IF NOT EXISTS overlay_opacity INTEGER NOT NULL DEFAULT 30`);
+  await dbQuery(`ALTER TABLE IF EXISTS homepage_hero_settings ADD COLUMN IF NOT EXISTS background_color TEXT`);
+  await dbQuery(`ALTER TABLE IF EXISTS homepage_hero_settings ADD COLUMN IF NOT EXISTS background_fit TEXT NOT NULL DEFAULT 'fit'`);
   await dbQuery(`ALTER TABLE IF EXISTS homepage_hero_settings ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`);
   await dbQuery(`ALTER TABLE IF EXISTS homepage_hero_settings ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`);
 
@@ -144,6 +153,8 @@ function mapSettingsRow(row: HomepageHeroSettingsRow): HomepageHeroSettings {
     mode: row.mode === 'video' ? 'video' : 'slideshow',
     slideshow_interval_ms: row.slideshow_interval_ms,
     overlay_opacity: row.overlay_opacity,
+    background_color: row.background_color,
+    background_fit: row.background_fit || 'fit',
     created_at: row.created_at,
     updated_at: row.updated_at,
   };
@@ -168,7 +179,7 @@ export async function getHomepageHeroConfig(): Promise<HomepageHeroConfig> {
 
   const settingsResult = await dbQuery(
     `
-      SELECT config_key, mode, slideshow_interval_ms, overlay_opacity, created_at, updated_at
+      SELECT config_key, mode, slideshow_interval_ms, overlay_opacity, background_color, background_fit, created_at, updated_at
       FROM homepage_hero_settings
       ORDER BY updated_at DESC, created_at DESC
       LIMIT 1
@@ -205,19 +216,23 @@ export async function replaceHomepageHeroConfig(
 
     await client.query(
       `
-        INSERT INTO homepage_hero_settings (config_key, mode, slideshow_interval_ms, overlay_opacity, updated_at)
-        VALUES ('default', $1, $2, $3, NOW())
+        INSERT INTO homepage_hero_settings (config_key, mode, slideshow_interval_ms, overlay_opacity, background_color, background_fit, updated_at)
+        VALUES ('default', $1, $2, $3, $4, $5, NOW())
         ON CONFLICT (config_key)
         DO UPDATE SET
           mode = EXCLUDED.mode,
           slideshow_interval_ms = EXCLUDED.slideshow_interval_ms,
           overlay_opacity = EXCLUDED.overlay_opacity,
+          background_color = EXCLUDED.background_color,
+          background_fit = EXCLUDED.background_fit,
           updated_at = NOW()
       `,
       [
         settings.mode,
         settings.slideshow_interval_ms ?? 3000,
         settings.overlay_opacity ?? 30,
+        settings.background_color ?? null,
+        settings.background_fit ?? 'fit',
       ],
     );
 

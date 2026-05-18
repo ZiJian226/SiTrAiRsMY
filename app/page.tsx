@@ -91,7 +91,8 @@ export default function Home() {
 
   useEffect(() => {
     const heroSection = document.getElementById("hero-section");
-    if (!heroSection) return;
+    const spacerDiv = document.getElementById("hero-spacer");
+    if (!heroSection || !spacerDiv) return;
 
     let animationFrame: number | null = null;
 
@@ -99,12 +100,19 @@ export default function Home() {
       animationFrame = null;
 
       const heroHeight = heroSection.offsetHeight || window.innerHeight;
+      
+      // Set spacer height to match hero height dynamically
+      spacerDiv.style.height = `${heroHeight}px`;
+
       const blurStart = Math.max(0, heroHeight - window.innerHeight * 0.55);
       const blurRange = Math.max(window.innerHeight * 0.85, 520);
       const progress = Math.min(Math.max((window.scrollY - blurStart) / blurRange, 0), 1);
 
       heroSection.style.filter = `blur(${progress * 18}px)`;
       heroSection.style.opacity = `${Math.max(1 - progress * 0.55, 0.38)}`;
+
+      // Set CSS custom property for navbar background fade-in
+      document.documentElement.style.setProperty('--hero-blur-progress', progress.toString());
     };
 
     const scheduleUpdate = () => {
@@ -132,17 +140,20 @@ export default function Home() {
     <div className="min-h-screen bg-base-100">
       <Navbar />
 
-      {/* Hero Section with Scroll Blur Effect */}
-
-      {/* Hero Section with Scroll Blur Effect */}
+      {/* Hero Section - Fixed background */}
       <div
         id="hero-section"
-        className="hero h-auto relative transition-all duration-0 ease-in-out overflow-hidden"
+        className="hero h-[100svh] fixed top-0 left-0 right-0 transition-all duration-0 ease-in-out overflow-hidden"
+        style={{ zIndex: 0 }}
       >
         <HomeHeroBackground />
       </div>
-      {/* Welcome Section - Moved below hero image */}
-      <div className="bg-base-100 py-16 relative" style={{ zIndex: 2 }}>
+      
+      {/* Spacer for fixed hero - height is set dynamically to match hero height */}
+      <div id="hero-spacer" className="w-full"></div>
+      
+      {/* Welcome Section - Overlays the hero as you scroll */}
+      <div className="bg-base-100 py-16 relative" style={{ zIndex: 2, marginTop: '-10vh' }}>
         <Container>
           <div className="text-center max-w-3xl mx-auto">
             <h1 className="text-5xl font-bold pb-2 mb-4 bg-gradient-to-r from-secondary to-primary-content bg-clip-text text-transparent">
@@ -391,7 +402,9 @@ export default function Home() {
         />
       )}
 
-      <Footer />
+      <div className="relative z-[2]">
+        <Footer />
+      </div>
     </div>
   );
 }

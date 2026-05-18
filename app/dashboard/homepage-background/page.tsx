@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import PageLayout from '@/components/PageLayout';
-import type { HomepageHeroConfig, HomepageHeroMediaType, HomepageHeroMode } from '@/lib/types';
+import type { HomepageHeroConfig, HomepageHeroMediaType, HomepageHeroMode, BackgroundFitMode } from '@/lib/types';
 import { ASSETS } from '@/lib/assetPath';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -15,6 +15,25 @@ interface EditableHomepageMedia {
   media_object_key?: string;
   sort_order: number;
   is_active: boolean;
+}
+
+function getBackgroundFitClasses(fitMode: string): string {
+  switch (fitMode) {
+    case 'fill':
+      return 'object-fill';
+    case 'fit':
+      return 'object-contain';
+    case 'stretch':
+      return 'object-fill';
+    case 'center':
+      return 'object-contain object-center';
+    case 'span':
+      return 'object-cover object-center';
+    case 'tile':
+      return 'object-cover object-center'; // For tile, we'd need background-repeat; covered by CSS
+    default:
+      return 'object-contain';
+  }
 }
 
 function inferMediaType(mediaType: HomepageHeroMediaType, mediaUrl: string): HomepageHeroMediaType {
@@ -40,6 +59,110 @@ function normalizeMedia(items: EditableHomepageMedia[]): EditableHomepageMedia[]
     .filter((item) => item.media_url.length > 0);
 }
 
+function isHexColor(value: string) {
+  return /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(value.trim());
+}
+
+function expandHexColor(value: string) {
+  const hex = value.trim().replace('#', '');
+  if (hex.length === 3) {
+    return hex.split('').map((character) => character + character).join('');
+  }
+
+  return hex;
+}
+
+function rgbToHex(red: number, green: number, blue: number) {
+  return `#${[red, green, blue]
+    .map((channel) => Math.max(0, Math.min(255, Math.round(channel))).toString(16).padStart(2, '0'))
+    .join('')}`;
+}
+
+async function getDominantColorFromImageUrl(url: string): Promise<string | null> {
+  return new Promise((resolve) => {
+    const image = new Image();
+    image.crossOrigin = 'anonymous';
+    image.decoding = 'async';
+
+    image.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        const size = 32;
+        canvas.width = size;
+        canvas.height = size;
+
+        const context = canvas.getContext('2d', { willReadFrequently: true });
+        if (!context) {
+          resolve(null);
+          return;
+        }
+
+        context.drawImage(image, 0, 0, size, size);
+        const { data } = context.getImageData(0, 0, size, size);
+        const colorCounts = new Map<string, number>();
+
+        for (let index = 0; index < data.length; index += 4) {
+          const alpha = data[index + 3];
+          if (alpha < 32) {
+            continue;
+          }
+
+          const red = Math.floor(data[index] / 32) * 32;
+          const green = Math.floor(data[index + 1] / 32) * 32;
+          const blue = Math.floor(data[index + 2] / 32) * 32;
+          const color = rgbToHex(red, green, blue);
+          colorCounts.set(color, (colorCounts.get(color) || 0) + 1);
+        }
+
+        if (colorCounts.size === 0) {
+          resolve(null);
+          return;
+        }
+
+        let dominantColor = '#ffffff';
+        let dominantCount = 0;
+
+        colorCounts.forEach((count, color) => {
+          if (count > dominantCount) {
+            dominantColor = color;
+            dominantCount = count;
+          }
+        });
+
+        resolve(dominantColor);
+      } catch {
+        resolve(null);
+      }
+    };
+
+    image.onerror = () => resolve(null);
+    image.src = url;
+  });
+}
+
+async function deriveHomepageColor(mediaItems: EditableHomepageMedia[]): Promise<string> {
+  const photoItems = mediaItems.filter((item) => item.is_active && item.media_type === 'photo' && item.media_url.trim().length > 0);
+
+  const dominantColors = await Promise.all(photoItems.map((item) => getDominantColorFromImageUrl(item.media_url)));
+  const colorCounts = new Map<string, number>();
+
+  dominantColors.filter((color): color is string => Boolean(color)).forEach((color) => {
+    colorCounts.set(color, (colorCounts.get(color) || 0) + 1);
+  });
+
+  let fallbackColor = '#ffffff';
+  let fallbackCount = 0;
+
+  colorCounts.forEach((count, color) => {
+    if (count > fallbackCount) {
+      fallbackColor = color;
+      fallbackCount = count;
+    }
+  });
+
+  return fallbackColor;
+}
+
 export default function HomepageBackgroundPage() {
   const { user, profile, loading: authLoading } = useAuth();
   const router = useRouter();
@@ -50,17 +173,36 @@ export default function HomepageBackgroundPage() {
   const [success, setSuccess] = useState<string | null>(null);
   const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
   const [config, setConfig] = useState<HomepageHeroConfig | null>(null);
-  const [settings, setSettings] = useState({
-    mode: 'slideshow' as HomepageHeroMode,
+  const [settings, setSettings] = useState<{
+    mode: HomepageHeroMode;
+    slideshow_interval_ms: number;
+    overlay_opacity: number;
+    background_color: string;
+    background_fit: BackgroundFitMode;
+  }>({
+    mode: 'slideshow',
     slideshow_interval_ms: 3000,
     overlay_opacity: 30,
+    background_color: '',
+    background_fit: 'fit',
   });
   const [media, setMedia] = useState<EditableHomepageMedia[]>([]);
+  const [colorMode, setColorMode] = useState<'auto' | 'manual'>('auto');
+  const [colorScanning, setColorScanning] = useState(false);
+  const previewBackgroundColor = isHexColor(settings.background_color) ? settings.background_color : 'oklch(var(--b1))';
   const previewMedia = useMemo(
     () => media.filter((item) => item.is_active && item.media_url.trim().length > 0).sort((left, right) => left.sort_order - right.sort_order),
     [media],
   );
-  const [previewIndex, setPreviewIndex] = useState(0);
+
+  // Sliding-track preview (cloned edges like homepage)
+  const slideshowPreviewMedia = useMemo(() => {
+    if (previewMedia.length <= 1) return previewMedia;
+    return [previewMedia[previewMedia.length - 1], ...previewMedia, previewMedia[0]];
+  }, [previewMedia]);
+
+  const [previewTrackIndex, setPreviewTrackIndex] = useState(previewMedia.length > 1 ? 1 : 0);
+  const [previewShouldAnimate, setPreviewShouldAnimate] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -91,10 +233,13 @@ export default function HomepageBackgroundPage() {
         const data = payload.data as HomepageHeroConfig;
         setConfig(data);
         setSettings({
-          mode: data.settings?.mode ?? 'slideshow',
+          mode: 'slideshow',
           slideshow_interval_ms: data.settings?.slideshow_interval_ms ?? 3000,
           overlay_opacity: data.settings?.overlay_opacity ?? 30,
+          background_color: data.settings?.background_color ?? '',
+          background_fit: data.settings?.background_fit ?? 'fit',
         });
+        setColorMode(data.settings?.background_color ? 'manual' : 'auto');
         setMedia(
           (data.media || []).map((item, index) => ({
             id: item.id,
@@ -116,21 +261,73 @@ export default function HomepageBackgroundPage() {
   }, [user, profile]);
 
   useEffect(() => {
-    setPreviewIndex(0);
-  }, [settings.mode, previewMedia.length]);
+    setPreviewTrackIndex(previewMedia.length > 1 ? 1 : 0);
+    setPreviewShouldAnimate(false);
+    const raf = window.requestAnimationFrame(() => setPreviewShouldAnimate(true));
+    return () => window.cancelAnimationFrame(raf);
+  }, [previewMedia.length]);
 
   useEffect(() => {
-    if (settings.mode !== 'slideshow' || previewMedia.length <= 1) {
+    if (previewMedia.length <= 1) return undefined;
+
+    const currentItem = slideshowPreviewMedia[previewTrackIndex];
+    if (!currentItem || currentItem.media_type === 'video') {
       return undefined;
     }
 
     const intervalMs = Math.max(1000, settings.slideshow_interval_ms || 3000);
-    const timer = window.setInterval(() => {
-      setPreviewIndex((current) => (current + 1) % previewMedia.length);
-    }, intervalMs);
+    const timer = window.setTimeout(() => setPreviewTrackIndex((i) => i + 1), intervalMs);
+    return () => window.clearTimeout(timer);
+  }, [settings.slideshow_interval_ms, previewMedia.length, previewTrackIndex, slideshowPreviewMedia]);
 
-    return () => window.clearInterval(timer);
-  }, [settings.mode, settings.slideshow_interval_ms, previewMedia.length]);
+  useEffect(() => {
+    let cancelled = false;
+
+    const applyDefaultColor = async () => {
+      if (colorMode !== 'auto' || isHexColor(settings.background_color)) {
+        return;
+      }
+
+      if (previewMedia.length === 0) {
+        return;
+      }
+
+      setColorScanning(true);
+      try {
+        const derivedColor = await deriveHomepageColor(previewMedia);
+        if (!cancelled) {
+          setSettings((prev) => ({
+            ...prev,
+            background_color: derivedColor,
+          }));
+        }
+      } finally {
+        if (!cancelled) {
+          setColorScanning(false);
+        }
+      }
+    };
+
+    void applyDefaultColor();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [colorMode, previewMedia, settings.background_color]);
+
+  async function handleAutoPickColor() {
+    setColorScanning(true);
+    try {
+      const derivedColor = await deriveHomepageColor(previewMedia);
+      setSettings((prev) => ({
+        ...prev,
+        background_color: derivedColor,
+      }));
+      setColorMode('auto');
+    } finally {
+      setColorScanning(false);
+    }
+  }
 
   async function handleUploadMediaFile(file: File, index: number) {
     setUploadingIndex(index);
@@ -200,11 +397,21 @@ export default function HomepageBackgroundPage() {
         sort_order: index,
       }));
 
+      let backgroundColor = settings.background_color.trim();
+      if (!isHexColor(backgroundColor)) {
+        backgroundColor = await deriveHomepageColor(normalizedMedia);
+        setSettings((prev) => ({
+          ...prev,
+          background_color: backgroundColor,
+        }));
+      }
+
       const response = await fetch('/api/admin/homepage-background', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...settings,
+          background_color: backgroundColor,
           media: normalizedMedia,
         }),
       });
@@ -237,6 +444,31 @@ export default function HomepageBackgroundPage() {
     } finally {
       setSaving(false);
     }
+  }
+
+  function handlePreviewTrackTransitionEnd() {
+    if (previewMedia.length <= 1) return;
+
+    const lastIndex = slideshowPreviewMedia.length - 1;
+
+    if (previewTrackIndex === lastIndex) {
+      setPreviewShouldAnimate(false);
+      setPreviewTrackIndex(1);
+      requestAnimationFrame(() => requestAnimationFrame(() => setPreviewShouldAnimate(true)));
+      return;
+    }
+
+    if (previewTrackIndex === 0) {
+      setPreviewShouldAnimate(false);
+      setPreviewTrackIndex(slideshowPreviewMedia.length - 2);
+      requestAnimationFrame(() => requestAnimationFrame(() => setPreviewShouldAnimate(true)));
+      return;
+    }
+  }
+
+  function handlePreviewMediaEnded() {
+    if (previewMedia.length <= 1) return;
+    setPreviewTrackIndex((i) => i + 1);
   }
 
   if (authLoading || loading) {
@@ -285,24 +517,11 @@ export default function HomepageBackgroundPage() {
               <div className="flex items-center justify-between gap-4 flex-wrap">
                 <div>
                   <h2 className="card-title text-2xl text-primary">Hero Settings</h2>
-                  <p className="opacity-70">Choose between a looping video or a rotating slideshow.</p>
+                  <p className="opacity-70">Mix photos and videos together. Photos use the interval; videos advance when they end.</p>
                 </div>
-                <div className="badge badge-outline badge-lg capitalize">{settings.mode}</div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <label className="form-control">
-                  <span className="label-text font-semibold mb-2">Display Mode</span>
-                  <select
-                    className="select select-bordered"
-                    value={settings.mode}
-                    onChange={(e) => setSettings((prev) => ({ ...prev, mode: e.target.value as HomepageHeroMode }))}
-                  >
-                    <option value="slideshow">Slideshow</option>
-                    <option value="video">Video</option>
-                  </select>
-                </label>
-
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <label className="form-control">
                   <span className="label-text font-semibold mb-2">Slideshow Interval (ms)</span>
                   <input
@@ -328,6 +547,23 @@ export default function HomepageBackgroundPage() {
                   <div className="text-xs opacity-70 mt-2">{settings.overlay_opacity}%</div>
                 </label>
               </div>
+
+              <label className="form-control">
+                <span className="label-text font-semibold mb-2">Background Fit Mode</span>
+                <select
+                  className="select select-bordered"
+                  value={settings.background_fit}
+                  onChange={(e) => setSettings((prev) => ({ ...prev, background_fit: e.target.value as any }))}
+                >
+                  <option value="fill">Fill (stretches to fill)</option>
+                  <option value="fit">Fit (contain with letterbox)</option>
+                  <option value="stretch">Stretch (same as fill)</option>
+                  <option value="center">Center (contain centered)</option>
+                  <option value="span">Span (cover the area)</option>
+                  <option value="tile">Tile (repeat pattern)</option>
+                </select>
+                <div className="text-xs opacity-70 mt-2">Choose how media fills the hero area</div>
+              </label>
             </div>
           </div>
 
@@ -336,14 +572,30 @@ export default function HomepageBackgroundPage() {
               <div className="flex items-center justify-between gap-4 flex-wrap">
                 <div>
                   <h2 className="card-title text-2xl text-secondary">Media Items</h2>
-                  <p className="opacity-70">Add photos for slideshows or one muted looping video.</p>
+                  <p className="opacity-70">Add photos and videos in any order. Photos use the interval; videos play until they end.</p>
                 </div>
-                <div className="flex gap-2 flex-wrap">
-                  <button type="button" className="btn btn-sm btn-outline" onClick={() => addMedia('photo')}>
-                    + Add Photo
-                  </button>
-                  <button type="button" className="btn btn-sm btn-outline" onClick={() => addMedia('video')}>
-                    + Add Video
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <label className="form-control">
+                  <span className="label-text font-semibold mb-2">Background Color</span>
+                  <input
+                    type="color"
+                    className="input input-bordered h-12 w-full p-2"
+                    value={isHexColor(settings.background_color) ? `#${expandHexColor(settings.background_color)}` : '#ffffff'}
+                    onChange={(e) => {
+                      setSettings((prev) => ({ ...prev, background_color: e.target.value }));
+                      setColorMode('manual');
+                    }}
+                  />
+                </label>
+
+                <div className="flex flex-col justify-end gap-2">
+                  <div className="text-xs opacity-70 break-all">
+                    {colorMode === 'auto' ? 'Auto-picked from slideshow photos.' : 'Manual override enabled.'}
+                  </div>
+                  <button type="button" className="btn btn-outline self-start" onClick={() => void handleAutoPickColor()} disabled={colorScanning}>
+                    {colorScanning ? 'Scanning...' : 'Auto-pick from photos'}
                   </button>
                 </div>
               </div>
@@ -368,32 +620,18 @@ export default function HomepageBackgroundPage() {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-[96px_minmax(0,1fr)_auto] gap-4 items-end">
                         <label className="form-control">
-                          <span className="label-text font-semibold mb-2">Sort Order</span>
+                          <span className="label-text font-semibold mb-2">Sort</span>
                           <input
                             type="number"
-                            className="input input-bordered"
+                            className="input input-bordered w-24"
                             value={item.sort_order}
                             onChange={(e) => updateMedia(index, { sort_order: Number(e.target.value) || index })}
                           />
                         </label>
-                      </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <label className="form-control">
-                          <span className="label-text font-semibold mb-2">Media Type</span>
-                          <select
-                            className="select select-bordered"
-                            value={item.media_type}
-                            onChange={(e) => updateMedia(index, { media_type: e.target.value as HomepageHeroMediaType })}
-                          >
-                            <option value="photo">Photo</option>
-                            <option value="video">Video</option>
-                          </select>
-                        </label>
-
-                        <label className="form-control md:col-span-2">
                           <span className="label-text font-semibold mb-2">Media URL</span>
                           <input
                             type="text"
@@ -403,37 +641,49 @@ export default function HomepageBackgroundPage() {
                             onChange={(e) => updateMedia(index, { media_url: e.target.value, media_object_key: undefined })}
                           />
                         </label>
+
+                        <label className="form-control">
+                          <span className="label-text font-semibold mb-2">Type / Active</span>
+                          <div className="flex flex-wrap items-center gap-3 pt-1">
+                            <select
+                              className="select select-bordered select-sm min-w-28"
+                              value={item.media_type}
+                              onChange={(e) => updateMedia(index, { media_type: e.target.value as HomepageHeroMediaType })}
+                            >
+                              <option value="photo">Photo</option>
+                              <option value="video">Video</option>
+                            </select>
+
+                            <label className="label cursor-pointer justify-start gap-3 px-0">
+                              <input
+                                type="checkbox"
+                                className="checkbox checkbox-primary"
+                                checked={item.is_active}
+                                onChange={(e) => updateMedia(index, { is_active: e.target.checked })}
+                              />
+                              <span className="label-text font-semibold">Active</span>
+                            </label>
+                          </div>
+                        </label>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
-                        <div>
-                          <input
-                            type="file"
-                            className="file-input file-input-bordered w-full"
-                            accept={item.media_type === 'video' ? 'video/*' : 'image/*'}
-                            disabled={uploadingIndex === index}
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) {
-                                void handleUploadMediaFile(file, index);
-                              }
-                              e.currentTarget.value = '';
-                            }}
-                          />
-                          {uploadingIndex === index && (
-                            <p className="text-xs text-primary mt-2">Uploading media...</p>
-                          )}
-                        </div>
-
-                        <label className="label cursor-pointer justify-start gap-3">
-                          <input
-                            type="checkbox"
-                            className="checkbox checkbox-primary"
-                            checked={item.is_active}
-                            onChange={(e) => updateMedia(index, { is_active: e.target.checked })}
-                          />
-                          <span className="label-text font-semibold">Active</span>
-                        </label>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <input
+                          type="file"
+                          className="file-input file-input-bordered flex-1 min-w-[16rem]"
+                          accept={item.media_type === 'video' ? 'video/*' : 'image/*'}
+                          disabled={uploadingIndex === index}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              void handleUploadMediaFile(file, index);
+                            }
+                            e.currentTarget.value = '';
+                          }}
+                        />
+                        {uploadingIndex === index && (
+                          <p className="text-xs text-primary">Uploading media...</p>
+                        )}
                       </div>
 
                       {item.media_url && item.media_type === 'photo' && (
@@ -460,8 +710,14 @@ export default function HomepageBackgroundPage() {
                   </div>
                 ))}
               </div>
-
               <div className="flex justify-end gap-3 pt-2">
+                <button type="button" className="btn btn-lg btn-outline" onClick={() => addMedia('photo')}>
+                  + Photo
+                </button>
+                <button type="button" className="btn btn-lg btn-outline" onClick={() => addMedia('video')}>
+                  + Video
+                </button>
+
                 <button
                   type="button"
                   className="btn btn-primary btn-lg"
@@ -479,50 +735,77 @@ export default function HomepageBackgroundPage() {
           <div className="card bg-base-200 shadow-xl">
             <div className="card-body">
               <h2 className="card-title text-2xl text-accent">Preview</h2>
-              <p className="opacity-70 text-sm">This is a quick preview of the hero area behavior.</p>
-              <div className="relative mt-4 aspect-[16/10] rounded-box overflow-hidden border border-base-300 bg-base-300">
-                {previewMedia.length > 0 ? (
-                  <div className="relative w-full h-full">
-                    {previewMedia.map((item, index) => {
-                      const isVisible = index === previewIndex;
-                      return (
-                        <div
-                          key={`${item.id || item.media_url}-${index}`}
-                          className={`absolute inset-0 transition-transform duration-700 ease-in-out ${isVisible ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'}`}
-                        >
-                          {item.media_type === 'video' || settings.mode === 'video' ? (
-                            <video
-                              src={item.media_url}
-                              autoPlay
-                              muted
-                              loop
-                              playsInline
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <img
-                              src={item.media_url}
-                              alt={`Homepage preview ${index + 1}`}
-                              className="w-full h-full object-cover"
-                            />
-                          )}
-                        </div>
-                      );
-                    })}
+              <p className="opacity-70 text-sm">This preview mirrors the live homepage in desktop and mobile layouts.</p>
+
+              <div className="mt-4 grid grid-cols-1 xl:grid-cols-2 gap-4">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold">PC browser preview</h3>
+                    <span className="badge badge-outline">Desktop</span>
                   </div>
-                ) : (
-                  <img
-                    src={ASSETS.images.background.starmy}
-                    alt="Default homepage background"
-                    className="w-full h-full object-cover"
-                  />
-                )}
-                <div className="absolute inset-0 bg-base-100/30"></div>
+                  <div className="relative aspect-[16/9] rounded-box overflow-hidden border border-base-300" style={{ backgroundColor: previewBackgroundColor }}>
+                    {previewMedia.length > 0 ? (
+                      <div className="relative w-full h-full overflow-hidden">
+                        <div
+                          className={`h-full flex ${previewShouldAnimate ? 'transition-transform duration-700 ease-in-out' : ''}`}
+                          style={{ width: `${slideshowPreviewMedia.length * 100}%`, transform: `translateX(-${(previewTrackIndex * 100) / slideshowPreviewMedia.length}%)` }}
+                          onTransitionEnd={handlePreviewTrackTransitionEnd}
+                        >
+                          {slideshowPreviewMedia.map((item, index) => (
+                            <div key={`desktop-${item.id || item.media_url}-${index}`} className="flex-shrink-0 h-full" style={{ width: `${100 / slideshowPreviewMedia.length}%` }}>
+                              {item.media_type === 'video' ? (
+                                <video src={item.media_url} autoPlay muted loop={previewMedia.length <= 1} playsInline onEnded={handlePreviewMediaEnded} className={`w-full h-full ${getBackgroundFitClasses(settings.background_fit)}`} />
+                              ) : (
+                                <img src={item.media_url} alt={`Desktop preview ${index + 1}`} className={`w-full h-full ${getBackgroundFitClasses(settings.background_fit)}`} />
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <img src={ASSETS.images.background.starmy} alt="Default homepage background" className="w-full h-full object-contain" />
+                    )}
+                    <div className="absolute inset-0 bg-base-100 pointer-events-none" style={{ opacity: settings.overlay_opacity / 100 }}></div>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold">Mobile preview</h3>
+                    <span className="badge badge-outline">Phone</span>
+                  </div>
+                  <div className="mx-auto relative aspect-[9/16] max-w-[18rem] rounded-box overflow-hidden border border-base-300" style={{ backgroundColor: previewBackgroundColor }}>
+                    {previewMedia.length > 0 ? (
+                      <div className="relative w-full h-full overflow-hidden">
+                        <div
+                          className={`h-full flex ${previewShouldAnimate ? 'transition-transform duration-700 ease-in-out' : ''}`}
+                          style={{ width: `${slideshowPreviewMedia.length * 100}%`, transform: `translateX(-${(previewTrackIndex * 100) / slideshowPreviewMedia.length}%)` }}
+                        >
+                          {slideshowPreviewMedia.map((item, index) => (
+                            <div key={`mobile-${item.id || item.media_url}-${index}`} className="flex-shrink-0 h-full" style={{ width: `${100 / slideshowPreviewMedia.length}%` }}>
+                              {item.media_type === 'video' ? (
+                                <video src={item.media_url} autoPlay muted loop={previewMedia.length <= 1} playsInline onEnded={handlePreviewMediaEnded} className={`w-full h-full ${getBackgroundFitClasses(settings.background_fit)}`} />
+                              ) : (
+                                <img src={item.media_url} alt={`Mobile preview ${index + 1}`} className={`w-full h-full ${getBackgroundFitClasses(settings.background_fit)}`} />
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <img src={ASSETS.images.background.starmy} alt="Default homepage background" className="w-full h-full object-contain" />
+                    )}
+                    <div className="absolute inset-0 bg-base-100 pointer-events-none" style={{ opacity: settings.overlay_opacity / 100 }}></div>
+                  </div>
+                </div>
               </div>
+
               <div className="mt-4 text-sm opacity-70 space-y-1">
-                <p>Mode: {settings.mode}</p>
+                <p>Playback: Mixed media carousel</p>
+                <p>Fit: {settings.background_fit}</p>
                 <p>Overlay: {settings.overlay_opacity}%</p>
                 <p>Interval: {settings.slideshow_interval_ms}ms</p>
+                <p>Background: {settings.background_color || 'auto-detected'}</p>
               </div>
             </div>
           </div>

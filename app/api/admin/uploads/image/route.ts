@@ -6,6 +6,7 @@ import {
   getObjectStorageBucket,
   getObjectStorageClient,
 } from '@/lib/objectStorage';
+import { cleanupUnlinkedObjectStorageMedia } from '@/lib/objectStorageCleanup';
 
 export const runtime = 'nodejs';
 
@@ -57,6 +58,12 @@ export async function POST(request: Request) {
         CacheControl: 'public, max-age=31536000, immutable',
       }),
     );
+
+    try {
+      await cleanupUnlinkedObjectStorageMedia({ trigger: 'admin/uploads/image' });
+    } catch (cleanupError) {
+      console.warn('Upload succeeded but cleanup failed:', cleanupError);
+    }
 
     return NextResponse.json({
       key: objectKey,

@@ -16,7 +16,7 @@ export const MusicToggle = () => {
   return (
     <button
       onClick={toggleBgmMute}
-      className="btn btn-ghost btn-circle hover:drop-shadow-[0_0_8px_rgba(141,118,209,0.8)] hover:scale-110 duration-300"
+      className="btn btn-ghost btn-circle pointer-events-auto hover:drop-shadow-[0_0_8px_rgba(141,118,209,0.8)] hover:scale-110 duration-300"
       aria-label={isBgmMuted ? 'Unmute music' : 'Mute music'}
       title={isBgmMuted ? 'Unmute music' : 'Mute music'}
     >

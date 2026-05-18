@@ -131,12 +131,15 @@ export type CommunityApplication = AgencyApplication;
 
 export type HomepageHeroMode = 'video' | 'slideshow';
 export type HomepageHeroMediaType = 'photo' | 'video';
+export type BackgroundFitMode = 'fill' | 'fit' | 'stretch' | 'tile' | 'center' | 'span';
 
 export interface HomepageHeroSettings {
   config_key: string;
   mode: HomepageHeroMode;
   slideshow_interval_ms: number;
   overlay_opacity: number;
+  background_color: string | null;
+  background_fit: BackgroundFitMode;
   created_at: string;
   updated_at: string;
 }

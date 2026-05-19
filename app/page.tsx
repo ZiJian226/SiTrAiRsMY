@@ -7,6 +7,7 @@ import Container from "@/components/Container";
 import Footer from "@/components/Footer";
 import LazyRow from "@/components/LazyRow";
 import PagedCarousel from "@/components/PagedCarousel";
+import ContentHighlightsSection from "@/components/ContentHighlightsSection";
 import GalleryMediaShowcase from "@/components/GalleryMediaShowcase";
 import LandscapeModal from "@/components/LandscapeModal";
 import EdgeStarAnimation from "@/components/EdgeStarAnimation";
@@ -166,6 +167,9 @@ export default function Home() {
           </div>
         </Container>
       </div>
+
+      {/* Content Highlights Section */}
+      <ContentHighlightsSection />
 
       {/* Featured News Section */}
       <div className="bg-base-200 py-16 relative" style={{ zIndex: 2 }}>

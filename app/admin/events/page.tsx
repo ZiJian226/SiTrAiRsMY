@@ -438,6 +438,9 @@ export default function AdminEventsPage() {
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   required
                 />
+                <label className="label">
+                  <span className="label-text-alt opacity-70">Supports Markdown: # Heading, ## Subheading, - bullet, 1. numbered list</span>
+                </label>
               </div>
 
               <div className="form-control">

@@ -31,7 +31,7 @@ export default function AboutPage() {
             <div className="card-body">
               <h2 className="text-4xl font-bold mb-6 text-primary">Our Mission</h2>
               <p className="text-lg opacity-80 leading-relaxed">
-                StarMy was created with a singular vision: to empower Malaysia's VTuber and artist community by
+                StarMyriad was created with a singular vision: to empower Malaysia's VTuber and artist community by
                 providing a platform where creativity thrives, connections flourish, and dreams become reality.
                 We believe in the power of community, the importance of visibility, and the magic that happens
                 when talented creators and passionate fans come together.
@@ -81,7 +81,7 @@ export default function AboutPage() {
               <h2 className="text-4xl font-bold mb-6 text-primary">Our Story</h2>
               <div className="space-y-4 text-lg opacity-80 leading-relaxed">
                 <p>
-                  Founded in 2025, StarMy emerged from a simple observation: Malaysia has an incredibly talented
+                  Founded in 2025, StarMyriad emerged from a simple observation: Malaysia has an incredibly talented
                   pool of VTubers and digital artists, but they lacked a dedicated platform to showcase their work
                   and connect with their audience.
                 </p>
@@ -91,7 +91,7 @@ export default function AboutPage() {
                   collaborations that have created amazing content.
                 </p>
                 <p>
-                  Today, StarMy stands as Malaysia's premier destination for virtual entertainment and digital art.
+                  Today, StarMyriad stands as Malaysia's premier destination for virtual entertainment and digital art.
                   But we're just getting started. Our roadmap includes exciting features like live streaming integration,
                   community events, collaborative projects, and much more.
                 </p>

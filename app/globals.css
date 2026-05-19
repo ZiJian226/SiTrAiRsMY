@@ -131,3 +131,53 @@ RGB StarMy logo — Pink Variant
 #E1C3DC
 #DC96BE 
 */
+
+.starmy-rich-text {
+  display: grid;
+  gap: 0.6rem;
+  line-height: 1.6;
+}
+
+.starmy-rich-text h1,
+.starmy-rich-text h2,
+.starmy-rich-text h3 {
+  margin: 0.25rem 0;
+}
+
+.starmy-rich-text ul,
+.starmy-rich-text ol {
+  margin: 0.25rem 0;
+  padding-left: 1.25rem;
+}
+
+.starmy-rich-text p {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.starmy-rich-text-collapsed {
+  max-height: 7.25rem;
+  overflow: hidden;
+  position: relative;
+}
+
+.starmy-rich-text-collapsed::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 2.25rem;
+  background: linear-gradient(
+    to bottom,
+    color-mix(in oklab, var(--color-base-200) 0%, transparent),
+    var(--color-base-200)
+  );
+  pointer-events: none;
+}
+
+.starmy-rich-text > :first-child {
+  margin-top: 0;
+}
+
+.starmy-rich-text > :last-child {
+  margin-bottom: 0;
+}

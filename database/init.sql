@@ -367,6 +367,23 @@ CREATE TABLE IF NOT EXISTS homepage_hero_media (
 CREATE INDEX IF NOT EXISTS idx_homepage_hero_media_is_active ON homepage_hero_media(is_active);
 CREATE INDEX IF NOT EXISTS idx_homepage_hero_media_sort_order ON homepage_hero_media(sort_order);
 
+CREATE TABLE IF NOT EXISTS homepage_content_highlights (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title TEXT NOT NULL,
+  description TEXT,
+  video_url TEXT NOT NULL,
+  video_object_key TEXT,
+  thumbnail_url TEXT,
+  thumbnail_object_key TEXT,
+  sort_order INTEGER DEFAULT 0,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_homepage_content_highlights_is_active ON homepage_content_highlights(is_active);
+CREATE INDEX IF NOT EXISTS idx_homepage_content_highlights_sort_order ON homepage_content_highlights(sort_order);
+
 -- ============================================
 -- AGENCY SETTINGS
 -- ============================================
@@ -440,6 +457,10 @@ CREATE TRIGGER update_homepage_hero_settings_updated_at BEFORE UPDATE ON homepag
 DROP TRIGGER IF EXISTS update_homepage_hero_media_updated_at ON homepage_hero_media;
 CREATE TRIGGER update_homepage_hero_media_updated_at BEFORE UPDATE ON homepage_hero_media
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_homepage_content_highlights_updated_at ON homepage_content_highlights;
+CREATE TRIGGER update_homepage_content_highlights_updated_at BEFORE UPDATE ON homepage_content_highlights
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 DROP TRIGGER IF EXISTS update_agency_settings_updated_at ON agency_settings;
 CREATE TRIGGER update_agency_settings_updated_at BEFORE UPDATE ON agency_settings

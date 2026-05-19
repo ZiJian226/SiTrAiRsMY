@@ -3,10 +3,10 @@ import { ReactNode } from 'react';
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
-  title: string;
+  title?: string;
   children: ReactNode;
   actions?: ReactNode;
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
 }
 
 /**
@@ -28,11 +28,12 @@ export default function Modal({
     md: 'max-w-2xl',
     lg: 'max-w-4xl',
     xl: 'max-w-6xl',
+    '2xl': 'max-w-[95vw]',
   };
 
   return (
     <div className="modal modal-open">
-      <div className={`modal-box ${sizeClasses[size]} max-h-[90vh] overflow-y-auto`}>
+      <div className={`modal-box ${sizeClasses[size]} max-h-[92vh] overflow-y-auto`}>
         <button
           className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
           onClick={onClose}
@@ -40,7 +41,7 @@ export default function Modal({
           ✕
         </button>
         
-        <h3 className="font-bold text-2xl mb-6">{title}</h3>
+        {title ? <h3 className="font-bold text-2xl mb-6">{title}</h3> : null}
         
         <div className="space-y-6">
           {children}
@@ -52,7 +53,7 @@ export default function Modal({
           </div>
         )}
       </div>
-      <div className="modal-backdrop" onClick={onClose} />
+      <div className="modal-backdrop bg-black/80 backdrop-blur-sm" onClick={onClose} />
     </div>
   );
 }

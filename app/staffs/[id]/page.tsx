@@ -567,7 +567,7 @@ export default async function StaffProfilePage({ params }: { params: Promise<{ i
                             </h3>
                             {tiktokVideoId ? (
                                <VideoEmbedWithAudio
-                                 src={`https://www.tiktok.com/embed/v2/${tiktokVideoId}`}
+                                 src={`https://www.tiktok.com/player/v1/${tiktokVideoId}`}
                                  title={`${vtuber.name} TikTok`}
                                />
                             ) : (

@@ -140,6 +140,17 @@ export default function DashboardPage() {
                   </div>
                 </Link>
 
+                <Link href="/dashboard/homepage-content-highlights" className="card bg-gradient-to-br from-info to-primary shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all">
+                  <div className="card-body">
+                    <h2 className="card-title text-white">
+                      🎞️ Content Highlights
+                    </h2>
+                    <p className="text-white opacity-90">
+                      Manage homepage highlight videos and display order
+                    </p>
+                  </div>
+                </Link>
+
                 <Link href="/dashboard/agency-settings" className="card bg-gradient-to-br from-secondary to-accent shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all">
                   <div className="card-body">
                     <h2 className="card-title text-white">

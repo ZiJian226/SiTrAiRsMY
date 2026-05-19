@@ -37,9 +37,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - ./database-migrations/001-master-schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
-      - ./database-migrations/002-gallery-media.sql:/docker-entrypoint-initdb.d/02-gallery-media.sql:ro
-      - ./docker/postgres-init/00-master-init.sql:/docker-entrypoint-initdb.d/03-init.sql:ro
+      - ./database/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
       - starmy_pg_data:/var/lib/postgresql/data
 
 volumes:

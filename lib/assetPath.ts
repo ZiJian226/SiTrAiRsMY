@@ -34,6 +34,7 @@ export const ASSETS = {
     },
     icons: {
       logo: assetPath('/assets/images/icons/starmy-logo.svg'),
+      starweaver: assetPath('/assets/images/icons/starweaver-logo.svg'),
     },
     mascot: {
       default: assetPath('/assets/images/mascot/starmy-poffu-default.svg'),

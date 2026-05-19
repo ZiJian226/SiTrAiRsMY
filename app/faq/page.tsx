@@ -41,7 +41,7 @@ const faqs = [
     questions: [
       {
         q: "How do I create an artist profile?",
-        a: "Submit an application through our Career page with your portfolio, specialties, and contact information. Our team will review and approve qualified artists.",
+        a: "Submit an application through our JoinUs page with your portfolio, specialties, and contact information. Our team will review and approve qualified artists.",
       },
       {
         q: "How does the commission system work?",

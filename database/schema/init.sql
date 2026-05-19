@@ -44,4 +44,18 @@ CREATE TABLE IF NOT EXISTS profiles (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS homepage_content_highlights (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title TEXT NOT NULL,
+  description TEXT,
+  video_url TEXT NOT NULL,
+  video_object_key TEXT,
+  thumbnail_url TEXT,
+  thumbnail_object_key TEXT,
+  sort_order INTEGER DEFAULT 0,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 -- Additional tables and indexes omitted here for brevity; use `database/init.sql` or `database/migrations/` files for full incremental migrations.

@@ -6,6 +6,7 @@ import Navbar from "@/components/Navbar";
 import Container from "@/components/Container";
 import Footer from "@/components/Footer";
 import PageBackground from "@/components/PageBackground";
+import { ASSETS } from "@/lib/assetPath";
 
 export default function CommunityPage() {
   const [submitted, setSubmitted] = useState(false);
@@ -66,11 +67,16 @@ export default function CommunityPage() {
       <div className="relative z-10">
         <Navbar />
 
-        <Container className="py-8 md:py-12 flex-grow">
-          <h1 className="text-3xl md:text-5xl font-bold text-center mb-2 md:mb-4 text-primary px-4">
-            StarWeaver Community
-          </h1>
-          <p className="text-center text-base md:text-lg mb-8 md:mb-12 max-w-2xl mx-auto opacity-70 px-4">
+        <Container className="py-8 md:py-12 flex-grow flex flex-col items-center">
+          <img
+            src={ASSETS.images.icons.starweaver}
+            alt="StarWeaver Logo"
+            width="500"
+            height="500"
+            className="object-contain"
+          />
+
+          <p className="text-center text-base md:text-lg mb-8 md:mb-12 max-w-2xl mx-auto opacity-70 px-4 mt-6">
             Join StarWeaver - our public community space for non-StarMyriad members, collaborations, and sharing creative content.
           </p>
 

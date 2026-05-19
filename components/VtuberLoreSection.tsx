@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import ReactMarkdown from "react-markdown";
 
 type Props = {
   text: string;
@@ -21,17 +22,10 @@ export default function VtuberLoreSection({ text, title = "📖 Vtuber Lore / Mo
     <div className="card bg-base-200 shadow-xl">
       <div className="card-body">
         <h2 className="card-title text-2xl mb-4">{title}</h2>
-        <p
-          className="whitespace-pre-wrap"
-          style={expanded ? undefined : {
-            display: "-webkit-box",
-            WebkitLineClamp: 4,
-            WebkitBoxOrient: "vertical",
-            overflow: "hidden",
-          }}
-        >
-          {trimmed}
-        </p>
+
+        <div className={`starmy-rich-text ${expanded ? "" : "starmy-rich-text-collapsed"}`}>
+          <ReactMarkdown>{trimmed}</ReactMarkdown>
+        </div>
 
         {canFold && (
           <div className="mt-3">

@@ -161,7 +161,7 @@ export default function AdminDashboard() {
               <Link href="/admin/events/new" className="btn btn-accent btn-lg justify-start">🎫 Create Event</Link>
               <Link href="/admin/gallery/new" className="btn btn-secondary btn-lg justify-start">🖼️ New Gallery Item</Link>
               <Link href="/admin/merchandise/new" className="btn btn-success btn-lg justify-start">➕ Add Merchandise</Link>
-              <Link href="/admin/commissions" className="btn btn-info btn-lg justify-start">💼 Commission Requests</Link>
+              <Link href="/admin/dashboard/homepage-content-highlights" className="btn btn-info btn-lg justify-start">🎬 Content Highlights</Link>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
